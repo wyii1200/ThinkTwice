@@ -8,6 +8,7 @@ from agents.autosave_agent import suggest_savings
 from agents.behaviour_analysis import analyse_behaviour
 from agents.scoring_agent import calculate_scores
 from agents.financial_orchestrator_agent import orchestrate_intervention
+from agents.learning_loop_agent import learning_feedback
 
 app = FastAPI()
 
@@ -44,12 +45,18 @@ def analyze_risk(user: UserProfile):
     score_result,
     behaviour_result
 )
+    
+    learning_result = learning_feedback(
+    risk_result["riskLevel"],
+    nudge_result["suggestedAction"]
+)
 
     return {
         **risk_result,
         **nudge_result,
         **score_result,
         **orchestrator_result,
+        **learning_result,
         "suggestedSavingsAmount": savings_amount,
         "behaviourAnalysis": behaviour_result
     }
