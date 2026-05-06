@@ -7,6 +7,7 @@ from agents.nudge_agent import generate_nudge
 from agents.autosave_agent import suggest_savings
 from agents.behaviour_analysis import analyse_behaviour
 from agents.scoring_agent import calculate_scores
+from agents.financial_orchestrator_agent import orchestrate_intervention
 
 app = FastAPI()
 
@@ -38,10 +39,17 @@ def analyze_risk(user: UserProfile):
 
     behaviour_result = analyse_behaviour(user)
 
+    orchestrator_result = orchestrate_intervention(
+    risk_result,
+    score_result,
+    behaviour_result
+)
+
     return {
         **risk_result,
         **nudge_result,
         **score_result,
+        **orchestrator_result,
         "suggestedSavingsAmount": savings_amount,
         "behaviourAnalysis": behaviour_result
     }
