@@ -6,6 +6,7 @@ from agents.spending_risk_agent import calculate_risk
 from agents.nudge_agent import generate_nudge
 from agents.autosave_agent import suggest_savings
 from agents.behaviour_analysis import analyse_behaviour
+from agents.scoring_agent import calculate_scores
 
 app = FastAPI()
 
@@ -26,6 +27,11 @@ def analyze_risk(user: UserProfile):
         risk_result["riskLevel"]
     )
 
+    score_result = calculate_scores(
+        user,
+        risk_result["riskLevel"]
+    )
+
     savings_amount = suggest_savings(
         risk_result["riskLevel"]
     )
@@ -35,6 +41,7 @@ def analyze_risk(user: UserProfile):
     return {
         **risk_result,
         **nudge_result,
+        **score_result,
         "suggestedSavingsAmount": savings_amount,
         "behaviourAnalysis": behaviour_result
     }
