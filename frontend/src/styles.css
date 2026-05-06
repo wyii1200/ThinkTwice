@@ -1,0 +1,163 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-emerald: var(--emerald);
+  --color-emerald-foreground: var(--emerald-foreground);
+  --color-risk: var(--risk);
+  --color-risk-foreground: var(--risk-foreground);
+  --color-ai: var(--ai);
+  --color-ai-foreground: var(--ai-foreground);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --font-pixel: "Press Start 2P", monospace;
+}
+
+:root, .dark {
+  --radius: 1rem;
+  --background: oklch(0.16 0.03 260);
+  --foreground: oklch(0.98 0.01 250);
+  --surface: oklch(0.21 0.035 260);
+  --surface-2: oklch(0.26 0.04 265);
+  --card: oklch(0.21 0.035 260);
+  --card-foreground: oklch(0.98 0.01 250);
+  --popover: oklch(0.21 0.035 260);
+  --popover-foreground: oklch(0.98 0.01 250);
+  --primary: oklch(0.72 0.18 155);
+  --primary-foreground: oklch(0.15 0.04 260);
+  --secondary: oklch(0.30 0.04 265);
+  --secondary-foreground: oklch(0.98 0.01 250);
+  --muted: oklch(0.26 0.03 260);
+  --muted-foreground: oklch(0.70 0.02 260);
+  --accent: oklch(0.65 0.20 295);
+  --accent-foreground: oklch(0.98 0.01 250);
+  --destructive: oklch(0.66 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 250);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.72 0.18 155);
+  --emerald: oklch(0.74 0.18 155);
+  --emerald-foreground: oklch(0.15 0.04 260);
+  --risk: oklch(0.70 0.21 35);
+  --risk-foreground: oklch(0.15 0.04 260);
+  --ai: oklch(0.68 0.20 285);
+  --ai-foreground: oklch(0.98 0.01 250);
+  --gold: oklch(0.85 0.16 90);
+  --gold-foreground: oklch(0.20 0.04 260);
+
+  --gradient-ai: linear-gradient(135deg, oklch(0.55 0.22 285), oklch(0.65 0.20 240));
+  --gradient-emerald: linear-gradient(135deg, oklch(0.72 0.18 155), oklch(0.65 0.16 175));
+  --gradient-risk: linear-gradient(135deg, oklch(0.70 0.22 35), oklch(0.62 0.24 15));
+  --gradient-gold: linear-gradient(135deg, oklch(0.85 0.16 90), oklch(0.78 0.18 60));
+  --gradient-bg: radial-gradient(ellipse at top, oklch(0.22 0.06 280) 0%, oklch(0.13 0.03 260) 60%);
+  --shadow-glow-ai: 0 0 40px -10px oklch(0.65 0.22 285 / 60%);
+  --shadow-glow-emerald: 0 0 40px -10px oklch(0.72 0.18 155 / 50%);
+  --shadow-card: 0 8px 32px -8px oklch(0 0 0 / 50%);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html, body { background: var(--background); color: var(--foreground); }
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .bg-app { background: var(--gradient-bg); }
+  .bg-grad-ai { background: var(--gradient-ai); }
+  .bg-grad-emerald { background: var(--gradient-emerald); }
+  .bg-grad-risk { background: var(--gradient-risk); }
+  .bg-grad-gold { background: var(--gradient-gold); }
+  .glass {
+    background: color-mix(in oklab, var(--surface) 70%, transparent);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid oklch(1 0 0 / 8%);
+  }
+  .glass-strong {
+    background: color-mix(in oklab, var(--surface-2) 85%, transparent);
+    backdrop-filter: blur(24px) saturate(200%);
+    border: 1px solid oklch(1 0 0 / 10%);
+  }
+  .glow-ai { box-shadow: var(--shadow-glow-ai); }
+  .glow-emerald { box-shadow: var(--shadow-glow-emerald); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .text-emerald { color: var(--emerald); }
+  .text-risk { color: var(--risk); }
+  .text-ai { color: var(--ai); }
+  .text-gold { color: var(--gold); }
+  .font-pixel { font-family: "Press Start 2P", ui-monospace, monospace; letter-spacing: 0.02em; }
+  .pixelated { image-rendering: pixelated; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { scrollbar-width: none; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+@keyframes float-particle {
+  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.4; }
+  50% { transform: translateY(-30px) translateX(10px); opacity: 1; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes count-up {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes blob {
+  0%, 100% { border-radius: 50% 40% 60% 50%; transform: rotate(0deg); }
+  50% { border-radius: 40% 60% 50% 60%; transform: rotate(180deg); }
+}
+.animate-pulse-ring { animation: pulse-ring 2.4s cubic-bezier(0.4,0,0.2,1) infinite; }
+.animate-float { animation: float-particle 6s ease-in-out infinite; }
+.animate-slide-up { animation: slide-up 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.animate-scale-in { animation: scale-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.animate-blob { animation: blob 12s ease-in-out infinite; }
+.shimmer {
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 8%), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
