@@ -1,15 +1,24 @@
 const admin = require("firebase-admin");
- 
-// For local dev: set GOOGLE_APPLICATION_CREDENTIALS env var to your service account JSON path
-// For deployment: Firebase auto-detects credentials
+const serviceAccount = require("./serviceAccountKey.json");
+
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET, // e.g. "thinktwice.appspot.com"
-  });
+  const config = {
+    credential: admin.credential.cert(serviceAccount),
+  };
+
+  if (process.env.FIREBASE_STORAGE_BUCKET) {
+    config.storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
+  }
+
+  admin.initializeApp(config);
 }
- 
+
 const db = admin.firestore();
-const bucket = admin.storage().bucket();
- 
+
+// Storage only available once FIREBASE_STORAGE_BUCKET is set
+// (needed for deal image uploads — wait for Person 1 to share bucket name)
+const bucket = process.env.FIREBASE_STORAGE_BUCKET
+  ? admin.storage().bucket()
+  : null;
+
 module.exports = { admin, db, bucket };

@@ -1,8 +1,19 @@
+require('dotenv').config();
+
 const axios = require("axios");
- 
-const MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+
 const BASE = "https://maps.googleapis.com/maps/api";
- 
+// Read at call time, not at module load — ensures dotenv is already initialised
+const getKey = () => {
+
+  const key = process.env.GOOGLE_MAPS_API_KEY;
+  if (!key) throw new Error("GOOGLE_MAPS_API_KEY is not set in .env");
+  return key;
+  console.log("Google Maps API Key:", process.env.GOOGLE_MAPS_API_KEY);
+
+
+};
+
 // Find nearby stores/deals by category and user location
 async function getNearbyPlaces(lat, lng, category = "grocery_or_supermarket", radiusMeters = 2000) {
   const typeMap = {
@@ -10,23 +21,23 @@ async function getNearbyPlaces(lat, lng, category = "grocery_or_supermarket", ra
     grocery: "grocery_or_supermarket",
     transport: "transit_station",
   };
- 
+
   const placeType = typeMap[category] || "store";
- 
+
   const url = `${BASE}/place/nearbysearch/json`;
   const params = {
     location: `${lat},${lng}`,
     radius: radiusMeters,
     type: placeType,
-    key: MAPS_API_KEY,
+    key: getKey(),
   };
- 
+
   const res = await axios.get(url, { params });
- 
+
   if (res.data.status !== "OK" && res.data.status !== "ZERO_RESULTS") {
     throw new Error(`Places API error: ${res.data.status}`);
   }
- 
+
   return (res.data.results || []).slice(0, 10).map((place) => ({
     placeId: place.place_id,
     name: place.name,
@@ -37,45 +48,45 @@ async function getNearbyPlaces(lat, lng, category = "grocery_or_supermarket", ra
     isOpen: place.opening_hours?.open_now ?? null,
   }));
 }
- 
+
 // Optimize multi-stop grocery route using Directions API
 // stops = [{ address or lat/lng }, ...]
 async function getOptimizedRoute(originLat, originLng, stops) {
   if (!stops || stops.length === 0) {
     throw new Error("At least one stop is required");
   }
- 
+
   const origin = `${originLat},${originLng}`;
   const destination = stops[stops.length - 1].address || `${stops[stops.length - 1].lat},${stops[stops.length - 1].lng}`;
- 
+
   const waypoints = stops
     .slice(0, -1)
     .map((s) => s.address || `${s.lat},${s.lng}`)
     .join("|");
- 
+
   const url = `${BASE}/directions/json`;
   const params = {
     origin,
     destination,
     waypoints: waypoints ? `optimize:true|${waypoints}` : undefined,
     mode: "driving",
-    key: MAPS_API_KEY,
+    key: getKey(),
   };
- 
+
   const res = await axios.get(url, { params });
- 
+
   if (res.data.status !== "OK") {
     throw new Error(`Directions API error: ${res.data.status}`);
   }
- 
+
   const route = res.data.routes[0];
   const legs = route.legs;
- 
+
   const totalDistanceMeters = legs.reduce((sum, leg) => sum + leg.distance.value, 0);
   const totalDurationSeconds = legs.reduce((sum, leg) => sum + leg.duration.value, 0);
- 
+
   const optimizedOrder = route.waypoint_order || [];
- 
+
   return {
     optimizedStopOrder: optimizedOrder,
     totalDistanceKm: parseFloat((totalDistanceMeters / 1000).toFixed(2)),
@@ -89,7 +100,7 @@ async function getOptimizedRoute(originLat, originLng, stops) {
     polyline: route.overview_polyline?.points || null,
   };
 }
- 
+
 // Estimate travel cost between user and a set of stores
 async function getDistanceMatrix(originLat, originLng, destinationAddresses) {
   const url = `${BASE}/distancematrix/json`;
@@ -97,18 +108,18 @@ async function getDistanceMatrix(originLat, originLng, destinationAddresses) {
     origins: `${originLat},${originLng}`,
     destinations: destinationAddresses.join("|"),
     mode: "driving",
-    key: MAPS_API_KEY,
+    key: getKey(),
   };
- 
+
   const res = await axios.get(url, { params });
- 
+
   if (res.data.status !== "OK") {
     throw new Error(`Distance Matrix API error: ${res.data.status}`);
   }
- 
+
   const elements = res.data.rows[0].elements;
   const destNames = res.data.destination_addresses;
- 
+
   return elements.map((el, i) => ({
     destination: destNames[i],
     distanceKm: el.status === "OK" ? parseFloat((el.distance.value / 1000).toFixed(2)) : null,
@@ -116,5 +127,5 @@ async function getDistanceMatrix(originLat, originLng, destinationAddresses) {
     status: el.status,
   }));
 }
- 
+
 module.exports = { getNearbyPlaces, getOptimizedRoute, getDistanceMatrix };
