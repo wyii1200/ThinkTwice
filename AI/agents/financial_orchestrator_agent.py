@@ -1,3 +1,6 @@
+from agents.safety_consent_agent import check_safety_and_consent
+
+
 def orchestrate_intervention(
     risk_result,
     score_result,
@@ -29,7 +32,13 @@ def orchestrate_intervention(
     else:
         reward = "no_reward"
 
-    return {
+    # Final AI decision object
+    final_decision = {
         "selectedIntervention": intervention,
         "rewardAction": reward
     }
+
+    # Run Safety & Consent Agent
+    final_decision = check_safety_and_consent(final_decision)
+
+    return final_decision
