@@ -1,11 +1,12 @@
-def calculate_scores(user, risk_level):
+from utils.transaction_utils import safe_divide
 
+
+def calculate_scores(user, risk_level):
     resilience_score = 50
     smart_decision_score = 50
 
-    # Spending behaviour
-    spending_ratio = (
-        user.current_daily_spending /
+    spending_ratio = safe_divide(
+        user.current_daily_spending,
         user.daily_budget
     )
 
@@ -30,16 +31,8 @@ def calculate_scores(user, risk_level):
     elif risk_level == "medium":
         resilience_score -= 5
 
-    # Keep scores within 0–100
-    resilience_score = max(
-        0,
-        min(100, resilience_score)
-    )
-
-    smart_decision_score = max(
-        0,
-        min(100, smart_decision_score)
-    )
+    resilience_score = max(0, min(100, resilience_score))
+    smart_decision_score = max(0, min(100, smart_decision_score))
 
     return {
         "resilienceScore": resilience_score,

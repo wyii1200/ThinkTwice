@@ -1,43 +1,39 @@
 def learning_feedback(
     risk_level,
-    final_action
+    final_action,
+    user_action=None
 ):
+    """
+    user_action can be:
+    - accepted
+    - ignored
+    - opened_smart_radar
+    - saved_money
+    - None
+    """
 
-    accepted_nudge = False
+    if user_action in ["accepted", "opened_smart_radar", "saved_money"]:
+        accepted_nudge = True
 
-    if risk_level == "high":
+    elif user_action == "ignored":
         accepted_nudge = False
 
-    elif risk_level == "medium":
-        accepted_nudge = True
-
     else:
-        accepted_nudge = True
+        # Temporary fallback for demo if frontend has not sent real user action yet
+        accepted_nudge = risk_level != "high"
 
-    # Learning result
     if accepted_nudge:
-
-        learning_status = (
-            "User responds positively to interventions."
-        )
-
-        future_recommendation = (
-            "Continue proactive nudges."
-        )
+        learning_status = "User responds positively to interventions."
+        future_recommendation = "Continue proactive nudges."
 
     else:
-
-        learning_status = (
-            "User frequently ignores interventions."
-        )
-
-        future_recommendation = (
-            "Increase intervention intensity."
-        )
+        learning_status = "User frequently ignores interventions."
+        future_recommendation = "Increase intervention intensity."
 
     return {
         "acceptedNudge": accepted_nudge,
         "learningStatus": learning_status,
         "futureRecommendation": future_recommendation,
-        "trackedAction": final_action
+        "trackedAction": final_action,
+        "feedbackSource": "frontend_user_action" if user_action else "demo_fallback"
     }

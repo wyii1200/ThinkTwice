@@ -1,40 +1,46 @@
 def generate_explanation(
     risk_result,
     behaviour_result,
-    orchestrator_result
+    orchestrator_result,
+    velocity_result=None
 ):
-
     explanations = []
 
-    # Risk explanations
-    for reason in risk_result["reasons"]:
+    for reason in risk_result.get("reasons", []):
         explanations.append(reason)
 
-    # Behaviour explanations
-    if behaviour_result["lateNightSpending"]:
+    if behaviour_result.get("lateNightSpending"):
         explanations.append(
             "Late-night spending behaviour increases impulsive spending risk."
         )
 
-    # Intervention explanations
-    intervention = orchestrator_result["finalAction"]
+    if velocity_result:
+        explanations.append(
+            f"Spending velocity is classified as {velocity_result['spendingVelocity']}."
+        )
 
-    if intervention == "auto_save":
+    final_action = orchestrator_result.get("finalAction")
+
+    if final_action == "auto_save":
         explanations.append(
             "AI recommends micro-saving to reduce overspending risk."
         )
 
-    elif intervention == "smart_radar_and_auto_save":
+    elif final_action == "smart_radar_and_auto_save":
         explanations.append(
             "AI recommends cheaper nearby alternatives and micro-saving action."
         )
 
-    elif intervention == "send_warning_nudge":
+    elif final_action == "send_warning_nudge":
         explanations.append(
             "AI detected moderate financial risk and triggered a warning nudge."
         )
 
-    # Safety explanation
+    elif final_action == "continue_tracking":
+        explanations.append(
+            "AI detected stable behaviour and continued passive financial monitoring."
+        )
+
     safety = orchestrator_result.get("safetyCheck", {})
 
     if safety.get("requiresUserConsent"):

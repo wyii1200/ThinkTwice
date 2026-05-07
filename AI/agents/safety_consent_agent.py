@@ -1,17 +1,12 @@
+from config.constants import FINANCIAL_ACTIONS_REQUIRING_CONSENT
+
+
 def check_safety_and_consent(ai_decision: dict) -> dict:
-
-    financial_actions = [
-        "auto_save",
-        "round_up_save",
-        "transfer_to_savings",
-        "salary_auto_allocation"
-    ]
-
-    suggested_action = ai_decision.get("finalAction", "")
+    final_action = ai_decision.get("finalAction", "")
 
     requires_consent = any(
-        action in suggested_action
-        for action in financial_actions
+        action in final_action
+        for action in FINANCIAL_ACTIONS_REQUIRING_CONSENT
     )
 
     ai_decision["safetyCheck"] = {
@@ -24,7 +19,7 @@ def check_safety_and_consent(ai_decision: dict) -> dict:
         "consentReason": (
             "This action may move user money, so user approval is required before execution."
             if requires_consent
-            else "This action only provides advice or notification, so no financial consent is required."
+            else "This action only provides advice, tracking, or notification."
         ),
         "canExecuteAction": not requires_consent
     }
