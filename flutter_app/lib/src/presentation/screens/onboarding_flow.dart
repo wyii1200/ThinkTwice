@@ -142,47 +142,18 @@ class _SplashScreenState extends State<SplashScreen> {
         children: [
           const Spacer(),
           SizedBox(
-            width: 130,
-            height: 130,
+            width: 250,
+            height: 250,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 const _PulseRing(delay: 0),
                 const _PulseRing(delay: 800),
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
-                    gradient: const LinearGradient(colors: AppColors.aiGradient),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.ai.withValues(alpha: 0.36),
-                        blurRadius: 36,
-                        spreadRadius: -8,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.auto_awesome_rounded,
-                    size: 44,
-                    color: Colors.white,
-                  ),
-                ),
+                const AppLogo(width: 220, height: 220),
               ],
             ),
           ),
-          const SizedBox(height: 36),
-          RichText(
-            text: const TextSpan(
-              style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900),
-              children: [
-                TextSpan(text: 'Think'),
-                TextSpan(text: 'Twice', style: TextStyle(color: AppColors.ai)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           const Text(
             'Financial resilience by design.',
             style: TextStyle(color: AppColors.muted, fontSize: 14),
@@ -932,26 +903,14 @@ class _InitScreenState extends State<InitScreen> {
             alignment: Alignment.center,
             children: [
               if (!ready) const _PulseRing(delay: 0),
-              Container(
-                width: 84,
-                height: 84,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: AppColors.aiGradient),
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: ready
-                    ? Center(
-                        child: PixelCatWidget(
-                          breed: widget.catBreed,
-                          size: 64,
-                        ),
-                      )
-                    : const Icon(
-                        Icons.auto_awesome_rounded,
-                        size: 36,
-                        color: Colors.white,
+              ready
+                  ? Center(
+                      child: PixelCatWidget(
+                        breed: widget.catBreed,
+                        size: 64,
                       ),
-              ),
+                    )
+                  : const AppLogo(width: 96, height: 96),
             ],
           ),
           const SizedBox(height: 28),

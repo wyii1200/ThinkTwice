@@ -339,6 +339,30 @@ class AppSectionTitle extends StatelessWidget {
   }
 }
 
+class AppLogo extends StatelessWidget {
+  const AppLogo({
+    this.width = 140,
+    this.height = 140,
+    this.fit = BoxFit.contain,
+    super.key,
+  });
+
+  final double width;
+  final double height;
+  final BoxFit fit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/thinktwice_logo.png',
+      width: width,
+      height: height,
+      fit: fit,
+      filterQuality: FilterQuality.high,
+    );
+  }
+}
+
 class PixelCatWidget extends StatelessWidget {
   const PixelCatWidget({
     required this.breed,
@@ -563,21 +587,11 @@ class _StatusBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 14, 24, 8),
-      child: Row(
-        children: const [
+      child: const Row(
+        children: [
           Text('9:41', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
           Spacer(),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.auto_awesome_rounded, size: 13, color: AppColors.ai),
-              SizedBox(width: 4),
-              Text(
-                'ThinkTwice',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
+          AppLogo(width: 78, height: 20),
           Spacer(),
           Text('100%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
         ],
