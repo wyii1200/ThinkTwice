@@ -12,6 +12,7 @@ from agents.learning_loop_agent import learning_feedback
 from agents.explainability_agent import generate_explanation
 from agents.spending_velocity_agent import analyse_spending_velocity
 from agents.intervention_intelligence_agent import evaluate_intervention_intelligence
+from agents.decision_layer_agent import build_decision_layer
 
 app = FastAPI()
 
@@ -62,6 +63,12 @@ def analyze_risk(user: UserProfile):
     orchestrator_result["finalAction"]
 )
     
+    decision_layer_result = build_decision_layer(
+    risk_result,
+    orchestrator_result,
+    learning_result
+)
+    
     explanation_result = generate_explanation(
     risk_result,
     behaviour_result,
@@ -74,6 +81,7 @@ def analyze_risk(user: UserProfile):
         **score_result,
         **orchestrator_result,
         **learning_result,
+        **decision_layer_result,
         **explanation_result,
         **velocity_result,
         **intelligence_result,
