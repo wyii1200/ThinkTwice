@@ -9,6 +9,7 @@ from agents.behaviour_analysis import analyse_behaviour
 from agents.scoring_agent import calculate_scores
 from agents.financial_orchestrator_agent import orchestrate_intervention
 from agents.learning_loop_agent import learning_feedback
+from agents.explainability_agent import generate_explanation
 
 app = FastAPI()
 
@@ -50,6 +51,12 @@ def analyze_risk(user: UserProfile):
     risk_result["riskLevel"],
     nudge_result["suggestedAction"]
 )
+    
+    explanation_result = generate_explanation(
+    risk_result,
+    behaviour_result,
+    orchestrator_result
+)
 
     return {
         **risk_result,
@@ -57,6 +64,7 @@ def analyze_risk(user: UserProfile):
         **score_result,
         **orchestrator_result,
         **learning_result,
+        **explanation_result,
         "suggestedSavingsAmount": savings_amount,
         "behaviourAnalysis": behaviour_result
     }
