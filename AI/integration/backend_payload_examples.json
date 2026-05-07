@@ -1,0 +1,32 @@
+{
+  "description": "Backend should read integrationPayload after calling POST /analyze-risk.",
+  "usedBy": "Person 1 Backend",
+  "importantFields": {
+    "finalAction": "Determines what action pipeline should run.",
+    "smartRadar": "Send to Smart Radar module if triggerSmartRadar is true.",
+    "notification": "Used to decide whether to send FCM.",
+    "safetyCheck": "Prevents money movement without approval.",
+    "fcmPayload": "Ready-to-send push notification payload."
+  },
+  "example": {
+    "userId": "user_high_001",
+    "finalAction": "smart_radar_and_auto_save",
+    "smartRadar": {
+      "triggerSmartRadar": true,
+      "radarCategory": "food",
+      "radarMessage": "You usually overspend on food during risky hours. Find cheaper nearby alternatives?",
+      "openMode": "category_filter"
+    },
+    "notification": {
+      "sendPushNotification": true,
+      "notificationTitle": "Smart Savings Alert",
+      "notificationBody": "AI detected risky food spending. Save RM8 or find cheaper options nearby.",
+      "notificationType": "smart_radar"
+    },
+    "safetyCheck": {
+      "requiresUserConsent": true,
+      "consentStatus": "pending_user_approval",
+      "canExecuteAction": false
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "description": "Frontend should use intervention and integrationPayload for UI display.",
+  "usedBy": "Person 3 Frontend",
+  "displayFields": {
+    "nudge": "Main AI message shown to user.",
+    "resilienceScore": "Shown on dashboard.",
+    "smartDecisionScore": "Shown on dashboard.",
+    "severityLevel": "Used for colour/intensity display.",
+    "aiExplanation": "Shown as Why am I seeing this? explanation.",
+    "decisionLayer": "Used for demo/storytelling cards."
+  },
+  "exampleUserActionFeedback": {
+    "user_action": {
+      "actionType": "opened_smart_radar",
+      "timestamp": "2026-05-07T22:45:00",
+      "interactionSource": "push_notification"
+    }
+  },
+  "validActionTypes": [
+    "accepted",
+    "ignored",
+    "opened_smart_radar",
+    "saved_money",
+    "dismissed_notification"
+  ]
+}

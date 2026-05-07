@@ -1,0 +1,41 @@
+{
+  "user_id": "user_medium_001",
+  "daily_budget": 80,
+  "current_daily_spending": 70,
+  "savings_goal": 500,
+  "user_action": {
+    "actionType": "dismissed_notification",
+    "timestamp": "2026-05-07T20:00:00",
+    "interactionSource": "push_notification"
+  },
+  "transactions": [
+    {
+      "transaction_id": "txn_med_001",
+      "amount": 15,
+      "category": "food",
+      "time": "6:00 PM",
+      "location": "Restaurant"
+    },
+    {
+      "transaction_id": "txn_med_002",
+      "amount": 20,
+      "category": "shopping",
+      "time": "7:30 PM",
+      "location": "Mall"
+    },
+    {
+      "transaction_id": "txn_med_003",
+      "amount": 10,
+      "category": "transport",
+      "time": "8:00 PM",
+      "location": "Grab"
+    },
+    {
+      "transaction_id": "txn_med_004",
+      "amount": 25,
+      "category": "food",
+      "time": "9:00 PM",
+      "location": "Cafe"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "description": "Backend can send this through Firebase Cloud Messaging.",
+  "usedBy": "Person 1 Backend and Person 3 Frontend",
+  "fcmPayload": {
+    "shouldSend": true,
+    "title": "Smart Savings Alert",
+    "body": "AI detected risky food spending. Save RM8 or find cheaper options nearby.",
+    "data": {
+      "finalAction": "smart_radar_and_auto_save",
+      "triggerSmartRadar": "true",
+      "radarCategory": "food",
+      "notificationType": "smart_radar"
+    }
+  },
+  "frontendBehaviour": {
+    "ifTriggerSmartRadarTrue": "Open or pre-filter Smart Radar page.",
+    "radarCategory": "Use this category as default filter.",
+    "notificationType": "Use this to decide notification click behaviour."
+  }
+}
