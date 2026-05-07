@@ -1,16 +1,85 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../providers/app_providers.dart';
 import '../widgets/app_shell.dart';
 
-class RadarScreen extends ConsumerWidget {
+class RadarScreen extends ConsumerStatefulWidget {
   const RadarScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RadarScreen> createState() => _RadarScreenState();
+}
+
+class _RadarScreenState extends ConsumerState<RadarScreen> {
+  static const _fallbackCamera = CameraPosition(
+    target: LatLng(3.1097, 101.6118),
+    zoom: 14.5,
+  );
+
+  GoogleMapController? _mapController;
+  LatLng? _currentLocation;
+  bool _isLocating = false;
+  String _locationStatus = 'Using default savings area';
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareLocation();
+  }
+
+  Future<void> _prepareLocation() async {
+    setState(() => _isLocating = true);
+
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          _locationStatus = 'Location services are off';
+          _isLocating = false;
+        });
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        setState(() {
+          _locationStatus = 'Location permission not granted';
+          _isLocating = false;
+        });
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition();
+      final target = LatLng(position.latitude, position.longitude);
+      setState(() {
+        _currentLocation = target;
+        _locationStatus = 'Showing deals near your location';
+        _isLocating = false;
+      });
+
+      await _mapController?.animateCamera(CameraUpdate.newCameraPosition(
+        CameraPosition(target: target, zoom: 14.5),
+      ));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _locationStatus = 'Unable to fetch current location';
+        _isLocating = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final deals = ref.watch(mockRepositoryProvider).loadDeals();
     final markers = deals
         .map(
@@ -24,6 +93,17 @@ class RadarScreen extends ConsumerWidget {
           ),
         )
         .toSet();
+
+    if (_currentLocation != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('current-location'),
+          position: _currentLocation!,
+          infoWindow: const InfoWindow(title: 'You are here'),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        ),
+      );
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
@@ -66,6 +146,34 @@ class RadarScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
+          GlassCard(
+            strong: true,
+            radius: 24,
+            child: Row(
+              children: [
+                const Icon(Icons.my_location_rounded, size: 18, color: AppColors.ai),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _locationStatus,
+                    style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  ),
+                ),
+                if (_isLocating)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  TextButton(
+                    onPressed: _prepareLocation,
+                    child: const Text('Refresh'),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
           ClipRRect(
             borderRadius: BorderRadius.circular(30),
             child: SizedBox(
@@ -73,12 +181,18 @@ class RadarScreen extends ConsumerWidget {
               child: Stack(
                 children: [
                   GoogleMap(
-                    initialCameraPosition: const CameraPosition(
-                      target: LatLng(3.1097, 101.6118),
-                      zoom: 14.5,
-                    ),
+                    initialCameraPosition: _fallbackCamera,
+                    onMapCreated: (controller) {
+                      _mapController = controller;
+                      if (_currentLocation != null) {
+                        controller.animateCamera(
+                          CameraUpdate.newLatLng(_currentLocation!),
+                        );
+                      }
+                    },
                     zoomControlsEnabled: false,
                     myLocationButtonEnabled: false,
+                    myLocationEnabled: _currentLocation != null,
                     compassEnabled: false,
                     markers: markers,
                   ),

@@ -174,13 +174,8 @@ class _SplashScreenState extends State<SplashScreen> {
           SizedBox(
             width: 250,
             height: 250,
-            child: Stack(
-              alignment: Alignment.center,
-              children: const [
-                _PulseRing(delay: 0),
-                _PulseRing(delay: 800),
-                AppLogo(width: 220, height: 220),
-              ],
+            child: const Center(
+              child: AppLogo(width: 220, height: 220),
             ),
           ),
           const SizedBox(height: 16),

@@ -7,6 +7,16 @@ final mockRepositoryProvider = Provider<MockRepository>((ref) {
   return MockRepository();
 });
 
+final realtimeTickProvider = StreamProvider<int>((ref) async* {
+  var tick = 0;
+  yield tick;
+  while (true) {
+    await Future<void>.delayed(const Duration(seconds: 4));
+    tick += 1;
+    yield tick;
+  }
+});
+
 final appStateProvider =
     NotifierProvider<AppStateNotifier, AppState>(AppStateNotifier.new);
 

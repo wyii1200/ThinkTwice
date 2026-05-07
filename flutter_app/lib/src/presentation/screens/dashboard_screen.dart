@@ -15,8 +15,18 @@ class DashboardScreen extends ConsumerWidget {
     final repo = ref.watch(mockRepositoryProvider);
     final profile = ref.watch(appStateProvider).profile;
     final controller = ref.read(appStateProvider.notifier);
+    final tick = ref.watch(realtimeTickProvider).valueOrNull ?? 0;
     final insights = repo.loadInsights();
     final transactions = repo.loadTransactions().take(4).toList();
+    final liveBalance = 1847.22 + ((tick % 3) * 6.4);
+    final liveResilience = (profile.resilience + (tick % 4)).clamp(0, 100);
+    final liveDecisionScore = 82 + (tick % 3);
+    final liveSavedThisMonth = 124 + (tick * 2);
+    final syncLabel = switch (tick % 3) {
+      0 => 'GXBank synced just now',
+      1 => 'New transaction classified',
+      _ => 'AI nudges recalculated',
+    };
     final burnPoints = List.generate(
       14,
       (index) => FlSpot(index.toDouble(), 40 + index * 1.6 + (index.isEven ? 7 : 2)),
@@ -92,7 +102,7 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,12 +113,12 @@ class DashboardScreen extends ConsumerWidget {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'RM 1,847.22',
+                            'RM ${liveBalance.toStringAsFixed(2)}',
                             style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900),
                           ),
                           SizedBox(height: 4),
                           Text(
-                            '+RM 124 saved this month',
+                            '+RM $liveSavedThisMonth saved this month',
                             style: TextStyle(fontSize: 11, color: Color(0xC7FFFFFF)),
                           ),
                         ],
@@ -122,7 +132,7 @@ class DashboardScreen extends ConsumerWidget {
                           style: TextStyle(fontSize: 10, letterSpacing: 1.2, color: Color(0xB3FFFFFF)),
                         ),
                         SizedBox(height: 4),
-                        Text('68', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+                        Text('$liveResilience', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
                         Row(
                           children: [
                             Icon(Icons.trending_up_rounded, size: 12, color: AppColors.emerald),
@@ -136,13 +146,71 @@ class DashboardScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 18),
                 Row(
-                  children: const [
+                  children: [
                     Expanded(child: _MiniHeroStat(label: 'Vault', value: 'RM 312')),
                     SizedBox(width: 8),
                     Expanded(child: _MiniHeroStat(label: 'Streak', value: '14 day')),
                     SizedBox(width: 8),
-                    Expanded(child: _MiniHeroStat(label: 'Decision', value: '82')),
+                    Expanded(child: _MiniHeroStat(label: 'Decision', value: '$liveDecisionScore')),
                   ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.sync_rounded, size: 14, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text(
+                      syncLabel,
+                      style: const TextStyle(fontSize: 11, color: Color(0xD9FFFFFF)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          GlassCard(
+            strong: true,
+            radius: 28,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 82,
+                  height: 82,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CircularProgressIndicator(
+                        value: liveResilience / 100,
+                        strokeWidth: 8,
+                        backgroundColor: AppColors.surface,
+                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.emerald),
+                      ),
+                      Center(
+                        child: Text(
+                          '$liveResilience',
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Resilience score',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Your score updates as nudges are accepted, savings are protected, and risky spending is reduced.',
+                        style: TextStyle(fontSize: 12, color: AppColors.muted, height: 1.45),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -345,6 +413,41 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 18),
+          GlassCard(
+            strong: true,
+            radius: 28,
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSectionTitle(
+                  'ThinkTwice engine',
+                  trailing: Text(
+                    'Frontend view',
+                    style: TextStyle(fontSize: 10, color: AppColors.muted),
+                  ),
+                ),
+                SizedBox(height: 12),
+                _LayerRow(
+                  icon: Icons.account_balance_wallet_rounded,
+                  title: 'User & banking input',
+                  detail: 'GXBank connection, transaction intake, and authenticated profile setup.',
+                ),
+                SizedBox(height: 10),
+                _LayerRow(
+                  icon: Icons.bolt_rounded,
+                  title: 'Real-time events',
+                  detail: 'Frontend reflects new transaction classifications, nudges, and sync status as they arrive.',
+                ),
+                SizedBox(height: 10),
+                _LayerRow(
+                  icon: Icons.psychology_rounded,
+                  title: 'AI agentic intelligence',
+                  detail: 'The orchestrator coordinates predictions, nudges, radar suggestions, and micro-save actions.',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
@@ -383,6 +486,37 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 18),
+          GlassCard(
+            strong: true,
+            radius: 28,
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSectionTitle(
+                  'Behaviour loop',
+                  trailing: Text(
+                    'Continuous',
+                    style: TextStyle(fontSize: 10, color: AppColors.ai),
+                  ),
+                ),
+                SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: _LoopStep(label: 'Detect')),
+                    SizedBox(width: 6),
+                    Expanded(child: _LoopStep(label: 'Nudge')),
+                    SizedBox(width: 6),
+                    Expanded(child: _LoopStep(label: 'Act')),
+                    SizedBox(width: 6),
+                    Expanded(child: _LoopStep(label: 'Reward')),
+                    SizedBox(width: 6),
+                    Expanded(child: _LoopStep(label: 'Repeat')),
+                  ],
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 18),
           const AppSectionTitle(
@@ -554,6 +688,73 @@ class _QuickAction extends StatelessWidget {
               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LayerRow extends StatelessWidget {
+  const _LayerRow({
+    required this.icon,
+    required this.title,
+    required this.detail,
+  });
+
+  final IconData icon;
+  final String title;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceStrong,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 18, color: AppColors.ai),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 4),
+              Text(
+                detail,
+                style: const TextStyle(fontSize: 12, color: AppColors.muted, height: 1.45),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LoopStep extends StatelessWidget {
+  const _LoopStep({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceStrong,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Center(
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
         ),
       ),
     );

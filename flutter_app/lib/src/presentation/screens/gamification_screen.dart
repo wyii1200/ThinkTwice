@@ -20,7 +20,14 @@ class _GamificationScreenState extends ConsumerState<GamificationScreen> {
   Widget build(BuildContext context) {
     final repo = ref.watch(mockRepositoryProvider);
     final profile = ref.watch(appStateProvider).profile;
+    final tick = ref.watch(realtimeTickProvider).valueOrNull ?? 0;
     final quests = repo.loadQuests();
+    final leaderboard = [
+      ('Aiman', 1, profile.resilience + (tick % 3), 'RM312 saved'),
+      ('Sara', 2, 74, 'RM284 saved'),
+      ('Irfan', 3, 69, 'RM201 saved'),
+      ('Mei', 4, 63, 'RM188 saved'),
+    ];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
@@ -91,13 +98,41 @@ class _GamificationScreenState extends ConsumerState<GamificationScreen> {
                 const SizedBox(height: 14),
                 Row(
                   children: const [
-                    Expanded(child: _QuestHeroStat(label: 'Streak', value: '14🔥')),
+                    Expanded(child: _QuestHeroStat(label: 'Streak', value: '14 day')),
                     SizedBox(width: 8),
                     Expanded(child: _QuestHeroStat(label: 'Badges', value: '9')),
                     SizedBox(width: 8),
                     Expanded(child: _QuestHeroStat(label: 'Coins', value: '2,840')),
                   ],
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          GlassCard(
+            strong: true,
+            radius: 28,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const AppSectionTitle(
+                  'Squad leaderboard',
+                  trailing: Text(
+                    'This week',
+                    style: TextStyle(fontSize: 10, color: AppColors.muted),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                for (final row in leaderboard) ...[
+                  _LeaderboardRow(
+                    name: row.$1,
+                    place: row.$2,
+                    score: row.$3,
+                    savings: row.$4,
+                    highlight: row.$1 == 'Aiman',
+                  ),
+                  if (row != leaderboard.last) const SizedBox(height: 10),
+                ],
               ],
             ),
           ),
@@ -227,10 +262,10 @@ class _GamificationScreenState extends ConsumerState<GamificationScreen> {
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
               children: const [
-                _BadgeCard(emoji: '🏦', name: 'First Save', rarity: 'Common'),
-                _BadgeCard(emoji: '🌙', name: 'Night Owl Slayer', rarity: 'Rare'),
-                _BadgeCard(emoji: '🛒', name: 'Smart Shopper', rarity: 'Epic'),
-                _BadgeCard(emoji: '👑', name: 'Discipline', rarity: 'Legendary'),
+                _BadgeCard(emoji: 'S', name: 'First Save', rarity: 'Common'),
+                _BadgeCard(emoji: 'N', name: 'Night Owl Slayer', rarity: 'Rare'),
+                _BadgeCard(emoji: 'R', name: 'Smart Shopper', rarity: 'Epic'),
+                _BadgeCard(emoji: 'D', name: 'Discipline', rarity: 'Legendary'),
               ],
             ),
           ] else ...[
@@ -403,7 +438,7 @@ class _ShopCard extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                locked ? 'LOCK' : '$cost 🪙',
+                locked ? 'LOCK' : '$cost coins',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
@@ -411,6 +446,70 @@ class _ShopCard extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LeaderboardRow extends StatelessWidget {
+  const _LeaderboardRow({
+    required this.name,
+    required this.place,
+    required this.score,
+    required this.savings,
+    required this.highlight,
+  });
+
+  final String name;
+  final int place;
+  final int score;
+  final String savings;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: highlight ? AppColors.ai.withValues(alpha: 0.12) : AppColors.surfaceStrong,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: highlight ? AppColors.ai : AppColors.surface,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '$place',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: highlight ? Colors.white : AppColors.text,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 2),
+                Text(savings, style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+              ],
+            ),
+          ),
+          Text(
+            '$score',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
         ],
       ),

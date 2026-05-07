@@ -159,7 +159,7 @@ class AnalyticsScreen extends ConsumerWidget {
             radius: 22,
             child: Row(
               children: [
-                const Text('📊', style: TextStyle(fontSize: 28)),
+                const Text('R', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Column(
@@ -167,7 +167,7 @@ class AnalyticsScreen extends ConsumerWidget {
                     children: [
                       Text('Weekly report ready', style: TextStyle(fontWeight: FontWeight.w800)),
                       SizedBox(height: 4),
-                      Text('12 insights · 3 wins · 1 risk', style: TextStyle(fontSize: 11, color: AppColors.muted)),
+                      Text('12 insights - 3 wins - 1 risk', style: TextStyle(fontSize: 11, color: AppColors.muted)),
                     ],
                   ),
                 ),

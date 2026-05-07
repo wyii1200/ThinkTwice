@@ -71,7 +71,7 @@ class ProfileScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            'LVL ${profile.level} · ${profile.rank.toUpperCase()}',
+                            'LVL ${profile.level} - ${profile.rank.toUpperCase()}',
                             style: const TextStyle(
                               color: AppColors.gold,
                               fontSize: 11,
@@ -89,7 +89,7 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     Expanded(child: _ProfileStat(label: 'Resilience', value: '${profile.resilience}')),
                     const SizedBox(width: 8),
-                    Expanded(child: _ProfileStat(label: 'Streak', value: '${profile.streak}🔥')),
+                    Expanded(child: _ProfileStat(label: 'Streak', value: '${profile.streak} day')),
                     const SizedBox(width: 8),
                     Expanded(child: _ProfileStat(label: 'Badges', value: '${profile.badges}')),
                   ],

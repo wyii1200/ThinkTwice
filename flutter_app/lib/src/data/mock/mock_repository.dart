@@ -7,13 +7,13 @@ class MockRepository {
   UserProfileModel loadProfile() {
     return UserProfileModel.fromJson(const {
       'name': 'Aiman Hakim',
-      'school': 'Universiti Malaya · Y3',
+      'school': 'Universiti Malaya - Y3',
       'level': 4,
       'rank': 'Builder',
       'resilience': 68,
       'streak': 14,
       'badges': 9,
-      'income': 'RM500 – 1,500',
+      'income': 'RM500 - 1,500',
       'habit': 'Balanced',
       'goals': ['Emergency fund'],
       'concerns': ['Late-night food'],
@@ -75,7 +75,7 @@ class MockRepository {
       AppTransaction(
         icon: Icons.local_cafe_rounded,
         name: 'Starbucks',
-        category: 'Food · Mid Valley',
+        category: 'Food - Mid Valley',
         time: '10:32 PM',
         amount: -12,
         isRisk: true,
@@ -83,7 +83,7 @@ class MockRepository {
       AppTransaction(
         icon: Icons.directions_car_rounded,
         name: 'Grab',
-        category: 'Transport · USJ → KL',
+        category: 'Transport - USJ to KL',
         time: '9:14 PM',
         amount: -18,
       ),
@@ -97,14 +97,14 @@ class MockRepository {
       AppTransaction(
         icon: Icons.savings_rounded,
         name: 'Auto-save Vault',
-        category: 'Round-up · 12 tx',
+        category: 'Round-up - 12 tx',
         time: '5:00 PM',
         amount: 8.4,
       ),
       AppTransaction(
         icon: Icons.menu_book_rounded,
         name: 'Kinokuniya',
-        category: 'Books · KLCC',
+        category: 'Books - KLCC',
         time: '1:48 PM',
         amount: -45,
       ),
@@ -125,7 +125,7 @@ class MockRepository {
         savings: 4,
         latitude: 3.1078,
         longitude: 101.6066,
-        description: 'Rice · Eggs & Milk · Veggies',
+        description: 'Rice - Eggs & Milk - Veggies',
         rating: 4.7,
       ),
       RadarDeal(
@@ -166,7 +166,7 @@ class MockRepository {
       ),
       QuestModel(
         title: 'Hit RM200 in vault',
-        reward: '+300 XP · Hat',
+        reward: '+300 XP - Hat',
         progress: 0.85,
         subtitle: 'RM170 / 200',
       ),
@@ -177,8 +177,8 @@ class MockRepository {
         subtitle: '2 / 5',
       ),
       QuestModel(
-        title: 'No late-night spending (9pm–2am)',
-        reward: '+200 XP · Rare skin',
+        title: 'No late-night spending (9pm-2am)',
+        reward: '+200 XP - Rare skin',
         progress: 1,
         subtitle: 'Claim now!',
         claimable: true,

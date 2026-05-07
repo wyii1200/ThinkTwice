@@ -4,6 +4,7 @@
 .flutter-plugins-dependencies
 .packages
 .pub/
+.metadata
 build/
 
 # Generated
@@ -14,6 +15,7 @@ build/
 # IDE
 .idea/
 .vscode/
+*.iml
 
 # OS
 .DS_Store
