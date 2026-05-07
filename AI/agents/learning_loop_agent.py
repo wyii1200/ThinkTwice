@@ -1,6 +1,6 @@
 def learning_feedback(
     risk_level,
-    suggested_action
+    final_action
 ):
 
     accepted_nudge = False
@@ -38,5 +38,6 @@ def learning_feedback(
     return {
         "acceptedNudge": accepted_nudge,
         "learningStatus": learning_status,
-        "futureRecommendation": future_recommendation
+        "futureRecommendation": future_recommendation,
+        "trackedAction": final_action
     }

@@ -34,9 +34,9 @@ def orchestrate_intervention(
 
     # Final AI decision object
     final_decision = {
-        "selectedIntervention": intervention,
-        "rewardAction": reward
-    }
+    "finalAction": intervention,
+    "rewardAction": reward
+}
 
     # Run Safety & Consent Agent
     final_decision = check_safety_and_consent(final_decision)

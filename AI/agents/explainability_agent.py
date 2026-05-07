@@ -17,7 +17,7 @@ def generate_explanation(
         )
 
     # Intervention explanations
-    intervention = orchestrator_result["selectedIntervention"]
+    intervention = orchestrator_result["finalAction"]
 
     if intervention == "auto_save":
         explanations.append(

@@ -49,7 +49,7 @@ def analyze_risk(user: UserProfile):
     
     learning_result = learning_feedback(
     risk_result["riskLevel"],
-    nudge_result["suggestedAction"]
+    orchestrator_result["finalAction"]
 )
     
     explanation_result = generate_explanation(

@@ -7,7 +7,7 @@ def check_safety_and_consent(ai_decision: dict) -> dict:
         "salary_auto_allocation"
     ]
 
-    suggested_action = ai_decision.get("selectedIntervention", "")
+    suggested_action = ai_decision.get("finalAction", "")
 
     requires_consent = any(
         action in suggested_action
