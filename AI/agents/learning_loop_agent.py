@@ -4,22 +4,39 @@ def learning_feedback(
     user_action=None
 ):
     """
-    user_action can be:
+    user_action.actionType can be:
     - accepted
     - ignored
     - opened_smart_radar
     - saved_money
-    - None
+    - dismissed_notification
     """
 
-    if user_action in ["accepted", "opened_smart_radar", "saved_money"]:
+    action_type = None
+    feedback_source = "demo_fallback"
+
+    if user_action:
+        action_type = user_action.actionType
+        feedback_source = "frontend_user_action"
+
+    positive_actions = [
+        "accepted",
+        "opened_smart_radar",
+        "saved_money"
+    ]
+
+    negative_actions = [
+        "ignored",
+        "dismissed_notification"
+    ]
+
+    if action_type in positive_actions:
         accepted_nudge = True
 
-    elif user_action == "ignored":
+    elif action_type in negative_actions:
         accepted_nudge = False
 
     else:
-        # Temporary fallback for demo if frontend has not sent real user action yet
         accepted_nudge = risk_level != "high"
 
     if accepted_nudge:
@@ -35,5 +52,6 @@ def learning_feedback(
         "learningStatus": learning_status,
         "futureRecommendation": future_recommendation,
         "trackedAction": final_action,
-        "feedbackSource": "frontend_user_action" if user_action else "demo_fallback"
-    }
+        "userActionType": action_type,
+        "feedbackSource": feedback_source
+    }   

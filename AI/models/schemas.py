@@ -10,10 +10,16 @@ class Transaction(BaseModel):
     location: Optional[str] = None
 
 
+class UserAction(BaseModel):
+    actionType: Optional[str] = None
+    timestamp: Optional[str] = None
+    interactionSource: Optional[str] = None
+
+
 class UserProfile(BaseModel):
     user_id: Optional[str] = None
     daily_budget: float
     current_daily_spending: float
     savings_goal: float
     transactions: List[Transaction]
-    user_action: Optional[str] = None
+    user_action: Optional[UserAction] = None
