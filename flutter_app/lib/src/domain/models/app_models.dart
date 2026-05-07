@@ -177,3 +177,43 @@ class QuestModel {
   final String subtitle;
   final bool claimable;
 }
+
+class NudgeModel {
+  const NudgeModel({
+    required this.title,
+    required this.message,
+    required this.riskLevel,
+    required this.primaryActionLabel,
+    required this.secondaryActionLabel,
+    required this.impactLabel,
+    this.dismissed = false,
+  });
+
+  final String title;
+  final String message;
+  final String riskLevel;
+  final String primaryActionLabel;
+  final String secondaryActionLabel;
+  final String impactLabel;
+  final bool dismissed;
+
+  NudgeModel copyWith({
+    String? title,
+    String? message,
+    String? riskLevel,
+    String? primaryActionLabel,
+    String? secondaryActionLabel,
+    String? impactLabel,
+    bool? dismissed,
+  }) {
+    return NudgeModel(
+      title: title ?? this.title,
+      message: message ?? this.message,
+      riskLevel: riskLevel ?? this.riskLevel,
+      primaryActionLabel: primaryActionLabel ?? this.primaryActionLabel,
+      secondaryActionLabel: secondaryActionLabel ?? this.secondaryActionLabel,
+      impactLabel: impactLabel ?? this.impactLabel,
+      dismissed: dismissed ?? this.dismissed,
+    );
+  }
+}

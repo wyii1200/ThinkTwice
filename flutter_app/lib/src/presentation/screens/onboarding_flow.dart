@@ -13,6 +13,14 @@ class OnboardingFlow extends StatelessWidget {
     required this.state,
     required this.onContinue,
     required this.onBack,
+    required this.onOpenSignIn,
+    required this.onOpenCreateAccount,
+    required this.accountFullName,
+    required this.accountEmail,
+    required this.accountPassword,
+    required this.onSetAccountFullName,
+    required this.onSetAccountEmail,
+    required this.onSetAccountPassword,
     required this.onSetIncome,
     required this.onSetHabit,
     required this.onToggleGoal,
@@ -24,13 +32,20 @@ class OnboardingFlow extends StatelessWidget {
     required this.onSetHat,
     required this.onToggleGlasses,
     required this.onSetCatName,
-    required this.onSkipToDemo,
     super.key,
   });
 
   final AppState state;
   final VoidCallback onContinue;
   final VoidCallback onBack;
+  final VoidCallback onOpenSignIn;
+  final VoidCallback onOpenCreateAccount;
+  final String accountFullName;
+  final String accountEmail;
+  final String accountPassword;
+  final ValueChanged<String> onSetAccountFullName;
+  final ValueChanged<String> onSetAccountEmail;
+  final ValueChanged<String> onSetAccountPassword;
   final ValueChanged<String> onSetIncome;
   final ValueChanged<String> onSetHabit;
   final ValueChanged<String> onToggleGoal;
@@ -42,7 +57,6 @@ class OnboardingFlow extends StatelessWidget {
   final ValueChanged<CatHat> onSetHat;
   final VoidCallback onToggleGlasses;
   final ValueChanged<String> onSetCatName;
-  final VoidCallback onSkipToDemo;
 
   @override
   Widget build(BuildContext context) {
@@ -63,13 +77,29 @@ class OnboardingFlow extends StatelessWidget {
           0 => SplashScreen(
               key: const ValueKey('splash'),
               onContinue: onContinue,
-              onSkipToDemo: onSkipToDemo,
             ),
           1 => WelcomeScreen(
               key: const ValueKey('welcome'),
+              onOpenSignIn: onOpenSignIn,
+              onOpenCreateAccount: onOpenCreateAccount,
+            ),
+          2 => CreateAccountScreen(
+              key: const ValueKey('create-account'),
+              onBack: onBack,
+              onContinue: onContinue,
+              fullName: accountFullName,
+              email: accountEmail,
+              password: accountPassword,
+              onSetFullName: onSetAccountFullName,
+              onSetEmail: onSetAccountEmail,
+              onSetPassword: onSetAccountPassword,
+            ),
+          3 => ConnectionScreen(
+              key: const ValueKey('connect'),
+              onBack: onBack,
               onContinue: onContinue,
             ),
-          2 => ProfileSetupScreen(
+          4 => ProfileSetupScreen(
               key: const ValueKey('profile'),
               profile: state.profile,
               onBack: onBack,
@@ -79,7 +109,7 @@ class OnboardingFlow extends StatelessWidget {
               onToggleGoal: onToggleGoal,
               onToggleConcern: onToggleConcern,
             ),
-          3 => BudgetSetupScreen(
+          5 => BudgetSetupScreen(
               key: const ValueKey('budget'),
               profile: state.profile,
               onBack: onBack,
@@ -88,7 +118,7 @@ class OnboardingFlow extends StatelessWidget {
               onSetAutoSaveRate: onSetAutoSaveRate,
               onToggleAlerts: onToggleAlerts,
             ),
-          4 => AvatarCreationScreen(
+          6 => AvatarCreationScreen(
               key: const ValueKey('avatar'),
               profile: state.profile,
               onBack: onBack,
@@ -112,12 +142,10 @@ class OnboardingFlow extends StatelessWidget {
 class SplashScreen extends StatefulWidget {
   const SplashScreen({
     required this.onContinue,
-    required this.onSkipToDemo,
     super.key,
   });
 
   final VoidCallback onContinue;
-  final VoidCallback onSkipToDemo;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -130,7 +158,9 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Future<void>.delayed(const Duration(milliseconds: 1800), () {
-      if (mounted) setState(() => _ready = true);
+      if (mounted) {
+        setState(() => _ready = true);
+      }
     });
   }
 
@@ -146,10 +176,10 @@ class _SplashScreenState extends State<SplashScreen> {
             height: 250,
             child: Stack(
               alignment: Alignment.center,
-              children: [
-                const _PulseRing(delay: 0),
-                const _PulseRing(delay: 800),
-                const AppLogo(width: 220, height: 220),
+              children: const [
+                _PulseRing(delay: 0),
+                _PulseRing(delay: 800),
+                AppLogo(width: 220, height: 220),
               ],
             ),
           ),
@@ -160,23 +190,11 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
           const Spacer(),
           if (_ready)
-            Column(
-              children: [
-                GradientButton(
-                  label: 'Get Started',
-                  gradient: AppColors.aiGradient,
-                  textColor: Colors.white,
-                  onTap: widget.onContinue,
-                ),
-                const SizedBox(height: 14),
-                TextButton(
-                  onPressed: widget.onSkipToDemo,
-                  child: const Text(
-                    'Skip to demo',
-                    style: TextStyle(color: AppColors.muted),
-                  ),
-                ),
-              ],
+            GradientButton(
+              label: 'Get Started',
+              gradient: AppColors.aiGradient,
+              textColor: Colors.white,
+              onTap: widget.onContinue,
             )
           else
             Container(
@@ -204,27 +222,32 @@ class _SplashScreenState extends State<SplashScreen> {
 }
 
 class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({required this.onContinue, super.key});
+  const WelcomeScreen({
+    required this.onOpenSignIn,
+    required this.onOpenCreateAccount,
+    super.key,
+  });
 
-  final VoidCallback onContinue;
+  final VoidCallback onOpenSignIn;
+  final VoidCallback onOpenCreateAccount;
 
   @override
   Widget build(BuildContext context) {
     final features = const [
       (
-        icon: Icons.account_balance_wallet_rounded,
-        title: 'Real-time spending intelligence',
-        detail: 'Predicts overspending before it happens',
+        icon: Icons.link_rounded,
+        title: 'Connect GXBank in one secure step',
+        detail: 'OAuth, email, and biometrics keep your account protected',
       ),
       (
-        icon: Icons.shield_rounded,
-        title: 'Autonomous savings protection',
-        detail: 'AI moves money to your vault when risk spikes',
+        icon: Icons.psychology_rounded,
+        title: 'AI orchestrates the next best intervention',
+        detail: 'Nudges, micro-saves, and smart radar triggers work together',
       ),
       (
-        icon: Icons.fingerprint_rounded,
-        title: 'Habit-building rewards',
-        detail: 'Streaks, squads, and a pixel cat that grows with you',
+        icon: Icons.auto_graph_rounded,
+        title: 'Daily learning loop that gets smarter',
+        detail: 'Every accepted or ignored nudge improves future coaching',
       ),
     ];
 
@@ -233,40 +256,354 @@ class WelcomeScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 18),
-          Align(
-            child: GlassCard(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              radius: 999,
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(Icons.shield_rounded, size: 14, color: AppColors.ai),
-                  SizedBox(width: 8),
+                  const SizedBox(height: 18),
+                  Align(
+                    child: GlassCard(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      radius: 999,
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.shield_rounded, size: 14, color: AppColors.ai),
+                          SizedBox(width: 8),
+                          Text(
+                            'Bank-grade security',
+                            style: TextStyle(fontSize: 12, color: AppColors.ai),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 26),
+                  const Text(
+                    'Turn daily spending\ninto smart decisions.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, height: 1.1),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Sign in, connect GXBank, set your goals, and let ThinkTwice guide the loop every day.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.muted, fontSize: 14, height: 1.45),
+                  ),
+                  const SizedBox(height: 28),
+                  for (final feature in features) ...[
+                    GlassCard(
+                      padding: const EdgeInsets.all(16),
+                      radius: 22,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(colors: AppColors.aiGradient),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Icon(feature.icon, color: Colors.white),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  feature.title,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  feature.detail,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.muted,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GradientButton(
+            label: 'Sign in with GXBank',
+            gradient: AppColors.emeraldGradient,
+            onTap: onOpenSignIn,
+          ),
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: onOpenCreateAccount,
+            borderRadius: BorderRadius.circular(22),
+            child: GlassCard(
+              strong: true,
+              radius: 22,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.mail_outline_rounded, size: 18, color: AppColors.ai),
+                  SizedBox(width: 10),
                   Text(
-                    'Bank-grade security',
-                    style: TextStyle(fontSize: 12, color: AppColors.ai),
+                    'Create new account',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 26),
-          const Text(
-            'Your AI financial\nguardian awaits.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, height: 1.1),
-          ),
           const SizedBox(height: 12),
           const Text(
-            'Connect GXBank in 30 seconds. ThinkTwice handles the rest.',
+            'By continuing you agree to our Terms - 256-bit encrypted',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.muted, fontSize: 14, height: 1.45),
+            style: TextStyle(color: AppColors.muted, fontSize: 11),
           ),
-          const SizedBox(height: 28),
-          for (final feature in features) ...[
+        ],
+      ),
+    );
+  }
+}
+
+class CreateAccountScreen extends StatelessWidget {
+  const CreateAccountScreen({
+    required this.onBack,
+    required this.onContinue,
+    required this.fullName,
+    required this.email,
+    required this.password,
+    required this.onSetFullName,
+    required this.onSetEmail,
+    required this.onSetPassword,
+    super.key,
+  });
+
+  final VoidCallback onBack;
+  final VoidCallback onContinue;
+  final String fullName;
+  final String email;
+  final String password;
+  final ValueChanged<String> onSetFullName;
+  final ValueChanged<String> onSetEmail;
+  final ValueChanged<String> onSetPassword;
+
+  @override
+  Widget build(BuildContext context) {
+    const checkpoints = [
+      'Create your ThinkTwice profile with email and password.',
+      'Enable biometric login on your next sign-in.',
+      'Connect GXBank after this step to stream transactions securely.',
+    ];
+
+    return _OnboardingScaffold(
+      title: 'Create account',
+      step: 1,
+      totalSteps: 6,
+      onBack: onBack,
+      onContinue: onContinue,
+      continueLabel: 'Create and continue',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GlassCard(
+            strong: true,
+            radius: 28,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Set up your account',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  initialValue: fullName,
+                  onChanged: onSetFullName,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    hintText: 'Full name',
+                    prefixIcon: Icon(Icons.person_outline_rounded),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  initialValue: email,
+                  onChanged: onSetEmail,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    hintText: 'Email address',
+                    prefixIcon: Icon(Icons.mail_outline_rounded),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  initialValue: password,
+                  onChanged: onSetPassword,
+                  obscureText: true,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    hintText: 'Password',
+                    prefixIcon: Icon(Icons.lock_outline_rounded),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                GlassCard(
+                  radius: 20,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_rounded, color: AppColors.emerald, size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          fullName.isEmpty && email.isEmpty && password.isEmpty
+                              ? 'Start filling your details to create your ThinkTwice account.'
+                              : 'Account preview: ${fullName.isEmpty ? 'New user' : fullName} · ${email.isEmpty ? 'email pending' : email}',
+                          style: const TextStyle(fontSize: 12, color: AppColors.muted, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'What happens next',
+            style: TextStyle(
+              color: AppColors.muted,
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (var i = 0; i < checkpoints.length; i++) ...[
             GlassCard(
-              padding: const EdgeInsets.all(16),
+              radius: 20,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceStrong,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${i + 1}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      checkpoints[i],
+                      style: const TextStyle(fontSize: 12, height: 1.45),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class ConnectionScreen extends StatelessWidget {
+  const ConnectionScreen({
+    required this.onBack,
+    required this.onContinue,
+    super.key,
+  });
+
+  final VoidCallback onBack;
+  final VoidCallback onContinue;
+
+  @override
+  Widget build(BuildContext context) {
+    const methods = [
+      (
+        icon: Icons.account_balance_rounded,
+        title: 'GXBank OAuth',
+        detail: 'Connect balances, transactions, and savings pockets instantly.',
+      ),
+      (
+        icon: Icons.mail_rounded,
+        title: 'Email + password',
+        detail: 'Secure fallback for account recovery and cross-device access.',
+      ),
+    ];
+
+    const ingestionSteps = [
+      'GXBank webhook streams transactions in real time.',
+      'ThinkTwice categorizes each spend by time, category, and location.',
+      'The AI agent layer analyzes risk before you drift off budget.',
+      'The orchestrator picks the best intervention for that moment.',
+    ];
+
+    return _OnboardingScaffold(
+      title: 'Secure connection',
+      step: 2,
+      totalSteps: 6,
+      onBack: onBack,
+      onContinue: onContinue,
+      continueLabel: 'Connect GXBank',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GlassCard(
+            strong: true,
+            radius: 28,
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.lock_rounded, size: 16, color: AppColors.emerald),
+                    SizedBox(width: 8),
+                    Text(
+                      'Secure authentication',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10),
+                Text(
+                  'Choose how you want to sign in and connect your bank securely.',
+                  style: TextStyle(fontSize: 13, color: AppColors.muted, height: 1.45),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          for (final method in methods) ...[
+            GlassCard(
               radius: 22,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,7 +615,7 @@ class WelcomeScreen extends StatelessWidget {
                       gradient: const LinearGradient(colors: AppColors.aiGradient),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(feature.icon, color: Colors.white),
+                    child: Icon(method.icon, color: Colors.white),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -286,19 +623,16 @@ class WelcomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          feature.title,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          method.title,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          feature.detail,
+                          method.detail,
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.muted,
-                            height: 1.4,
+                            height: 1.45,
                           ),
                         ),
                       ],
@@ -309,35 +643,51 @@ class WelcomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
-          const Spacer(),
-          GradientButton(
-            label: 'Sign in with GXBank',
-            gradient: AppColors.emeraldGradient,
-            onTap: onContinue,
-          ),
-          const SizedBox(height: 12),
-          GlassCard(
-            strong: true,
-            radius: 22,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.fingerprint_rounded, size: 18, color: AppColors.ai),
-                SizedBox(width: 10),
-                Text(
-                  'Use Face ID',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                ),
-              ],
+          const SizedBox(height: 6),
+          const Text(
+            'What happens next',
+            style: TextStyle(
+              color: AppColors.muted,
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
+              letterSpacing: 1.2,
             ),
           ),
-          const SizedBox(height: 12),
-          const Text(
-            'By continuing you agree to our Terms · 256-bit encrypted',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.muted, fontSize: 11),
-          ),
+          const SizedBox(height: 10),
+          for (var i = 0; i < ingestionSteps.length; i++) ...[
+            GlassCard(
+              radius: 20,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceStrong,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${i + 1}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      ingestionSteps[i],
+                      style: const TextStyle(fontSize: 12, height: 1.45),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
         ],
       ),
     );
@@ -366,14 +716,15 @@ class ProfileSetupScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const incomes = ['< RM500', 'RM500 – 1,500', 'RM1,500 – 3,000', 'RM3,000+'];
+    const incomes = ['< RM500', 'RM500 - 1,500', 'RM1,500 - 3,000', 'RM3,000+'];
     const habits = ['Saver', 'Balanced', 'Spender', 'YOLO'];
     const goals = ['Emergency fund', 'First car', 'Travel', 'Tech gear', 'Investment'];
-    const concerns = ['Late-night food', 'Online shopping', 'Subscriptions', 'Cafés', 'Grab rides'];
+    const concerns = ['Late-night food', 'Online shopping', 'Subscriptions', 'Cafes', 'Grab rides'];
 
     return _OnboardingScaffold(
       title: 'Financial profile',
-      step: 1,
+      step: 3,
+      totalSteps: 6,
       onBack: onBack,
       onContinue: onContinue,
       child: Column(
@@ -462,7 +813,8 @@ class BudgetSetupScreen extends StatelessWidget {
 
     return _OnboardingScaffold(
       title: 'Budget preferences',
-      step: 2,
+      step: 4,
+      totalSteps: 6,
       onBack: onBack,
       onContinue: onContinue,
       child: Column(
@@ -535,16 +887,16 @@ class BudgetSetupScreen extends StatelessWidget {
                   onChanged: onSetAutoSaveRate,
                 ),
                 Text(
-                  '≈ RM${(2000 * profile.autoSaveRate / 100).round()} saved every payday',
+                  'Approx. RM${(2000 * profile.autoSaveRate / 100).round()} saved every payday',
                   style: const TextStyle(color: AppColors.muted, fontSize: 12),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 18),
-          Align(
+          const Align(
             alignment: Alignment.centerLeft,
-            child: const Text(
+            child: Text(
               'CATEGORY LIMITS / DAY',
               style: TextStyle(
                 color: AppColors.muted,
@@ -647,7 +999,8 @@ class AvatarCreationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return _OnboardingScaffold(
       title: 'Meet your money cat',
-      step: 3,
+      step: 5,
+      totalSteps: 6,
       onBack: onBack,
       onContinue: onContinue,
       continueLabel: 'Hatch my cat',
@@ -693,7 +1046,7 @@ class AvatarCreationScreen extends StatelessWidget {
                     Icon(Icons.auto_awesome_rounded, color: AppColors.gold, size: 14),
                     SizedBox(width: 6),
                     Text(
-                      'LVL 1 · STARTER',
+                      'LVL 1 - STARTER',
                       style: TextStyle(
                         color: AppColors.gold,
                         fontSize: 11,
@@ -767,9 +1120,7 @@ class AvatarCreationScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: breed == profile.catBreed
-                                ? Colors.white
-                                : AppColors.text,
+                            color: breed == profile.catBreed ? Colors.white : AppColors.text,
                           ),
                         ),
                       ],
@@ -863,11 +1214,11 @@ class InitScreen extends StatefulWidget {
 
 class _InitScreenState extends State<InitScreen> {
   static const _steps = [
-    'Encrypting GXBank link…',
-    'Analyzing 90 days of transactions…',
-    'Training behavioral model…',
-    'Calibrating Resilience Score…',
-    'Waking up your money cat…',
+    'Encrypting GXBank link...',
+    'Analyzing 90 days of transactions...',
+    'Training behavioral model...',
+    'Calibrating Resilience Score...',
+    'Waking up your money cat...',
   ];
 
   late Timer _timer;
@@ -920,9 +1271,7 @@ class _InitScreenState extends State<InitScreen> {
           ),
           const SizedBox(height: 10),
           Text(
-            ready
-                ? 'Mochi is ready to protect your wallet.'
-                : 'This takes about 3 seconds.',
+            ready ? 'Mochi is ready to protect your wallet.' : 'This takes about 3 seconds.',
             style: const TextStyle(color: AppColors.muted),
           ),
           const SizedBox(height: 26),
@@ -996,6 +1345,7 @@ class _OnboardingScaffold extends StatelessWidget {
   const _OnboardingScaffold({
     required this.title,
     required this.step,
+    required this.totalSteps,
     required this.onBack,
     required this.onContinue,
     required this.child,
@@ -1004,6 +1354,7 @@ class _OnboardingScaffold extends StatelessWidget {
 
   final String title;
   final int step;
+  final int totalSteps;
   final VoidCallback onBack;
   final VoidCallback onContinue;
   final Widget child;
@@ -1029,7 +1380,7 @@ class _OnboardingScaffold extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                'Step $step of 4',
+                'Step $step of $totalSteps',
                 style: const TextStyle(color: AppColors.muted, fontSize: 12),
               ),
               const Spacer(),
@@ -1040,7 +1391,7 @@ class _OnboardingScaffold extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(99),
             child: LinearProgressIndicator(
-              value: step / 4,
+              value: step / totalSteps,
               minHeight: 6,
               backgroundColor: AppColors.surfaceStrong,
               valueColor: const AlwaysStoppedAnimation<Color>(AppColors.ai),
@@ -1098,6 +1449,7 @@ class _LabelledWrap extends StatelessWidget {
   }
 }
 
+
 class _PulseRing extends StatefulWidget {
   const _PulseRing({required this.delay});
 
@@ -1117,7 +1469,9 @@ class _PulseRingState extends State<_PulseRing> with SingleTickerProviderStateMi
   void initState() {
     super.initState();
     Future<void>.delayed(Duration(milliseconds: widget.delay), () {
-      if (mounted) _controller.repeat();
+      if (mounted) {
+        _controller.repeat();
+      }
     });
   }
 

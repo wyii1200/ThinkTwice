@@ -27,6 +27,29 @@ class MockRepository {
     });
   }
 
+  List<NudgeModel> loadNudges() {
+    return const [
+      NudgeModel(
+        title: 'Food spend risk is high',
+        message:
+            'You are already 35% above your food budget today. Save RM10 now to protect your streak.',
+        riskLevel: 'High',
+        primaryActionLabel: 'Save RM10 now',
+        secondaryActionLabel: 'Find cheaper options',
+        impactLabel: '+4 resilience if you act now',
+      ),
+      NudgeModel(
+        title: 'Late-night pattern detected',
+        message:
+            'Most overspending happens after 9:30 PM near Mid Valley. Switching to a cheaper stop could save RM13.',
+        riskLevel: 'Medium',
+        primaryActionLabel: 'Open Smart Radar',
+        secondaryActionLabel: 'Continue anyway',
+        impactLabel: 'Learning loop updates based on your choice',
+      ),
+    ];
+  }
+
   List<InsightCardModel> loadInsights() {
     return const [
       InsightCardModel(

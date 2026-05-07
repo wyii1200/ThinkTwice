@@ -7,6 +7,7 @@ import '../presentation/screens/analytics_screen.dart';
 import '../presentation/screens/coach_screen.dart';
 import '../presentation/screens/dashboard_screen.dart';
 import '../presentation/screens/gamification_screen.dart';
+import '../presentation/screens/nudge_center_screen.dart';
 import '../presentation/screens/onboarding_flow.dart';
 import '../presentation/screens/profile_screen.dart';
 import '../presentation/screens/radar_screen.dart';
@@ -40,6 +41,14 @@ class AppRoot extends ConsumerWidget {
         state: state,
         onContinue: controller.advanceOnboarding,
         onBack: controller.rewindOnboarding,
+        onOpenSignIn: () => controller.setOnboardingStep(3),
+        onOpenCreateAccount: () => controller.setOnboardingStep(2),
+        accountFullName: state.accountFullName,
+        accountEmail: state.accountEmail,
+        accountPassword: state.accountPassword,
+        onSetAccountFullName: controller.setAccountFullName,
+        onSetAccountEmail: controller.setAccountEmail,
+        onSetAccountPassword: controller.setAccountPassword,
         onSetIncome: controller.setIncome,
         onSetHabit: controller.setHabit,
         onToggleGoal: controller.toggleGoal,
@@ -51,7 +60,6 @@ class AppRoot extends ConsumerWidget {
         onSetHat: controller.setHat,
         onToggleGlasses: controller.toggleGlasses,
         onSetCatName: controller.setCatName,
-        onSkipToDemo: controller.completeOnboarding,
       );
     }
 
@@ -96,6 +104,8 @@ class AppRoot extends ConsumerWidget {
         return const CoachScreen();
       case 6:
         return const AnalyticsScreen();
+      case 7:
+        return const NudgeCenterScreen();
       default:
         return const DashboardScreen();
     }

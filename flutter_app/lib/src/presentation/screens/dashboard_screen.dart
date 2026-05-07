@@ -51,30 +51,34 @@ class DashboardScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: AppColors.surface.withValues(alpha: 0.9),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Stack(
-                  children: [
-                    const Center(child: Icon(Icons.notifications_none_rounded, size: 18)),
-                    Positioned(
-                      top: 9,
-                      right: 9,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppColors.risk,
-                          shape: BoxShape.circle,
+              InkWell(
+                onTap: () => controller.setTab(7),
+                borderRadius: BorderRadius.circular(99),
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppColors.surface.withValues(alpha: 0.9),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Stack(
+                    children: [
+                      const Center(child: Icon(Icons.notifications_none_rounded, size: 18)),
+                      Positioned(
+                        top: 9,
+                        right: 9,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.risk,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -88,13 +92,13 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Expanded(
+                  children: const [
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Available · GXBank',
+                            'Available - GXBank',
                             style: TextStyle(fontSize: 12, color: Color(0xD9FFFFFF)),
                           ),
                           SizedBox(height: 4),
@@ -110,7 +114,7 @@ class DashboardScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
@@ -135,9 +139,9 @@ class DashboardScreen extends ConsumerWidget {
                   children: const [
                     Expanded(child: _MiniHeroStat(label: 'Vault', value: 'RM 312')),
                     SizedBox(width: 8),
-                    Expanded(child: _MiniHeroStat(label: 'Streak', value: '14🔥')),
+                    Expanded(child: _MiniHeroStat(label: 'Streak', value: '14 day')),
                     SizedBox(width: 8),
-                    Expanded(child: _MiniHeroStat(label: 'Daily', value: 'RM 28/45')),
+                    Expanded(child: _MiniHeroStat(label: 'Decision', value: '82')),
                   ],
                 ),
               ],
@@ -161,7 +165,7 @@ class DashboardScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Mochi · Lvl 4',
+                        'Mochi - Lvl 4',
                         style: TextStyle(fontWeight: FontWeight.w800),
                       ),
                       SizedBox(height: 4),
@@ -186,6 +190,38 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          GlassCard(
+            strong: true,
+            radius: 28,
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSectionTitle(
+                  'Financial orchestrator',
+                  trailing: Text(
+                    'Live',
+                    style: TextStyle(fontSize: 10, color: AppColors.emerald, fontWeight: FontWeight.w800),
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'The AI layer is coordinating your next best intervention based on spending velocity, time, location, and streak risk.',
+                  style: TextStyle(fontSize: 12, color: AppColors.muted, height: 1.45),
+                ),
+                SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(child: _SignalStat(label: 'Risk level', value: 'High', color: AppColors.risk)),
+                    SizedBox(width: 8),
+                    Expanded(child: _SignalStat(label: 'Best move', value: 'Save RM10', color: AppColors.emerald)),
+                    SizedBox(width: 8),
+                    Expanded(child: _SignalStat(label: 'Loop', value: 'Learning', color: AppColors.ai)),
+                  ],
                 ),
               ],
             ),
@@ -274,6 +310,38 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 );
               },
+            ),
+          ),
+          const SizedBox(height: 18),
+          GlassCard(
+            strong: true,
+            radius: 28,
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSectionTitle(
+                  'Learning loop',
+                  trailing: Text(
+                    'Updated daily',
+                    style: TextStyle(fontSize: 10, color: AppColors.muted),
+                  ),
+                ),
+                SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: _LoopPill(label: 'Accepted nudges', value: '8')),
+                    SizedBox(width: 8),
+                    Expanded(child: _LoopPill(label: 'Ignored', value: '2')),
+                    SizedBox(width: 8),
+                    Expanded(child: _LoopPill(label: 'Radar wins', value: 'RM22')),
+                  ],
+                ),
+                SizedBox(height: 14),
+                Text(
+                  'ThinkTwice is learning that food overspending spikes after 9:30 PM and that cheaper alternatives are most effective near Mid Valley.',
+                  style: TextStyle(fontSize: 12, color: AppColors.muted, height: 1.45),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 18),
@@ -377,6 +445,75 @@ class _MiniHeroStat extends StatelessWidget {
   }
 }
 
+class _SignalStat extends StatelessWidget {
+  const _SignalStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceStrong,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 10, color: AppColors.muted)),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(fontWeight: FontWeight.w800, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoopPill extends StatelessWidget {
+  const _LoopPill({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceStrong,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, color: AppColors.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _QuickAction extends StatelessWidget {
   const _QuickAction({
     required this.icon,
@@ -459,7 +596,7 @@ class _TransactionRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '${transaction.category} · ${transaction.time}',
+                  '${transaction.category} - ${transaction.time}',
                   style: const TextStyle(fontSize: 11, color: AppColors.muted),
                 ),
               ],

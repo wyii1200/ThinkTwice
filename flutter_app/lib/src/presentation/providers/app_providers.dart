@@ -16,24 +16,40 @@ class AppState {
     required this.onboardingComplete,
     required this.currentTab,
     required this.profile,
+    required this.accountFullName,
+    required this.accountEmail,
+    required this.accountPassword,
+    required this.nudges,
   });
 
   final int onboardingStep;
   final bool onboardingComplete;
   final int currentTab;
   final UserProfileModel profile;
+  final String accountFullName;
+  final String accountEmail;
+  final String accountPassword;
+  final List<NudgeModel> nudges;
 
   AppState copyWith({
     int? onboardingStep,
     bool? onboardingComplete,
     int? currentTab,
     UserProfileModel? profile,
+    String? accountFullName,
+    String? accountEmail,
+    String? accountPassword,
+    List<NudgeModel>? nudges,
   }) {
     return AppState(
       onboardingStep: onboardingStep ?? this.onboardingStep,
       onboardingComplete: onboardingComplete ?? this.onboardingComplete,
       currentTab: currentTab ?? this.currentTab,
       profile: profile ?? this.profile,
+      accountFullName: accountFullName ?? this.accountFullName,
+      accountEmail: accountEmail ?? this.accountEmail,
+      accountPassword: accountPassword ?? this.accountPassword,
+      nudges: nudges ?? this.nudges,
     );
   }
 }
@@ -47,16 +63,24 @@ class AppStateNotifier extends Notifier<AppState> {
       onboardingComplete: false,
       currentTab: 0,
       profile: repo.loadProfile(),
+      accountFullName: '',
+      accountEmail: '',
+      accountPassword: '',
+      nudges: repo.loadNudges(),
     );
   }
 
   void advanceOnboarding() {
     final next = state.onboardingStep + 1;
-    if (next > 4) {
+    if (next > 6) {
       completeOnboarding();
       return;
     }
     state = state.copyWith(onboardingStep: next);
+  }
+
+  void setOnboardingStep(int step) {
+    state = state.copyWith(onboardingStep: step);
   }
 
   void rewindOnboarding() {
@@ -70,6 +94,29 @@ class AppStateNotifier extends Notifier<AppState> {
 
   void setTab(int index) {
     state = state.copyWith(currentTab: index);
+  }
+
+  void setAccountFullName(String value) {
+    state = state.copyWith(accountFullName: value);
+  }
+
+  void setAccountEmail(String value) {
+    state = state.copyWith(accountEmail: value);
+  }
+
+  void setAccountPassword(String value) {
+    state = state.copyWith(accountPassword: value);
+  }
+
+  void dismissNudge(int index) {
+    final nudges = [...state.nudges];
+    if (index < 0 || index >= nudges.length) return;
+    nudges[index] = nudges[index].copyWith(dismissed: true);
+    state = state.copyWith(nudges: nudges);
+  }
+
+  void completePrimaryNudgeAction(int index) {
+    dismissNudge(index);
   }
 
   void setIncome(String value) {

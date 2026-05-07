@@ -43,7 +43,7 @@ class RadarScreen extends ConsumerWidget {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'Best deals within 2km · Petaling Jaya',
+                      'Best deals within 2 km - Petaling Jaya',
                       style: TextStyle(color: AppColors.muted, fontSize: 12),
                     ),
                   ],
@@ -97,19 +97,19 @@ class RadarScreen extends ConsumerWidget {
                               Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.ai),
                               SizedBox(width: 6),
                               Text(
-                                'AI ROUTE · Cheapest combo',
+                                'AI ROUTE - Cheapest combo',
                                 style: TextStyle(fontSize: 11, color: AppColors.ai, fontWeight: FontWeight.w800),
                               ),
                             ],
                           ),
                           SizedBox(height: 10),
                           Text(
-                            'Jaya Grocer → Tesco → Mydin',
+                            'Jaya Grocer -> Tesco -> Mydin',
                             style: TextStyle(fontWeight: FontWeight.w800),
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Rice · Eggs & Milk · Veggies',
+                            'Rice - Eggs & Milk - Veggies',
                             style: TextStyle(fontSize: 11, color: AppColors.muted),
                           ),
                           SizedBox(height: 12),
@@ -146,6 +146,29 @@ class RadarScreen extends ConsumerWidget {
             label: 'Start route',
             gradient: AppColors.emeraldGradient,
             onTap: () {},
+          ),
+          const SizedBox(height: 18),
+          GlassCard(
+            strong: true,
+            radius: 28,
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSectionTitle(
+                  'Savings impact',
+                  trailing: Text(
+                    'This week',
+                    style: TextStyle(fontSize: 10, color: AppColors.muted),
+                  ),
+                ),
+                SizedBox(height: 12),
+                _ImpactRow(label: 'Overspending avoided', value: 'RM37', color: AppColors.emerald),
+                SizedBox(height: 10),
+                _ImpactRow(label: 'Saved through deals', value: 'RM22', color: AppColors.ai),
+                SizedBox(height: 10),
+                _ImpactRow(label: 'Resilience score gained', value: '+12', color: AppColors.gold),
+              ],
+            ),
           ),
           const SizedBox(height: 18),
           const AppSectionTitle(
@@ -226,6 +249,36 @@ class RadarScreen extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _ImpactRow extends StatelessWidget {
+  const _ImpactRow({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(fontWeight: FontWeight.w900, color: color),
+        ),
+      ],
     );
   }
 }

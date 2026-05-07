@@ -17,7 +17,7 @@ function Profile() {
   const [c, setC] = useState<string[]>(["Late-night food"]);
 
   const toggle = (arr: string[], v: string, set: (a: string[]) => void) =>
-    set(arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]);
+    set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
   return (
     <MobileFrame hideNav>
@@ -41,16 +41,31 @@ function Profile() {
   );
 }
 
-export function Header({ step, title, total = 4 }: { step: number; title: string; total?: number }) {
+export function Header({
+  step,
+  title,
+  total = 4,
+}: {
+  step: number;
+  title: string;
+  total?: number;
+}) {
   return (
     <div className="px-6 pt-4 pb-6">
       <div className="flex items-center justify-between mb-4">
-        <Link to="/welcome" className="w-9 h-9 rounded-xl glass flex items-center justify-center"><ChevronLeft className="w-5 h-5" /></Link>
-        <span className="text-xs text-muted-foreground">Step {step} of {total}</span>
+        <Link to="/gxbank" className="w-9 h-9 rounded-xl glass flex items-center justify-center">
+          <ChevronLeft className="w-5 h-5" />
+        </Link>
+        <span className="text-xs text-muted-foreground">
+          Step {step} of {total}
+        </span>
         <div className="w-9" />
       </div>
       <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-        <div className="h-full bg-grad-ai transition-all duration-500" style={{ width: `${(step/total)*100}%` }} />
+        <div
+          className="h-full bg-grad-ai transition-all duration-500"
+          style={{ width: `${(step / total) * 100}%` }}
+        />
       </div>
       <h1 className="mt-5 text-2xl font-black">{title}</h1>
     </div>
@@ -60,20 +75,37 @@ export function Header({ step, title, total = 4 }: { step: number; title: string
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{label}</div>
+      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+        {label}
+      </div>
       {children}
     </div>
   );
 }
 
-function Pills({ options, value, onChange, multi, onMulti }: { options: string[]; value: string | string[]; onChange?: (v: string) => void; multi?: boolean; onMulti?: (v: string) => void }) {
+function Pills({
+  options,
+  value,
+  onChange,
+  multi,
+  onMulti,
+}: {
+  options: string[];
+  value: string | string[];
+  onChange?: (v: string) => void;
+  multi?: boolean;
+  onMulti?: (v: string) => void;
+}) {
   return (
     <div className="flex flex-wrap gap-2">
       {options.map((o) => {
         const active = multi ? (value as string[]).includes(o) : value === o;
         return (
-          <button key={o} onClick={() => multi ? onMulti?.(o) : onChange?.(o)}
-            className={`px-4 py-2.5 rounded-2xl text-sm font-medium transition ${active ? "bg-grad-ai text-white glow-ai" : "glass text-foreground/80"}`}>
+          <button
+            key={o}
+            onClick={() => (multi ? onMulti?.(o) : onChange?.(o))}
+            className={`px-4 py-2.5 rounded-2xl text-sm font-medium transition ${active ? "bg-grad-ai text-white glow-ai" : "glass text-foreground/80"}`}
+          >
             {o}
           </button>
         );
@@ -85,8 +117,13 @@ function Pills({ options, value, onChange, multi, onMulti }: { options: string[]
 export function FooterCTA({ to, label = "Continue" }: { to: string; label?: string }) {
   return (
     <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-background via-background/95 to-transparent">
-      <Link to={to as any} className="block w-full bg-grad-emerald glow-emerald text-emerald-foreground font-bold rounded-2xl py-4 text-center">
-        <span className="inline-flex items-center gap-2">{label} <ArrowRight className="w-4 h-4" /></span>
+      <Link
+        to={to}
+        className="block w-full bg-grad-emerald glow-emerald text-emerald-foreground font-bold rounded-2xl py-4 text-center"
+      >
+        <span className="inline-flex items-center gap-2">
+          {label} <ArrowRight className="w-4 h-4" />
+        </span>
       </Link>
     </div>
   );

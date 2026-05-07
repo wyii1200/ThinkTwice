@@ -46,6 +46,47 @@ class CoachScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 18),
           GlassCard(
+            strong: true,
+            radius: 28,
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSectionTitle(
+                  'AI agent team',
+                  trailing: Text(
+                    'Orchestrated',
+                    style: TextStyle(fontSize: 10, color: AppColors.ai, fontWeight: FontWeight.w800),
+                  ),
+                ),
+                SizedBox(height: 12),
+                _AgentRow(
+                  icon: Icons.warning_amber_rounded,
+                  title: 'Spending Risk Agent',
+                  detail: 'Flags overspending velocity, budget deviation, and abnormal spend spikes.',
+                ),
+                SizedBox(height: 10),
+                _AgentRow(
+                  icon: Icons.message_rounded,
+                  title: 'Nudge Agent',
+                  detail: 'Builds the message most likely to change behaviour right now.',
+                ),
+                SizedBox(height: 10),
+                _AgentRow(
+                  icon: Icons.savings_rounded,
+                  title: 'Auto-Save Agent',
+                  detail: 'Suggests safe, user-approved micro-saves to protect your goals.',
+                ),
+                SizedBox(height: 10),
+                _AgentRow(
+                  icon: Icons.radar_rounded,
+                  title: 'Smart Radar Agent',
+                  detail: 'Looks for cheaper nearby alternatives and lower-risk spending choices.',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          GlassCard(
             gradient: const LinearGradient(colors: AppColors.riskGradient),
             radius: 30,
             child: const Column(
@@ -75,6 +116,57 @@ class CoachScreen extends ConsumerWidget {
                     SizedBox(width: 8),
                     Expanded(child: _CoachMiniStat(label: 'Days left', value: '4')),
                   ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          GlassCard(
+            strong: true,
+            radius: 28,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Orchestrator recommendation',
+                  style: TextStyle(fontSize: 11, letterSpacing: 1.2, color: AppColors.muted),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Food spending is already 35% above target today, so the orchestrator recommends a micro-save before your next purchase.',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, height: 1.35),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GradientButton(
+                        label: 'Save RM10 now',
+                        gradient: AppColors.emeraldGradient,
+                        onTap: () {},
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: GradientButton(
+                        label: 'Find cheaper options',
+                        gradient: AppColors.aiGradient,
+                        onTap: () => controller.setTab(2),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                GlassCard(
+                  radius: 20,
+                  strong: true,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: const Center(
+                    child: Text(
+                      'Continue anyway',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -194,51 +286,6 @@ class CoachScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Suggested action',
-                  style: TextStyle(fontSize: 11, letterSpacing: 1.2, color: AppColors.muted),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Reduce RM10 spending today to maintain your savings goal.',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: GradientButton(
-                        label: 'Take action',
-                        gradient: AppColors.emeraldGradient,
-                        onTap: () {},
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: GlassCard(
-                        radius: 22,
-                        strong: true,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: const Center(
-                          child: Text(
-                            'Snooze',
-                            style: TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          GlassCard(
-            strong: true,
-            radius: 28,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
                 const AppSectionTitle(
                   'Spending heatmap',
                   trailing: Text(
@@ -314,9 +361,7 @@ class _ChatBubble extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 280),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          gradient: fromCoach
-              ? const LinearGradient(colors: AppColors.aiGradient)
-              : null,
+          gradient: fromCoach ? const LinearGradient(colors: AppColors.aiGradient) : null,
           color: fromCoach ? null : AppColors.surfaceStrong,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: AppColors.border),
@@ -362,6 +407,53 @@ class _RiskTile extends StatelessWidget {
           Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
         ],
       ),
+    );
+  }
+}
+
+class _AgentRow extends StatelessWidget {
+  const _AgentRow({
+    required this.icon,
+    required this.title,
+    required this.detail,
+  });
+
+  final IconData icon;
+  final String title;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceStrong,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 18, color: AppColors.ai),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                detail,
+                style: const TextStyle(fontSize: 12, color: AppColors.muted, height: 1.45),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
