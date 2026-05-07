@@ -11,6 +11,7 @@ from agents.financial_orchestrator_agent import orchestrate_intervention
 from agents.learning_loop_agent import learning_feedback
 from agents.explainability_agent import generate_explanation
 from agents.spending_velocity_agent import analyse_spending_velocity
+from agents.intervention_intelligence_agent import evaluate_intervention_intelligence
 
 app = FastAPI()
 
@@ -44,6 +45,12 @@ def analyze_risk(user: UserProfile):
 
     velocity_result = analyse_spending_velocity(user)
 
+    intelligence_result = evaluate_intervention_intelligence(
+    risk_result,
+    behaviour_result,
+    velocity_result
+)
+
     orchestrator_result = orchestrate_intervention(
     risk_result,
     score_result,
@@ -69,6 +76,7 @@ def analyze_risk(user: UserProfile):
         **learning_result,
         **explanation_result,
         **velocity_result,
+        **intelligence_result,
         "suggestedSavingsAmount": savings_amount,
         "behaviourAnalysis": behaviour_result
     }
