@@ -120,9 +120,7 @@ def analyze_risk(user: UserProfile):
                 "triggerSmartRadar": str(
                     orchestrator_result["smartRadar"]["triggerSmartRadar"]
                 ).lower(),
-                "radarCategory": str(
-                    orchestrator_result["smartRadar"]["radarCategory"]
-                ),
+                "radarCategory": orchestrator_result["smartRadar"]["radarCategory"] or "",
                 "notificationType": orchestrator_result["notification"]["notificationType"]
             }
         }
