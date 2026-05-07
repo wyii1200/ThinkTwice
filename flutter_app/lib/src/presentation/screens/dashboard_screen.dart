@@ -204,7 +204,7 @@ class DashboardScreen extends ConsumerWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: insights.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
+              separatorBuilder: (context, index) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
                 final card = insights[index];
                 return GlassCard(

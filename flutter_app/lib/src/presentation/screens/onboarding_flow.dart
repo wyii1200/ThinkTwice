@@ -639,7 +639,7 @@ class BudgetSetupScreen extends StatelessWidget {
                 Switch(
                   value: profile.spendingAlerts,
                   onChanged: onToggleAlerts,
-                  activeColor: Colors.white,
+                  activeThumbColor: Colors.white,
                   activeTrackColor: AppColors.emerald,
                   inactiveTrackColor: AppColors.surfaceStrong,
                 ),
@@ -766,7 +766,7 @@ class AvatarCreationScreen extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: CatBreed.values.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              separatorBuilder: (context, index) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
                 final breed = CatBreed.values[index];
                 return InkWell(
@@ -916,7 +916,7 @@ class _InitScreenState extends State<InitScreen> {
 
   @override
   void dispose() {
-    _timer.dispose();
+    _timer.cancel();
     super.dispose();
   }
 
