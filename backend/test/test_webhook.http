@@ -1,0 +1,28 @@
+### Trigger a test transaction
+POST http://localhost:3000/webhook/transaction
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "amount": 12,
+  "category": "food",
+  "merchant": "Starbucks KLCC",
+  "description": "Iced latte"
+}
+
+###
+
+### Approve autosave
+POST http://localhost:3000/autosave/approve
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "amount": 8,
+  "nudgeId": "nudge-abc123"
+}
+
+###
+
+### Get transactions
+GET http://localhost:3000/transactions/user123

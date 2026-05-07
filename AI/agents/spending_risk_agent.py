@@ -1,11 +1,14 @@
-def calculate_risk(user):
+from config.constants import RISK_LEVELS
+from utils.transaction_utils import safe_divide, normalize_category, is_late_night_time
 
-    spending_ratio = (
-        user.current_daily_spending / user.daily_budget
+
+def calculate_risk(user):
+    spending_ratio = safe_divide(
+        user.current_daily_spending,
+        user.daily_budget
     )
 
     risk_score = spending_ratio * 100
-
     reasons = []
 
     # Budget overspending
@@ -18,12 +21,13 @@ def calculate_risk(user):
         risk_score += 10
 
     # Category overspending
-    food_spending = 0
+    category_totals = {}
 
     for transaction in user.transactions:
+        category = normalize_category(transaction.category)
+        category_totals[category] = category_totals.get(category, 0) + transaction.amount
 
-        if transaction.category.lower() == "food":
-            food_spending += transaction.amount
+    food_spending = category_totals.get("food", 0)
 
     if food_spending >= 30:
         reasons.append("High food spending detected.")
@@ -35,16 +39,10 @@ def calculate_risk(user):
         risk_score += 10
 
     # Late-night spending
-    late_night = False
-
-    for transaction in user.transactions:
-
-        if "PM" in transaction.time:
-
-            hour = int(transaction.time.split(":")[0])
-
-            if hour >= 10:
-                late_night = True
+    late_night = any(
+        is_late_night_time(transaction.time)
+        for transaction in user.transactions
+    )
 
     if late_night:
         reasons.append("Late-night spending behaviour detected.")
@@ -52,16 +50,18 @@ def calculate_risk(user):
 
     # Final risk level
     if risk_score >= 120:
-        risk_level = "high"
+        risk_level = RISK_LEVELS["HIGH"]
 
     elif risk_score >= 80:
-        risk_level = "medium"
+        risk_level = RISK_LEVELS["MEDIUM"]
 
     else:
-        risk_level = "low"
+        risk_level = RISK_LEVELS["LOW"]
 
     return {
         "riskLevel": risk_level,
         "riskScore": round(risk_score, 2),
+        "spendingRatio": round(spending_ratio, 2),
+        "categoryBreakdown": category_totals,
         "reasons": reasons
     }
