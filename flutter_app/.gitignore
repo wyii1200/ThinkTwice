@@ -1,0 +1,13 @@
+# Flutter and Dart generated files
+.dart_tool/
+build/
+.flutter-plugins-dependencies
+
+# Flutter package resolution
+.packages
+
+# IDE and OS noise
+.idea/
+.vscode/
+*.iml
+.DS_Store

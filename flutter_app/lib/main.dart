@@ -1,4 +1,4 @@
-// Converted from the current `frontend/src` app into a Flutter UI entrypoint.
+﻿// Converted from the current `frontend/src` app into a Flutter UI entrypoint.
 // Route coverage in this file mirrors:
 // - splash.tsx
 // - login.tsx
@@ -200,6 +200,141 @@ extension ThemeX on BuildContext {
   TextTheme get text => Theme.of(this).textTheme;
 }
 
+class BudgetAllocation {
+  const BudgetAllocation({
+    required this.name,
+    required this.percent,
+    required this.amount,
+    required this.color,
+  });
+
+  final String name;
+  final double percent;
+  final double amount;
+  final Color color;
+}
+
+class BudgetPlan {
+  const BudgetPlan({
+    required this.dailyLimit,
+    required this.savingsAmount,
+    required this.savingsRate,
+    required this.flexibleSpend,
+    required this.adaptabilityScore,
+    required this.allocations,
+    required this.recommendations,
+  });
+
+  final double dailyLimit;
+  final double savingsAmount;
+  final double savingsRate;
+  final double flexibleSpend;
+  final int adaptabilityScore;
+  final List<BudgetAllocation> allocations;
+  final List<String> recommendations;
+}
+
+String formatRm(num value, {int decimals = 0}) {
+  return decimals == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(decimals);
+}
+
+BudgetPlan buildBudgetPlan({
+  required double monthlyBudget,
+  required double savingsGoal,
+  required Map<String, double> categoryPercents,
+  required Set<int> yesAnswers,
+  required AppColors colors,
+}) {
+  final cappedGoal = math.min(savingsGoal, monthlyBudget * 0.45);
+  final savingsRate = math.max(0.1, cappedGoal / monthlyBudget).clamp(0.1, 0.45);
+  final savingsAmount = monthlyBudget * savingsRate;
+  final flexibleSpend = math.max(0.0, monthlyBudget - savingsAmount).toDouble();
+  final dailyLimit = flexibleSpend / 30;
+
+  final adaptabilityScore = ((72 +
+              (yesAnswers.contains(1) ? 4 : 0) +
+              (yesAnswers.contains(3) ? 6 : 0) -
+              (yesAnswers.contains(0) ? 2 : 0))
+          .clamp(68, 95))
+      .toInt();
+
+  final allocationColors = <String, Color>{
+    'Food & drinks': colors.warning,
+    'Transport': colors.primary,
+    'Bills': colors.success,
+    'Entertainment': colors.accent,
+    'Shopping': colors.accentForeground,
+  };
+
+  final allocations = categoryPercents.entries
+      .map(
+        (entry) => BudgetAllocation(
+          name: entry.key,
+          percent: entry.value,
+          amount: flexibleSpend * entry.value,
+          color: allocationColors[entry.key] ?? colors.primary,
+        ),
+      )
+      .toList()
+    ..sort((a, b) => b.percent.compareTo(a.percent));
+
+  final recommendations = <String>[
+    'Your safe daily spending limit is RM ${formatRm(dailyLimit)} after setting aside RM ${formatRm(savingsAmount)} for savings.',
+    if (yesAnswers.contains(3))
+      'Because you are saving for something specific, ThinkTwice will protect your savings bucket before increasing lifestyle spend.'
+    else
+      'ThinkTwice will keep your daily limit automatic and update category targets as your transaction history grows.',
+    if (yesAnswers.contains(0))
+      'If food or impulse purchases spike, ThinkTwice can lower lifestyle categories first instead of making you rebuild the whole plan.'
+    else if (yesAnswers.contains(1))
+      'We assume you respond well to deals, so ThinkTwice will nudge cheaper alternatives before you overspend.'
+    else
+      'ThinkTwice will rebalance category targets automatically as your transaction patterns become clearer.',
+  ];
+
+  return BudgetPlan(
+    dailyLimit: dailyLimit,
+    savingsAmount: savingsAmount,
+    savingsRate: savingsRate,
+    flexibleSpend: flexibleSpend,
+    adaptabilityScore: adaptabilityScore,
+    allocations: allocations,
+    recommendations: recommendations,
+  );
+}
+
+Map<String, double> rebalanceCategoryPercents(
+  Map<String, double> current,
+  String targetKey,
+  double nextPercent,
+) {
+  final updated = Map<String, double>.from(current);
+  final clampedTarget = nextPercent.clamp(0.05, 0.7);
+  final otherKeys = updated.keys.where((key) => key != targetKey).toList();
+  final otherTotal = otherKeys.fold<double>(0, (sum, key) => sum + updated[key]!);
+  final remaining = 1 - clampedTarget;
+
+  if (otherTotal <= 0) {
+    final evenShare = remaining / otherKeys.length;
+    for (final key in otherKeys) {
+      updated[key] = evenShare;
+    }
+  } else {
+    for (final key in otherKeys) {
+      updated[key] = (updated[key]! / otherTotal) * remaining;
+    }
+  }
+
+  updated[targetKey] = clampedTarget.toDouble();
+
+  final normalizedTotal = updated.values.fold<double>(0, (sum, value) => sum + value);
+  for (final key in updated.keys.toList()) {
+    updated[key] = updated[key]! / normalizedTotal;
+  }
+
+  return updated;
+}
+
 class AppRoot extends StatefulWidget {
   const AppRoot({super.key});
 
@@ -221,7 +356,13 @@ class _AppRootState extends State<AppRoot> {
   String _outfit = 'Hoodie';
   double _budget = 1200;
   double _goal = 800;
-  double _daily = 40;
+  Map<String, double> _categoryPercents = <String, double>{
+    'Food & drinks': 0.35,
+    'Transport': 0.15,
+    'Entertainment': 0.12,
+    'Bills': 0.23,
+    'Shopping': 0.15,
+  };
   final Set<int> _yesAnswers = <int>{};
   final Set<int> _noAnswers = <int>{};
 
@@ -238,6 +379,13 @@ class _AppRootState extends State<AppRoot> {
   @override
   Widget build(BuildContext context) {
     if (_showSplash) return const SplashPage();
+    final plan = buildBudgetPlan(
+      monthlyBudget: _budget,
+      savingsGoal: _goal,
+      categoryPercents: _categoryPercents,
+      yesAnswers: _yesAnswers,
+      colors: context.colors,
+    );
 
     if (!_isAuthed) {
       if (_onboardingStep == 0) {
@@ -261,7 +409,8 @@ class _AppRootState extends State<AppRoot> {
         outfit: _outfit,
         budget: _budget,
         goal: _goal,
-        daily: _daily,
+        categoryPercents: _categoryPercents,
+        plan: plan,
         yesAnswers: _yesAnswers,
         noAnswers: _noAnswers,
         onSetBreed: (v) => setState(() => _breed = v),
@@ -270,7 +419,9 @@ class _AppRootState extends State<AppRoot> {
         onSetOutfit: (v) => setState(() => _outfit = v),
         onSetBudget: (v) => setState(() => _budget = v),
         onSetGoal: (v) => setState(() => _goal = v),
-        onSetDaily: (v) => setState(() => _daily = v),
+        onSetCategoryPercent: (key, value) => setState(() {
+          _categoryPercents = rebalanceCategoryPercents(_categoryPercents, key, value);
+        }),
         onTogglePersonality: (index, yes) {
           setState(() {
             if (yes) {
@@ -307,14 +458,19 @@ class _AppRootState extends State<AppRoot> {
         index: _tabIndex,
         children: [
           HomePage(
+            plan: plan,
+            goal: _goal,
             showAlert: _showHomeAlert,
             onDismissAlert: () => setState(() => _showHomeAlert = false),
             onNavigate: (index) => setState(() => _tabIndex = index),
           ),
           const RadarPage(),
           const ChallengesPage(),
-          const InsightsPage(),
+          InsightsPage(plan: plan, goal: _goal),
           ProfilePage(
+            budget: _budget,
+            goal: _goal,
+            plan: plan,
             onSignOut: () => setState(() {
               _isAuthed = false;
               _isLoginMode = true;
@@ -322,6 +478,15 @@ class _AppRootState extends State<AppRoot> {
               _onboardingStep = 0;
               _tabIndex = 0;
               _showHomeAlert = true;
+              _yesAnswers.clear();
+              _noAnswers.clear();
+              _categoryPercents = <String, double>{
+                'Food & drinks': 0.35,
+                'Transport': 0.15,
+                'Entertainment': 0.12,
+                'Bills': 0.23,
+                'Shopping': 0.15,
+              };
             }),
           ),
         ],
@@ -493,31 +658,13 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        ScaleTransition(
-                          scale: Tween<double>(begin: 0.85, end: 1.1).animate(_controller),
-                          child: Container(
-                            width: 132,
-                            height: 132,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.22),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: 128,
-                          height: 128,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(32),
-                          ),
-                          padding: const EdgeInsets.all(10),
-                          child: Image.asset('assets/images/cat-avatar.png'),
-                        ),
-                      ],
+                    ScaleTransition(
+                      scale: Tween<double>(begin: 0.92, end: 1.04).animate(_controller),
+                      child: Image.asset(
+                        'assets/images/thinktwice-logo.png',
+                        width: 150,
+                        height: 150,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Row(
@@ -615,35 +762,25 @@ class LoginPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Center(
-                    child: Container(
-                      width: 160,
-                      height: 160,
-                      decoration: BoxDecoration(
-                        gradient: context.colors.primaryGradient,
-                        borderRadius: BorderRadius.circular(32),
-                        boxShadow: context.colors.softShadow,
-                      ),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Positioned(
-                            right: -6,
-                            top: -6,
-                            child: _floatingDot(context.colors.accent, 32),
-                          ),
-                          Positioned(
-                            left: -8,
-                            bottom: -6,
-                            child: _floatingDot(context.colors.warning, 24),
-                          ),
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Image.asset('assets/images/cat-avatar.png', width: 128, height: 128),
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned(
+                          right: -6,
+                          top: -6,
+                          child: _floatingDot(context.colors.accent, 32),
+                        ),
+                        Positioned(
+                          left: -8,
+                          bottom: -6,
+                          child: _floatingDot(context.colors.warning, 24),
+                        ),
+                        Image.asset(
+                          'assets/images/thinktwice-logo.png',
+                          width: 160,
+                          height: 160,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -867,7 +1004,8 @@ class OnboardingPage extends StatelessWidget {
     required this.outfit,
     required this.budget,
     required this.goal,
-    required this.daily,
+    required this.categoryPercents,
+    required this.plan,
     required this.yesAnswers,
     required this.noAnswers,
     required this.onSetBreed,
@@ -876,7 +1014,7 @@ class OnboardingPage extends StatelessWidget {
     required this.onSetOutfit,
     required this.onSetBudget,
     required this.onSetGoal,
-    required this.onSetDaily,
+    required this.onSetCategoryPercent,
     required this.onTogglePersonality,
     required this.onBack,
     required this.onNext,
@@ -889,7 +1027,8 @@ class OnboardingPage extends StatelessWidget {
   final String outfit;
   final double budget;
   final double goal;
-  final double daily;
+  final Map<String, double> categoryPercents;
+  final BudgetPlan plan;
   final Set<int> yesAnswers;
   final Set<int> noAnswers;
   final ValueChanged<String> onSetBreed;
@@ -898,7 +1037,7 @@ class OnboardingPage extends StatelessWidget {
   final ValueChanged<String> onSetOutfit;
   final ValueChanged<double> onSetBudget;
   final ValueChanged<double> onSetGoal;
-  final ValueChanged<double> onSetDaily;
+  final void Function(String key, double value) onSetCategoryPercent;
   final void Function(int index, bool yes) onTogglePersonality;
   final VoidCallback onBack;
   final VoidCallback onNext;
@@ -906,10 +1045,10 @@ class OnboardingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final breeds = [
-      ('tabby', 'Tabby', '😺'),
-      ('calico', 'Calico', '😻'),
-      ('black', 'Shadow', '🐈‍⬛'),
-      ('persian', 'Fluffy', '😽'),
+      ('tabby', 'Tabby', 'Cat'),
+      ('calico', 'Calico', 'Calico'),
+      ('black', 'Shadow', 'Shadow'),
+      ('persian', 'Fluffy', 'Fluffy'),
     ];
     final colors = [
       ('mint', null, context.colors.primaryGradient),
@@ -918,13 +1057,14 @@ class OnboardingPage extends StatelessWidget {
       ('rose', const Color(0xFFDD7B84), null),
       ('lavender', const Color(0xFFB58ADF), null),
     ];
-    final accessories = ['🎩', '👑', '🎀', '🕶️', '🧣', '🎧'];
+    final accessories = ['Top Hat', 'Crown', 'Ribbon', 'Glasses', 'Scarf', 'Headphones'];
+    final accessoryIcons = ['??', '??', '??', '???', '??', '??'];
     final outfits = ['Hoodie', 'Sweater', 'Jacket', 'T-shirt'];
     final personality = [
-      "I overspend when I'm stressed 😅",
-      'I love a good deal hunt 🎯',
-      'I forget to track expenses 📝',
-      'I want to save for something specific 🎁',
+      "I overspend when I'm stressed",
+      'I love a good deal hunt',
+      'I forget to track expenses',
+      'I want to save for something specific',
     ];
 
     return Scaffold(
@@ -1000,12 +1140,12 @@ class OnboardingPage extends StatelessWidget {
                                   alignment: Alignment.center,
                                   child: Text(
                                     switch (accessory) {
-                                      'hat' => '🎩',
-                                      'crown' => '👑',
-                                      'ribbon' => '🎀',
-                                      'glasses' => '🕶️',
-                                      'scarf' => '🧣',
-                                      _ => '🎧',
+                                      'hat' => '??',
+                                      'crown' => '??',
+                                      'ribbon' => '??',
+                                      'glasses' => '???',
+                                      'scarf' => '??',
+                                      _ => '??',
                                     },
                                     style: const TextStyle(fontSize: 20),
                                   ),
@@ -1032,7 +1172,7 @@ class OnboardingPage extends StatelessWidget {
                               const Text('Pick your cat', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
                               const SizedBox(height: 4),
                               Text(
-                                'Your finance buddy for the journey 🐾',
+                                'Your finance buddy for the journey',
                                 style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
                               ),
                               const SizedBox(height: 20),
@@ -1044,7 +1184,8 @@ class OnboardingPage extends StatelessWidget {
                                 crossAxisSpacing: 8,
                                 mainAxisSpacing: 8,
                                 childAspectRatio: 0.9,
-                                children: breeds.map((item) {
+                                children: List.generate(breeds.length, (index) {
+                                  final item = breeds[index];
                                   final selected = breed == item.$1;
                                   return GestureDetector(
                                     onTap: () => onSetBreed(item.$1),
@@ -1057,14 +1198,14 @@ class OnboardingPage extends StatelessWidget {
                                       child: Column(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          Text(item.$3, style: const TextStyle(fontSize: 24)),
-                                          const SizedBox(height: 4),
+                                          Image.asset('assets/images/cat-avatar.png', width: 38, height: 38),
+                                          const SizedBox(height: 6),
                                           Text(item.$2, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
                                         ],
                                       ),
                                     ),
                                   );
-                                }).toList(),
+                                }),
                               ),
                               const SizedBox(height: 16),
                               _sectionLabel('Fur color', context),
@@ -1083,9 +1224,7 @@ class OnboardingPage extends StatelessWidget {
                                           color: item.$2,
                                           gradient: item.$3,
                                           border: selected ? Border.all(color: context.colors.foreground, width: 2) : null,
-                                          boxShadow: selected
-                                              ? [BoxShadow(color: context.colors.foreground.withOpacity(0.1), blurRadius: 0, spreadRadius: 4)]
-                                              : null,
+                                          boxShadow: selected ? [BoxShadow(color: context.colors.foreground.withOpacity(0.1), blurRadius: 0, spreadRadius: 4)] : null,
                                         ),
                                         child: selected ? const Icon(Icons.check_rounded, size: 18, color: Colors.white) : null,
                                       ),
@@ -1114,7 +1253,7 @@ class OnboardingPage extends StatelessWidget {
                                         border: selected ? Border.all(color: context.colors.primary, width: 2) : null,
                                       ),
                                       alignment: Alignment.center,
-                                      child: Text(accessories[index], style: const TextStyle(fontSize: 24)),
+                                      child: Text(accessoryIcons[index], style: const TextStyle(fontSize: 24)),
                                     ),
                                   );
                                 }),
@@ -1156,13 +1295,16 @@ class OnboardingPage extends StatelessWidget {
                         1 => Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Set your numbers', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+                              const Text('Tell us your money style', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
                               const SizedBox(height: 4),
-                              Text('We\'ll personalize your plan', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
+                              Text(
+                                'Set your monthly income and savings goal. We will calculate your safe daily spending limit automatically.',
+                                style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
+                              ),
                               const SizedBox(height: 20),
                               AmountSliderCard(
                                 icon: Icons.account_balance_wallet_outlined,
-                                label: 'Monthly budget',
+                                label: 'Monthly income / budget',
                                 value: budget,
                                 min: 300,
                                 max: 5000,
@@ -1183,18 +1325,59 @@ class OnboardingPage extends StatelessWidget {
                                 fg: Colors.white,
                                 onChanged: onSetGoal,
                               ),
-                              const SizedBox(height: 12),
-                              AmountSliderCard(
-                                icon: Icons.trending_down_rounded,
-                                label: 'Daily spending limit',
-                                value: daily,
-                                min: 10,
-                                max: 200,
-                                step: 5,
-                                color: context.colors.warning,
-                                fg: context.colors.warning.computeLuminance() > 0.5 ? context.colors.accentForeground : Colors.white,
-                                onChanged: onSetDaily,
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  gradient: context.colors.primaryGradient,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Estimated safe daily spending limit',
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'RM ${formatRm(plan.dailyLimit)} / day',
+                                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '(RM ${formatRm(budget)} - RM ${formatRm(goal)}) ÷ 30 days',
+                                      style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.88)),
+                                    ),
+                                  ],
+                                ),
                               ),
+                              const SizedBox(height: 18),
+                              _sectionLabel('Spending categories', context),
+                              Text(
+                                'Adjust how your spending pool is split across categories.',
+                                style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
+                              ),
+                              const SizedBox(height: 10),
+                              ...categoryPercents.entries.map((entry) {
+                                final colorMap = <String, Color>{
+                                  'Food & drinks': context.colors.warning,
+                                  'Transport': context.colors.primary,
+                                  'Entertainment': context.colors.accent,
+                                  'Bills': context.colors.success,
+                                  'Shopping': context.colors.accentForeground,
+                                };
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: AllocationSliderCard(
+                                    label: entry.key,
+                                    percent: entry.value,
+                                    amount: plan.flexibleSpend * entry.value,
+                                    color: colorMap[entry.key] ?? context.colors.primary,
+                                    onChanged: (value) => onSetCategoryPercent(entry.key, value),
+                                  ),
+                                );
+                              }),
                             ],
                           ),
                         _ => Column(
@@ -1202,7 +1385,51 @@ class OnboardingPage extends StatelessWidget {
                             children: [
                               const Text('Quick personality check', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
                               const SizedBox(height: 4),
-                              Text('Optional - helps us coach you better', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
+                              Text(
+                                'Optional, but useful. These signals help ThinkTwice fine-tune your limits and rebalance categories over time.',
+                                style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
+                              ),
+                              const SizedBox(height: 12),
+                              WhiteCard(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.psychology_alt_rounded, size: 18),
+                                        const SizedBox(width: 8),
+                                        const Text('Adaptive recommendations', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                                        const Spacer(),
+                                        Text(
+                                          '${plan.adaptabilityScore}/100',
+                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.primary),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    ...plan.recommendations.map((text) => Padding(
+                                          padding: const EdgeInsets.only(bottom: 8),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.only(top: 4),
+                                                child: Icon(Icons.circle, size: 6, color: context.colors.primary),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  text,
+                                                  style: TextStyle(fontSize: 12, color: context.colors.foreground, height: 1.35),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: 12),
                               ...List.generate(personality.length, (index) {
                                 final yes = yesAnswers.contains(index);
@@ -1330,7 +1557,6 @@ class OnboardingPage extends StatelessWidget {
     );
   }
 }
-
 class AmountSliderCard extends StatelessWidget {
   const AmountSliderCard({
     super.key,
@@ -1407,32 +1633,132 @@ class AmountSliderCard extends StatelessWidget {
   }
 }
 
+class AllocationSliderCard extends StatelessWidget {
+  const AllocationSliderCard({
+    super.key,
+    required this.label,
+    required this.percent,
+    required this.amount,
+    required this.color,
+    required this.onChanged,
+  });
+
+  final String label;
+  final double percent;
+  final double amount;
+  final Color color;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.colors.card,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              ),
+              Text(
+                '${formatRm(percent * 100)}% · RM ${formatRm(amount)}',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: color,
+              inactiveTrackColor: context.colors.muted,
+              thumbColor: color,
+              overlayColor: color.withOpacity(0.15),
+            ),
+            child: Slider(
+              value: percent.clamp(0.05, 0.7),
+              min: 0.05,
+              max: 0.7,
+              divisions: 13,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class HomePage extends StatelessWidget {
   const HomePage({
     super.key,
+    required this.plan,
+    required this.goal,
     required this.showAlert,
     required this.onDismissAlert,
     required this.onNavigate,
   });
 
+  final BudgetPlan plan;
+  final double goal;
   final bool showAlert;
   final VoidCallback onDismissAlert;
   final ValueChanged<int> onNavigate;
 
   @override
   Widget build(BuildContext context) {
+    final overspendingRisk = plan.allocations.firstWhere((item) => item.name == 'Food & drinks').percent >= 0.34;
+    final challengeCompleted = true;
+    final leveledUp = plan.adaptabilityScore >= 84;
+    final savingsWin = plan.savingsRate >= 0.25;
+    final emotion = leveledUp
+        ? _AvatarMood.excited
+        : (overspendingRisk && !showAlert)
+            ? _AvatarMood.sad
+            : (savingsWin || challengeCompleted)
+                ? _AvatarMood.happy
+                : _AvatarMood.neutral;
+    final level = 4;
+    final totalPoints = 1180;
+    final nextLevelPoints = 1400;
+    final levelProgress = (totalPoints / nextLevelPoints).clamp(0.0, 1.0);
+    final recentPoints = [
+      (Icons.savings_outlined, '+120', 'Saved under daily limit'),
+      (Icons.emoji_events_rounded, '+80', 'Quest completed'),
+      (Icons.auto_awesome_rounded, '+35', 'Used a smart nudge'),
+    ];
     final insights = [
-      (Icons.warning_amber_rounded, 'warning', 'Food spending 35% above average', 'You\'ve spent RM42 on food today vs your RM31 average.'),
-      (Icons.shield_outlined, 'success', 'You avoided RM47 this week', 'Smart Radar redirected you to cheaper alternatives 3 times.'),
-      (Icons.auto_awesome_rounded, 'primary', 'You can still save RM20 today', 'Skip the evening bubble tea and stay on streak.'),
+      (
+        Icons.wallet_outlined,
+        'primary',
+        'Safe daily limit: RM ${formatRm(plan.dailyLimit)}',
+        'Auto-calculated from your monthly budget and current savings target.',
+      ),
+      (
+        Icons.restaurant_rounded,
+        'warning',
+        'Food budget is capped at ${formatRm((plan.allocations.firstWhere((item) => item.name == 'Food & drinks').percent) * 100)}%',
+        'ThinkTwice will tighten or relax this category as it learns your spending rhythm.',
+      ),
+      (
+        Icons.shield_outlined,
+        'success',
+        'Savings protected at RM ${formatRm(plan.savingsAmount)}',
+        'Your plan keeps goal money aside before flexible spending kicks in.',
+      ),
     ];
-    final categories = [
-      ('Food', 42, context.colors.warning),
-      ('Transport', 18, context.colors.primary),
-      ('Shopping', 25, context.colors.accent),
-      ('Bills', 15, context.colors.success),
-    ];
+    final categories = plan.allocations.where((item) => item.name != 'Savings').take(4).toList();
     final trend = [30, 45, 28, 60, 35, 52, 41];
+    final goalProgress = (plan.savingsAmount * 0.6 / goal).clamp(0.0, 1.0);
 
     return Stack(
       children: [
@@ -1448,22 +1774,14 @@ class HomePage extends StatelessWidget {
                     children: [
                       Text('Good evening,', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
                       const SizedBox(height: 2),
-                      const Text('Aiman 👋', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+                      const Text('Aiman', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
                     ],
                   ),
                   const Spacer(),
-                  Container(
+                  Image.asset(
+                    'assets/images/thinktwice-logo.png',
                     width: 44,
                     height: 44,
-                    decoration: BoxDecoration(
-                      color: context.colors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset('assets/images/cat-avatar.png'),
-                    ),
                   ),
                 ],
               ),
@@ -1497,18 +1815,21 @@ class HomePage extends StatelessWidget {
                         const SizedBox(height: 4),
                         const Text('RM 1,284.50', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: Colors.white)),
                         const SizedBox(height: 12),
-                        const Row(
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Savings goal', style: TextStyle(fontSize: 12, color: Colors.white)),
-                            Text('RM 480 / RM 800', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                            const Text('Savings goal', style: TextStyle(fontSize: 12, color: Colors.white)),
+                            Text(
+                              'RM ${formatRm(plan.savingsAmount * 0.6)} / RM ${formatRm(goal)}',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 6),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(999),
                           child: LinearProgressIndicator(
-                            value: 0.6,
+                            value: goalProgress,
                             minHeight: 8,
                             backgroundColor: Colors.white24,
                             valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
@@ -1519,23 +1840,124 @@ class HomePage extends StatelessWidget {
                           children: [
                             Expanded(
                               child: _heroMiniCard(
-                                icon: Icons.shield_outlined,
-                                label: 'Resilience',
-                                value: '82',
+                                icon: Icons.wallet_rounded,
+                                label: 'Daily safe',
+                                value: 'RM ${formatRm(plan.dailyLimit)}',
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: _heroMiniCard(
-                                icon: Icons.local_fire_department_outlined,
-                                label: 'Streak',
-                                value: '7 days',
+                                icon: Icons.auto_awesome_rounded,
+                                label: 'Adaptive score',
+                                value: '${plan.adaptabilityScore}',
                               ),
                             ),
                           ],
                         ),
                       ],
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              WhiteCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        _avatarMoodBadge(context, emotion),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Avatar mood', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                              Text(
+                                _moodLabel(emotion),
+                                style: TextStyle(fontSize: 11, color: context.colors.mutedForeground),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: context.colors.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'Level $level',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.primary),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _progressStat(context, 'Total points', '$totalPoints pts'),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _progressStat(context, 'Next level', '${nextLevelPoints - totalPoints} pts left'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        const Text('Level progress', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                        const Spacer(),
+                        Text(
+                          '${formatRm(levelProgress * 100)}%',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.primary),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: levelProgress,
+                        minHeight: 8,
+                        backgroundColor: context.colors.muted,
+                        valueColor: AlwaysStoppedAnimation<Color>(context.colors.primary),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    const Text('Recent points earned', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    ...recentPoints.map((item) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: context.colors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              alignment: Alignment.center,
+                              child: Icon(item.$1, size: 18, color: context.colors.primary),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(item.$3, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                            ),
+                            Text(
+                              item.$2,
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.success),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -1627,19 +2049,22 @@ class HomePage extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                Text(item.$1, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+                                Text(item.name, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
                                 const Spacer(),
-                                Text('RM ${item.$2}', style: TextStyle(fontSize: 11, color: context.colors.mutedForeground)),
+                                Text(
+                                  '${formatRm(item.percent * 100)}% | RM ${formatRm(item.amount)}',
+                                  style: TextStyle(fontSize: 11, color: context.colors.mutedForeground),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 4),
                             ClipRRect(
                               borderRadius: BorderRadius.circular(999),
                               child: LinearProgressIndicator(
-                                value: item.$2 / 100,
+                                value: item.percent,
                                 minHeight: 6,
                                 backgroundColor: context.colors.muted,
-                                valueColor: AlwaysStoppedAnimation<Color>(item.$3),
+                                valueColor: AlwaysStoppedAnimation<Color>(item.color),
                               ),
                             ),
                           ],
@@ -1729,9 +2154,9 @@ class RadarPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final deals = [
-      (Icons.restaurant_rounded, 'RM5 Nasi Lemak', 'Kak Yan Stall · 200m', 42, 'RM7'),
-      (Icons.coffee_rounded, '20% off Coffee', 'ZUS Coffee · 450m', 28, 'RM3'),
-      (Icons.shopping_bag_rounded, 'Buy 1 Free 1 Bread', 'FamilyMart · 600m', 19, 'RM4'),
+      (Icons.restaurant_rounded, 'RM5 Nasi Lemak', 'Kak Yan Stall | 200m', 42, 'RM7'),
+      (Icons.coffee_rounded, '20% off Coffee', 'ZUS Coffee | 450m', 28, 'RM3'),
+      (Icons.shopping_bag_rounded, 'Buy 1 Free 1 Bread', 'FamilyMart | 600m', 19, 'RM4'),
     ];
 
     return SingleChildScrollView(
@@ -1752,7 +2177,7 @@ class RadarPage extends StatelessWidget {
                 SizedBox(height: 4),
                 Text('RM 47.20', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: Colors.white)),
                 SizedBox(height: 4),
-                Text('via Smart Radar 🎯', style: TextStyle(fontSize: 12, color: Colors.white)),
+                Text('via Smart Radar', style: TextStyle(fontSize: 12, color: Colors.white)),
               ],
             ),
           ),
@@ -2013,12 +2438,17 @@ class RadarPage extends StatelessWidget {
 }
 
 class InsightsPage extends StatelessWidget {
-  const InsightsPage({super.key});
+  const InsightsPage({super.key, required this.plan, required this.goal});
+
+  final BudgetPlan plan;
+  final double goal;
 
   @override
   Widget build(BuildContext context) {
     final trend = [40, 55, 38, 62, 45, 70, 48, 30, 52, 60, 35, 42];
     final savings = [10, 25, 18, 35, 42, 50, 47];
+    final foodAllocation = plan.allocations.firstWhere((item) => item.name == 'Food & drinks');
+    final topAllocations = plan.allocations.take(3).toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
@@ -2031,8 +2461,18 @@ class InsightsPage extends StatelessWidget {
           const SizedBox(height: 16),
           ...[
             (Icons.schedule_rounded, true, 'You overspend most after 10PM', '62% of impulse purchases happen late at night.'),
-            (Icons.trending_up_rounded, true, 'Food spending +18% this week', 'Mainly from food delivery (RM86 vs RM58 last week).'),
-            (Icons.track_changes_rounded, false, 'Reduce RM12 today to hit your goal', 'You\'re on track to save RM800 this month.'),
+            (
+              Icons.trending_up_rounded,
+              true,
+              'Food budget rebalanced to ${formatRm(foodAllocation.percent * 100)}%',
+              'If food keeps trending high, ThinkTwice can tighten lifestyle categories before it touches your essentials.',
+            ),
+            (
+              Icons.track_changes_rounded,
+              false,
+              'Safe daily spend is RM ${formatRm(plan.dailyLimit)}',
+              'You\'re on track to save RM ${formatRm(goal)} with an auto-protected monthly savings bucket of RM ${formatRm(plan.savingsAmount)}.',
+            ),
           ].map((item) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: InsightCard(
@@ -2080,7 +2520,51 @@ class InsightsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Savings momentum 📈', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                const Text('Adaptive category mix', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
+                ...topAllocations.map((allocation) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Text(allocation.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                            const Spacer(),
+                            Text(
+                              '${formatRm(allocation.percent * 100)}% | RM ${formatRm(allocation.amount)}',
+                              style: TextStyle(fontSize: 11, color: context.colors.mutedForeground),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: LinearProgressIndicator(
+                            value: allocation.percent,
+                            minHeight: 6,
+                            backgroundColor: context.colors.muted,
+                            valueColor: AlwaysStoppedAnimation<Color>(allocation.color),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                Text(
+                  plan.recommendations.last,
+                  style: TextStyle(fontSize: 12, height: 1.35, color: context.colors.mutedForeground),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          WhiteCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Savings momentum', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
                 Text('+RM 47', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: context.colors.success)),
                 Text('vs last week', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
@@ -2152,10 +2636,10 @@ class InsightsPage extends StatelessWidget {
           const SizedBox(height: 12),
           GradientCard(
             padding: const EdgeInsets.all(16),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                const Row(
                   children: [
                     Icon(Icons.psychology_alt_rounded, color: Colors.white, size: 18),
                     SizedBox(width: 8),
@@ -2164,8 +2648,8 @@ class InsightsPage extends StatelessWidget {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'Based on your patterns, set a 10PM spending lock. You could save up to RM 120/month.',
-                  style: TextStyle(fontSize: 14, color: Colors.white, height: 1.45),
+                  plan.recommendations.first,
+                  style: const TextStyle(fontSize: 14, color: Colors.white, height: 1.45),
                 ),
               ],
             ),
@@ -2184,14 +2668,23 @@ class ChallengesPage extends StatelessWidget {
     final challenges = [
       ('3-Day No Overspending', 0.66, '2/3', '150 pts', false),
       ('7-Day Savings Streak', 1.0, '7/7', '500 pts', true),
-      ('Food Budget Challenge', 0.4, 'RM80/200', 'Cat hat 🎩', false),
+      ('Food Budget Challenge', 0.4, 'RM80/200', 'Cat hat', false),
     ];
-    final badges = ['🥇', '🔥', '🎯', '💎', '🏆', '⭐', '🌱', '🔒'];
+    final badgeIcons = [
+      Icons.workspace_premium_rounded,
+      Icons.local_fire_department_rounded,
+      Icons.track_changes_rounded,
+      Icons.diamond_rounded,
+      Icons.emoji_events_rounded,
+      Icons.star_rounded,
+      Icons.park_rounded,
+      Icons.lock_rounded,
+    ];
     final squad = [
-      (1, 'Mira', 1240, '👑'),
-      (2, 'You', 1180, '😺'),
-      (3, 'Hafiz', 980, '🦊'),
-      (4, 'Lina', 760, '🐰'),
+      (1, 'Mira', 1240, Icons.workspace_premium_rounded),
+      (2, 'You', 1180, Icons.pets_rounded),
+      (3, 'Hafiz', 980, Icons.auto_awesome_rounded),
+      (4, 'Lina', 760, Icons.favorite_rounded),
     ];
 
     return SingleChildScrollView(
@@ -2312,7 +2805,7 @@ class ChallengesPage extends StatelessWidget {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: badges.length,
+                  itemCount: badgeIcons.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 4,
                     crossAxisSpacing: 12,
@@ -2328,7 +2821,11 @@ class ChallengesPage extends StatelessWidget {
                       alignment: Alignment.center,
                       child: Opacity(
                         opacity: active ? 1 : 0.4,
-                        child: Text(badges[index], style: const TextStyle(fontSize: 24)),
+                        child: Icon(
+                          badgeIcons[index],
+                          size: 24,
+                          color: active ? context.colors.accentForeground : context.colors.mutedForeground,
+                        ),
                       ),
                     );
                   },
@@ -2369,7 +2866,7 @@ class ChallengesPage extends StatelessWidget {
                           child: Text('${item.$1}', style: const TextStyle(fontWeight: FontWeight.w700)),
                         ),
                         const SizedBox(width: 10),
-                        Text(item.$4, style: const TextStyle(fontSize: 22)),
+                        Icon(item.$4, size: 20, color: context.colors.foreground),
                         const SizedBox(width: 10),
                         Expanded(child: Text(item.$2, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
                         Row(
@@ -2393,7 +2890,7 @@ class ChallengesPage extends StatelessWidget {
               minimumSize: const Size.fromHeight(48),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
-            child: const Text('Customize avatar 🎨'),
+            child: const Text('Customize avatar'),
           ),
         ],
       ),
@@ -2402,18 +2899,27 @@ class ChallengesPage extends StatelessWidget {
 }
 
 class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key, required this.onSignOut});
+  const ProfilePage({
+    super.key,
+    required this.budget,
+    required this.goal,
+    required this.plan,
+    required this.onSignOut,
+  });
 
+  final double budget;
+  final double goal;
+  final BudgetPlan plan;
   final VoidCallback onSignOut;
 
   @override
   Widget build(BuildContext context) {
     final tx = [
-      ('Starbucks', -12, '☕', '2h ago'),
-      ('Tealive', -9, '🧋', 'Yesterday'),
-      ('GrabFood', -24, '🍔', 'Yesterday'),
-      ('Salary', 2400, '💰', '3 days ago'),
-      ('Shopee', -45, '🛍️', '4 days ago'),
+      ('Starbucks', -12, Icons.coffee_rounded, '2h ago'),
+      ('Tealive', -9, Icons.local_drink_rounded, 'Yesterday'),
+      ('GrabFood', -24, Icons.lunch_dining_rounded, 'Yesterday'),
+      ('Salary', 2400, Icons.payments_rounded, '3 days ago'),
+      ('Shopee', -45, Icons.shopping_bag_rounded, '4 days ago'),
     ];
 
     return SingleChildScrollView(
@@ -2439,15 +2945,10 @@ class ProfilePage extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    Container(
+                    Image.asset(
+                      'assets/images/cat-avatar.png',
                       width: 96,
                       height: 96,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      padding: const EdgeInsets.all(8),
-                      child: Image.asset('assets/images/cat-avatar.png'),
                     ),
                     const SizedBox(width: 16),
                     const Column(
@@ -2455,7 +2956,7 @@ class ProfilePage extends StatelessWidget {
                       children: [
                         Text('Aiman', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white)),
                         SizedBox(height: 4),
-                        Text('Level 4 · Saver', style: TextStyle(fontSize: 12, color: Colors.white)),
+                        Text('Level 4 | Saver', style: TextStyle(fontSize: 12, color: Colors.white)),
                         SizedBox(height: 8),
                         _PointsChip(),
                       ],
@@ -2496,7 +2997,7 @@ class ProfilePage extends StatelessWidget {
                           height: 40,
                           decoration: BoxDecoration(color: context.colors.muted, borderRadius: BorderRadius.circular(16)),
                           alignment: Alignment.center,
-                          child: Text(item.$3, style: const TextStyle(fontSize: 18)),
+                          child: Icon(item.$3, size: 20, color: context.colors.foreground),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -2528,10 +3029,11 @@ class ProfilePage extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                _settingsRow(context, Icons.account_balance_wallet_outlined, 'Budget settings', 'RM 1,200/mo', true),
-                _settingsRow(context, Icons.track_changes_rounded, 'Savings goal', 'RM 800', true),
+                _settingsRow(context, Icons.account_balance_wallet_outlined, 'Budget settings', 'RM ${formatRm(budget)}/mo', true),
+                _settingsRow(context, Icons.track_changes_rounded, 'Savings goal', 'RM ${formatRm(goal)}', true),
+                _settingsRow(context, Icons.today_outlined, 'Safe daily spend', 'RM ${formatRm(plan.dailyLimit)}', true),
                 _settingsRow(context, Icons.notifications_none_rounded, 'Notifications', 'On', true),
-                _settingsRow(context, Icons.settings_outlined, 'Auto-save approval', 'Auto', false),
+                _settingsRow(context, Icons.settings_outlined, 'Auto-save approval', '${formatRm(plan.savingsRate * 100)}% auto-save', false),
               ],
             ),
           ),
@@ -2702,7 +3204,7 @@ class AIInterventionModal extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Text(
-                      'Your food spending today is already 42% above average. Save RM8 now to maintain your streak 🔥',
+                      'Your food spending today is already 42% above average. Save RM8 now to maintain your streak.',
                       style: TextStyle(fontSize: 14, height: 1.45),
                     ),
                   ),
@@ -2847,6 +3349,78 @@ class InsightCard extends StatelessWidget {
   }
 }
 
+enum _AvatarMood { happy, neutral, sad, excited }
+
+String _moodLabel(_AvatarMood mood) {
+  switch (mood) {
+    case _AvatarMood.happy:
+      return 'Happy and celebrating';
+    case _AvatarMood.neutral:
+      return 'Calm and on track';
+    case _AvatarMood.sad:
+      return 'Worried about overspending';
+    case _AvatarMood.excited:
+      return 'Excited about leveling up';
+  }
+}
+
+Widget _avatarMoodBadge(BuildContext context, _AvatarMood mood) {
+  final moodConfig = switch (mood) {
+    _AvatarMood.happy => (context.colors.success, Icons.sentiment_satisfied_alt_rounded),
+    _AvatarMood.neutral => (context.colors.primary, Icons.sentiment_neutral_rounded),
+    _AvatarMood.sad => (context.colors.warning, Icons.sentiment_dissatisfied_rounded),
+    _AvatarMood.excited => (context.colors.accentForeground, Icons.bolt_rounded),
+  };
+
+  return Stack(
+    clipBehavior: Clip.none,
+    children: [
+      Container(
+        width: 68,
+        height: 68,
+        decoration: BoxDecoration(
+          color: context.colors.primary.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Image.asset('assets/images/cat-avatar.png'),
+      ),
+      Positioned(
+        right: -4,
+        top: -4,
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: moodConfig.$1,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Icon(moodConfig.$2, size: 16, color: Colors.white),
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _progressStat(BuildContext context, String label, String value) {
+  return Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: context.colors.muted.withOpacity(0.65),
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontSize: 11, color: context.colors.mutedForeground)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+      ],
+    ),
+  );
+}
+
 class GradientButton extends StatelessWidget {
   const GradientButton({
     super.key,
@@ -2971,3 +3545,4 @@ class MapGridPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
