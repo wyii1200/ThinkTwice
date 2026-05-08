@@ -54,8 +54,10 @@ class CommunityDeal {
     this.imageBytes,
     this.distanceKm,
     this.postedByUser = false,
+
   });
 
+  final double? distanceKm;
   final String id;
   final String title;
   final String storeName;
@@ -69,13 +71,13 @@ class CommunityDeal {
   final String discountLabel;
   final int upvotes;
   final int verifications;
-  final Uint8List? imageBytes;
-  final double? distanceKm;
+  final Uint8List? imageBytes; 
   final bool postedByUser;
 
   double get estimatedSavings => math.max(0, originalPrice - dealPrice);
 
   CommunityDeal copyWith({
+  
     String? id,
     String? title,
     String? storeName,
