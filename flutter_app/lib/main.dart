@@ -1,17 +1,12 @@
-﻿// Converted from the current `frontend/src` app into a Flutter UI entrypoint.
-// Route coverage in this file mirrors:
-// - splash.tsx
-// - login.tsx
-// - onboarding.tsx
-// - index.tsx
-// - radar.tsx
-// - challenges.tsx
-// - insights.tsx
-// - profile.tsx
+﻿
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(const ThinkTwiceApp());
@@ -234,8 +229,150 @@ class BudgetPlan {
   final List<String> recommendations;
 }
 
+class CommunityDeal {
+  const CommunityDeal({
+    required this.id,
+    required this.title,
+    required this.storeName,
+    required this.category,
+    required this.description,
+    required this.expiryDate,
+    required this.latitude,
+    required this.longitude,
+    required this.originalPrice,
+    required this.dealPrice,
+    required this.discountLabel,
+    required this.upvotes,
+    required this.verifications,
+    this.imageBytes,
+    this.distanceKm,
+    this.postedByUser = false,
+  });
+
+  final String id;
+  final String title;
+  final String storeName;
+  final String category;
+  final String description;
+  final DateTime expiryDate;
+  final double latitude;
+  final double longitude;
+  final double originalPrice;
+  final double dealPrice;
+  final String discountLabel;
+  final int upvotes;
+  final int verifications;
+  final Uint8List? imageBytes;
+  final double? distanceKm;
+  final bool postedByUser;
+
+  double get estimatedSavings => math.max(0, originalPrice - dealPrice);
+
+  CommunityDeal copyWith({
+    String? id,
+    String? title,
+    String? storeName,
+    String? category,
+    String? description,
+    DateTime? expiryDate,
+    double? latitude,
+    double? longitude,
+    double? originalPrice,
+    double? dealPrice,
+    String? discountLabel,
+    int? upvotes,
+    int? verifications,
+    Uint8List? imageBytes,
+    double? distanceKm,
+    bool? postedByUser,
+  }) {
+    return CommunityDeal(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      storeName: storeName ?? this.storeName,
+      category: category ?? this.category,
+      description: description ?? this.description,
+      expiryDate: expiryDate ?? this.expiryDate,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      originalPrice: originalPrice ?? this.originalPrice,
+      dealPrice: dealPrice ?? this.dealPrice,
+      discountLabel: discountLabel ?? this.discountLabel,
+      upvotes: upvotes ?? this.upvotes,
+      verifications: verifications ?? this.verifications,
+      imageBytes: imageBytes ?? this.imageBytes,
+      distanceKm: distanceKm ?? this.distanceKm,
+      postedByUser: postedByUser ?? this.postedByUser,
+    );
+  }
+}
+
+class PointsEvent {
+  const PointsEvent({
+    required this.label,
+    required this.points,
+    required this.icon,
+  });
+
+  final String label;
+  final int points;
+  final IconData icon;
+}
+
 String formatRm(num value, {int decimals = 0}) {
   return decimals == 0 ? value.toStringAsFixed(0) : value.toStringAsFixed(decimals);
+}
+
+const LatLng kDefaultRadarCenter = LatLng(3.1390, 101.6869);
+
+List<CommunityDeal> seedDeals() {
+  return [
+    CommunityDeal(
+      id: 'deal-1',
+      title: 'RM5 Nasi Lemak',
+      storeName: 'Kak Yan Stall',
+      category: 'Food & drinks',
+      description: 'Breakfast promo before 10AM. Includes sambal and egg.',
+      expiryDate: DateTime.now().add(const Duration(days: 2)),
+      latitude: 3.1412,
+      longitude: 101.6892,
+      originalPrice: 12,
+      dealPrice: 5,
+      discountLabel: 'Save RM7',
+      upvotes: 42,
+      verifications: 9,
+    ),
+    CommunityDeal(
+      id: 'deal-2',
+      title: '20% Off Coffee',
+      storeName: 'ZUS Coffee',
+      category: 'Food & drinks',
+      description: 'Valid for one hot or iced coffee in-app pickup orders.',
+      expiryDate: DateTime.now().add(const Duration(days: 1)),
+      latitude: 3.1378,
+      longitude: 101.6927,
+      originalPrice: 15,
+      dealPrice: 12,
+      discountLabel: 'Save RM3',
+      upvotes: 28,
+      verifications: 6,
+    ),
+    CommunityDeal(
+      id: 'deal-3',
+      title: 'Buy 1 Free 1 Bread',
+      storeName: 'FamilyMart',
+      category: 'Groceries',
+      description: 'Selected bakery shelf items only, while stocks last.',
+      expiryDate: DateTime.now().add(const Duration(days: 3)),
+      latitude: 3.1349,
+      longitude: 101.6845,
+      originalPrice: 8,
+      dealPrice: 4,
+      discountLabel: 'Save RM4',
+      upvotes: 19,
+      verifications: 4,
+    ),
+  ];
 }
 
 BudgetPlan buildBudgetPlan({
@@ -350,12 +487,14 @@ class _AppRootState extends State<AppRoot> {
   bool _isLoginMode = true;
   bool _showPassword = false;
   int _onboardingStep = 0;
+  int _totalPoints = 1180;
   String _breed = 'tabby';
   String _color = 'mint';
   String _accessory = 'ribbon';
   String _outfit = 'Hoodie';
   double _budget = 1200;
   double _goal = 800;
+  LatLng _radarUserLocation = kDefaultRadarCenter;
   Map<String, double> _categoryPercents = <String, double>{
     'Food & drinks': 0.35,
     'Transport': 0.15,
@@ -363,6 +502,12 @@ class _AppRootState extends State<AppRoot> {
     'Bills': 0.23,
     'Shopping': 0.15,
   };
+  List<CommunityDeal> _communityDeals = seedDeals();
+  final List<PointsEvent> _recentPoints = <PointsEvent>[
+    const PointsEvent(label: 'Saved under daily limit', points: 120, icon: Icons.savings_outlined),
+    const PointsEvent(label: 'Quest completed', points: 80, icon: Icons.emoji_events_rounded),
+    const PointsEvent(label: 'Used a smart nudge', points: 35, icon: Icons.auto_awesome_rounded),
+  ];
   final Set<int> _yesAnswers = <int>{};
   final Set<int> _noAnswers = <int>{};
 
@@ -374,6 +519,44 @@ class _AppRootState extends State<AppRoot> {
         setState(() => _showSplash = false);
       }
     });
+  }
+
+  void _awardPoints(String label, int points, IconData icon) {
+    setState(() {
+      _totalPoints += points;
+      _recentPoints.insert(0, PointsEvent(label: label, points: points, icon: icon));
+      if (_recentPoints.length > 5) {
+        _recentPoints.removeLast();
+      }
+    });
+  }
+
+  void _updateRadarLocation(LatLng location) {
+    setState(() => _radarUserLocation = location);
+  }
+
+  void _postCommunityDeal(CommunityDeal deal) {
+    setState(() {
+      _communityDeals = [deal, ..._communityDeals];
+    });
+    _awardPoints('Posted a community deal', 90, Icons.campaign_rounded);
+  }
+
+  void _upvoteCommunityDeal(String id) {
+    setState(() {
+      _communityDeals = _communityDeals
+          .map((deal) => deal.id == id ? deal.copyWith(upvotes: deal.upvotes + 1) : deal)
+          .toList();
+    });
+  }
+
+  void _verifyCommunityDeal(String id) {
+    setState(() {
+      _communityDeals = _communityDeals
+          .map((deal) => deal.id == id ? deal.copyWith(verifications: deal.verifications + 1) : deal)
+          .toList();
+    });
+    _awardPoints('Verified a community deal', 20, Icons.verified_rounded);
   }
 
   @override
@@ -460,17 +643,27 @@ class _AppRootState extends State<AppRoot> {
           HomePage(
             plan: plan,
             goal: _goal,
+            totalPoints: _totalPoints,
+            recentPoints: _recentPoints,
             showAlert: _showHomeAlert,
             onDismissAlert: () => setState(() => _showHomeAlert = false),
             onNavigate: (index) => setState(() => _tabIndex = index),
           ),
-          const RadarPage(),
+          RadarPage(
+            deals: _communityDeals,
+            userLocation: _radarUserLocation,
+            onLocationChanged: _updateRadarLocation,
+            onPostDeal: _postCommunityDeal,
+            onUpvoteDeal: _upvoteCommunityDeal,
+            onVerifyDeal: _verifyCommunityDeal,
+          ),
           const ChallengesPage(),
           InsightsPage(plan: plan, goal: _goal),
           ProfilePage(
             budget: _budget,
             goal: _goal,
             plan: plan,
+            totalPoints: _totalPoints,
             onSignOut: () => setState(() {
               _isAuthed = false;
               _isLoginMode = true;
@@ -478,8 +671,18 @@ class _AppRootState extends State<AppRoot> {
               _onboardingStep = 0;
               _tabIndex = 0;
               _showHomeAlert = true;
+              _totalPoints = 1180;
+              _communityDeals = seedDeals();
+              _radarUserLocation = kDefaultRadarCenter;
               _yesAnswers.clear();
               _noAnswers.clear();
+              _recentPoints
+                ..clear()
+                ..addAll(const [
+                  PointsEvent(label: 'Saved under daily limit', points: 120, icon: Icons.savings_outlined),
+                  PointsEvent(label: 'Quest completed', points: 80, icon: Icons.emoji_events_rounded),
+                  PointsEvent(label: 'Used a smart nudge', points: 35, icon: Icons.auto_awesome_rounded),
+                ]);
               _categoryPercents = <String, double>{
                 'Food & drinks': 0.35,
                 'Transport': 0.15,
@@ -1703,6 +1906,8 @@ class HomePage extends StatelessWidget {
     super.key,
     required this.plan,
     required this.goal,
+    required this.totalPoints,
+    required this.recentPoints,
     required this.showAlert,
     required this.onDismissAlert,
     required this.onNavigate,
@@ -1710,6 +1915,8 @@ class HomePage extends StatelessWidget {
 
   final BudgetPlan plan;
   final double goal;
+  final int totalPoints;
+  final List<PointsEvent> recentPoints;
   final bool showAlert;
   final VoidCallback onDismissAlert;
   final ValueChanged<int> onNavigate;
@@ -1727,15 +1934,10 @@ class HomePage extends StatelessWidget {
             : (savingsWin || challengeCompleted)
                 ? _AvatarMood.happy
                 : _AvatarMood.neutral;
-    final level = 4;
-    final totalPoints = 1180;
-    final nextLevelPoints = 1400;
-    final levelProgress = (totalPoints / nextLevelPoints).clamp(0.0, 1.0);
-    final recentPoints = [
-      (Icons.savings_outlined, '+120', 'Saved under daily limit'),
-      (Icons.emoji_events_rounded, '+80', 'Quest completed'),
-      (Icons.auto_awesome_rounded, '+35', 'Used a smart nudge'),
-    ];
+    final level = 1 + (totalPoints ~/ 300);
+    final pointsIntoLevel = totalPoints % 300;
+    final nextLevelPoints = 300;
+    final levelProgress = (pointsIntoLevel / nextLevelPoints).clamp(0.0, 1.0);
     final insights = [
       (
         Icons.wallet_outlined,
@@ -1903,7 +2105,7 @@ class HomePage extends StatelessWidget {
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: _progressStat(context, 'Next level', '${nextLevelPoints - totalPoints} pts left'),
+                          child: _progressStat(context, 'Next level', '${nextLevelPoints - pointsIntoLevel} pts left'),
                         ),
                       ],
                     ),
@@ -1944,14 +2146,14 @@ class HomePage extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               alignment: Alignment.center,
-                              child: Icon(item.$1, size: 18, color: context.colors.primary),
+                              child: Icon(item.icon, size: 18, color: context.colors.primary),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: Text(item.$3, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                              child: Text(item.label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
                             ),
                             Text(
-                              item.$2,
+                              '+${item.points}',
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.success),
                             ),
                           ],
@@ -2148,16 +2350,160 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class RadarPage extends StatelessWidget {
-  const RadarPage({super.key});
+class RadarPage extends StatefulWidget {
+  const RadarPage({
+    super.key,
+    required this.deals,
+    required this.userLocation,
+    required this.onLocationChanged,
+    required this.onPostDeal,
+    required this.onUpvoteDeal,
+    required this.onVerifyDeal,
+  });
+
+  final List<CommunityDeal> deals;
+  final LatLng userLocation;
+  final ValueChanged<LatLng> onLocationChanged;
+  final ValueChanged<CommunityDeal> onPostDeal;
+  final ValueChanged<String> onUpvoteDeal;
+  final ValueChanged<String> onVerifyDeal;
+
+  @override
+  State<RadarPage> createState() => _RadarPageState();
+}
+
+class _RadarPageState extends State<RadarPage> {
+  GoogleMapController? _mapController;
+  CommunityDeal? _selectedDeal;
+  bool _loadingLocation = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDeal = widget.deals.isNotEmpty ? _withDistance(widget.deals.first) : null;
+    _detectLocation();
+  }
+
+  @override
+  void didUpdateWidget(covariant RadarPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_selectedDeal != null) {
+      final updated = widget.deals.where((deal) => deal.id == _selectedDeal!.id);
+      if (updated.isNotEmpty) {
+        _selectedDeal = _withDistance(updated.first);
+      }
+    } else if (widget.deals.isNotEmpty) {
+      _selectedDeal = _withDistance(widget.deals.first);
+    }
+  }
+
+  Future<void> _detectLocation() async {
+    setState(() => _loadingLocation = true);
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        return;
+      }
+      final position = await Geolocator.getCurrentPosition();
+      final current = LatLng(position.latitude, position.longitude);
+      if (!mounted) return;
+      widget.onLocationChanged(current);
+      _mapController?.animateCamera(CameraUpdate.newLatLng(current));
+      setState(() {
+        if (_selectedDeal != null) {
+          _selectedDeal = _withDistance(_selectedDeal!);
+        }
+      });
+    } catch (_) {
+      // Keep the default center when location is unavailable.
+    } finally {
+      if (mounted) {
+        setState(() => _loadingLocation = false);
+      }
+    }
+  }
+
+  CommunityDeal _withDistance(CommunityDeal deal) {
+    final meters = Geolocator.distanceBetween(
+      widget.userLocation.latitude,
+      widget.userLocation.longitude,
+      deal.latitude,
+      deal.longitude,
+    );
+    return deal.copyWith(distanceKm: meters / 1000);
+  }
+
+  Set<Marker> _markers(BuildContext context) {
+    return {
+      Marker(
+        markerId: const MarkerId('user'),
+        position: widget.userLocation,
+        infoWindow: const InfoWindow(title: 'You are here'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+      ),
+      ...widget.deals.map((deal) {
+        final enhanced = _withDistance(deal);
+        return Marker(
+          markerId: MarkerId(deal.id),
+          position: LatLng(deal.latitude, deal.longitude),
+          infoWindow: InfoWindow(
+            title: deal.title,
+            snippet: '${deal.storeName} • Save RM ${formatRm(deal.estimatedSavings)}',
+          ),
+          onTap: () {
+            setState(() => _selectedDeal = enhanced);
+          },
+        );
+      }),
+    };
+  }
+
+  Set<Polyline> _polylines() {
+    if (_selectedDeal == null) return {};
+    return {
+      Polyline(
+        polylineId: const PolylineId('selected-route'),
+        width: 5,
+        color: const Color(0xFF41B89B),
+        points: [
+          widget.userLocation,
+          LatLng(_selectedDeal!.latitude, _selectedDeal!.longitude),
+        ],
+      ),
+    };
+  }
+
+  Future<void> _openPostDealSheet() async {
+    final newDeal = await showModalBottomSheet<CommunityDeal>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => PostDealSheet(userLocation: widget.userLocation),
+    );
+
+    if (!mounted || newDeal == null) return;
+    widget.onPostDeal(newDeal);
+    setState(() => _selectedDeal = _withDistance(newDeal));
+    _mapController?.animateCamera(CameraUpdate.newLatLng(LatLng(newDeal.latitude, newDeal.longitude)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Deal posted! You earned points for helping others save.'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF41B89B),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final deals = [
-      (Icons.restaurant_rounded, 'RM5 Nasi Lemak', 'Kak Yan Stall | 200m', 42, 'RM7'),
-      (Icons.coffee_rounded, '20% off Coffee', 'ZUS Coffee | 450m', 28, 'RM3'),
-      (Icons.shopping_bag_rounded, 'Buy 1 Free 1 Bread', 'FamilyMart | 600m', 19, 'RM4'),
-    ];
+    final sortedDeals = widget.deals.map(_withDistance).toList()
+      ..sort((a, b) => (a.distanceKm ?? 999).compareTo(b.distanceKm ?? 999));
+    final selected = _selectedDeal != null ? _withDistance(_selectedDeal!) : (sortedDeals.isNotEmpty ? sortedDeals.first : null);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
@@ -2166,188 +2512,114 @@ class RadarPage extends StatelessWidget {
         children: [
           const Text('Smart Radar', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text('Deals & savings near you', style: TextStyle(fontSize: 14, color: context.colors.mutedForeground)),
+          Text('Deals, routes, and community savings near you', style: TextStyle(fontSize: 14, color: context.colors.mutedForeground)),
           const SizedBox(height: 20),
           GradientCard(
             padding: const EdgeInsets.all(16),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('You saved this month', style: TextStyle(fontSize: 12, color: Colors.white)),
-                SizedBox(height: 4),
-                Text('RM 47.20', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: Colors.white)),
-                SizedBox(height: 4),
-                Text('via Smart Radar', style: TextStyle(fontSize: 12, color: Colors.white)),
+                const Text('You saved this month', style: TextStyle(fontSize: 12, color: Colors.white)),
+                const SizedBox(height: 4),
+                Text(
+                  'RM ${formatRm(widget.deals.fold<double>(0, (sum, deal) => sum + deal.estimatedSavings))}',
+                  style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _loadingLocation ? 'Detecting your location...' : 'Live nearby deals and estimated savings',
+                  style: const TextStyle(fontSize: 12, color: Colors.white),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 16),
           Container(
-            height: 176,
+            height: 260,
             decoration: BoxDecoration(
-              color: context.colors.muted,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Theme.of(context).dividerColor),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(24),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            context.colors.primary.withOpacity(0.55),
-                            Colors.transparent,
-                            context.colors.primaryGlow.withOpacity(0.5),
-                          ],
-                          stops: const [0, 0.45, 1],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 70,
-                    top: 70,
-                    child: _radialGlow(context.colors.accent.withOpacity(0.5), 110),
-                  ),
-                  Positioned(
-                    right: 36,
-                    bottom: 20,
-                    child: _radialGlow(context.colors.primaryGlow.withOpacity(0.5), 120),
-                  ),
-                  Positioned.fill(
-                    child: CustomPaint(painter: MapGridPainter()),
-                  ),
-                  Center(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: context.colors.primary.withOpacity(0.2),
-                          ),
-                        ),
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: context.colors.primary,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.14), blurRadius: 12, offset: const Offset(0, 6)),
-                            ],
-                          ),
-                          child: const Icon(Icons.location_on_rounded, color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ...[
-                    const Offset(0.2, 0.3),
-                    const Offset(0.7, 0.55),
-                    const Offset(0.4, 0.7),
-                  ].map((offset) {
-                    return Positioned(
-                      left: 176 * offset.dx,
-                      top: 176 * offset.dy,
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: context.colors.warning,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: context.colors.card, width: 2),
-                        ),
-                      ),
-                    );
-                  }),
-                ],
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(target: widget.userLocation, zoom: 14.2),
+                myLocationEnabled: true,
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
+                markers: _markers(context),
+                polylines: _polylines(),
+                onMapCreated: (controller) => _mapController = controller,
+                onTap: (_) => setState(() => _selectedDeal = null),
               ),
             ),
           ),
           const SizedBox(height: 16),
-          WhiteCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.route_rounded, size: 16, color: context.colors.primary),
-                    const SizedBox(width: 8),
-                    const Text('Cheapest grocery route', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ...[
-                  ('Mydin', 'Rice 5kg', 'RM18'),
-                  ('Tesco', 'Eggs 30pc', 'RM12'),
-                  ('Pasar Borong', 'Vegetables', 'RM9'),
-                ].asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final item = entry.value;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: context.colors.primary.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text('${index + 1}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.primary)),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item.$1, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                              Text(item.$2, style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
-                            ],
-                          ),
-                        ),
-                        Text(item.$3, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                      ],
-                    ),
-                  );
-                }),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: context.colors.success.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
+          if (selected != null)
+            WhiteCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text('Estimated savings', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.success)),
-                      const Spacer(),
-                      Text('RM 14.00', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: context.colors.success)),
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: context.colors.primary.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(Icons.route_rounded, color: context.colors.primary),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(selected.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                            Text(selected.storeName, style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 12),
-                const GradientButton(text: 'Use this route'),
-              ],
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(child: _progressStat(context, 'Distance', '${selected.distanceKm?.toStringAsFixed(2) ?? '--'} km')),
+                      const SizedBox(width: 10),
+                      Expanded(child: _progressStat(context, 'Estimated savings', 'RM ${formatRm(selected.estimatedSavings)}')),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(selected.description, style: TextStyle(fontSize: 12, height: 1.4, color: context.colors.mutedForeground)),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: context.colors.success.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        Text('Deal route ready', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.success)),
+                        const Spacer(),
+                        Text('Save ${selected.discountLabel.replaceFirst('Save ', '')}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: context.colors.success)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
           const SizedBox(height: 16),
           Row(
             children: [
               const Text('Community deals', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
               const Spacer(),
               FilledButton(
-                onPressed: () {},
+                onPressed: _openPostDealSheet,
                 style: FilledButton.styleFrom(
                   backgroundColor: context.colors.primary,
                   foregroundColor: Colors.white,
@@ -2360,58 +2632,93 @@ class RadarPage extends StatelessWidget {
                   children: [
                     Icon(Icons.add_rounded, size: 14),
                     SizedBox(width: 4),
-                    Text('Post', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    Text('Post Community Deal', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          ...deals.map((deal) {
+          const SizedBox(height: 10),
+          ...sortedDeals.map((deal) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: 10),
               child: WhiteCard(
                 padding: const EdgeInsets.all(12),
-                child: Row(
+                child: Column(
                   children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: context.colors.warning.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(deal.$1, size: 24, color: context.colors.accentForeground),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(deal.$2, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                          Text(deal.$3, style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          width: 52,
+                          height: 52,
                           decoration: BoxDecoration(
-                            color: context.colors.success.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(999),
+                            color: context.colors.warning.withOpacity(0.16),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Text('Save ${deal.$5}', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: context.colors.success)),
+                          clipBehavior: Clip.antiAlias,
+                          child: deal.imageBytes != null
+                              ? Image.memory(deal.imageBytes!, fit: BoxFit.cover)
+                              : Icon(Icons.storefront_rounded, size: 24, color: context.colors.accentForeground),
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(Icons.thumb_up_alt_outlined, size: 12, color: context.colors.mutedForeground),
-                            const SizedBox(width: 4),
-                            Text('${deal.$4}', style: TextStyle(fontSize: 11, color: context.colors.mutedForeground)),
-                          ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(deal.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 2),
+                              Text('${deal.storeName} • ${deal.category}', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${deal.distanceKm?.toStringAsFixed(2) ?? '--'} km away • expires ${deal.expiryDate.day}/${deal.expiryDate.month}',
+                                style: TextStyle(fontSize: 11, color: context.colors.mutedForeground),
+                              ),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() => _selectedDeal = deal);
+                            _mapController?.animateCamera(CameraUpdate.newLatLng(LatLng(deal.latitude, deal.longitude)));
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: context.colors.success.withOpacity(0.14),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              'Save RM ${formatRm(deal.estimatedSavings)}',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: context.colors.success),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => widget.onUpvoteDeal(deal.id),
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            icon: const Icon(Icons.thumb_up_alt_outlined, size: 16),
+                            label: Text('Upvote ${deal.upvotes}'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: FilledButton.tonalIcon(
+                            onPressed: () => widget.onVerifyDeal(deal.id),
+                            style: FilledButton.styleFrom(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            icon: const Icon(Icons.verified_rounded, size: 16),
+                            label: Text('Verify ${deal.verifications}'),
+                          ),
                         ),
                       ],
                     ),
@@ -2425,13 +2732,220 @@ class RadarPage extends StatelessWidget {
     );
   }
 
-  Widget _radialGlow(Color color, double size) {
+}
+
+class PostDealSheet extends StatefulWidget {
+  const PostDealSheet({super.key, required this.userLocation});
+
+  final LatLng userLocation;
+
+  @override
+  State<PostDealSheet> createState() => _PostDealSheetState();
+}
+
+class _PostDealSheetState extends State<PostDealSheet> {
+  final _titleController = TextEditingController();
+  final _storeController = TextEditingController();
+  final _categoryController = TextEditingController(text: 'Food & drinks');
+  final _originalPriceController = TextEditingController();
+  final _dealPriceController = TextEditingController();
+  final _locationController = TextEditingController(text: 'Use current location');
+  final _descriptionController = TextEditingController();
+  DateTime _expiryDate = DateTime.now().add(const Duration(days: 2));
+  Uint8List? _imageBytes;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _storeController.dispose();
+    _categoryController.dispose();
+    _originalPriceController.dispose();
+    _dealPriceController.dispose();
+    _locationController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (image == null) return;
+    final bytes = await image.readAsBytes();
+    if (!mounted) return;
+    setState(() => _imageBytes = bytes);
+  }
+
+  void _submit() {
+    final originalPrice = double.tryParse(_originalPriceController.text) ?? 0;
+    final dealPrice = double.tryParse(_dealPriceController.text) ?? 0;
+    if (_titleController.text.trim().isEmpty ||
+        _storeController.text.trim().isEmpty ||
+        _categoryController.text.trim().isEmpty ||
+        originalPrice <= 0 ||
+        dealPrice <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please complete the deal form before posting.')),
+      );
+      return;
+    }
+
+    final newDeal = CommunityDeal(
+      id: 'deal-${DateTime.now().millisecondsSinceEpoch}',
+      title: _titleController.text.trim(),
+      storeName: _storeController.text.trim(),
+      category: _categoryController.text.trim(),
+      description: _descriptionController.text.trim().isEmpty ? 'Community-submitted savings deal.' : _descriptionController.text.trim(),
+      expiryDate: _expiryDate,
+      latitude: widget.userLocation.latitude + 0.0025,
+      longitude: widget.userLocation.longitude + 0.0025,
+      originalPrice: originalPrice,
+      dealPrice: dealPrice,
+      discountLabel: 'Save RM ${formatRm(originalPrice - dealPrice)}',
+      upvotes: 1,
+      verifications: 0,
+      imageBytes: _imageBytes,
+      postedByUser: true,
+    );
+
+    Navigator.of(context).pop(newDeal);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: color, blurRadius: 48, spreadRadius: 8)],
+      decoration: const BoxDecoration(
+        color: Colors.transparent,
+      ),
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.92,
+        minChildSize: 0.65,
+        maxChildSize: 0.96,
+        builder: (context, controller) {
+          return Container(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: ListView(
+              controller: controller,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE3ECE6),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text('Post Community Deal', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 4),
+                Text('Help others save nearby and earn points for the community.', style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
+                const SizedBox(height: 16),
+                _dealField(controller: _titleController, label: 'Deal title'),
+                const SizedBox(height: 10),
+                _dealField(controller: _storeController, label: 'Store name'),
+                const SizedBox(height: 10),
+                _dealField(controller: _categoryController, label: 'Category'),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(child: _dealField(controller: _originalPriceController, label: 'Original price')),
+                    const SizedBox(width: 10),
+                    Expanded(child: _dealField(controller: _dealPriceController, label: 'Price / discount')),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                _dealField(controller: _locationController, label: 'Location'),
+                const SizedBox(height: 10),
+                _dealField(controller: _descriptionController, label: 'Description', maxLines: 3),
+                const SizedBox(height: 10),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 60)),
+                      initialDate: _expiryDate,
+                    );
+                    if (picked != null) {
+                      setState(() => _expiryDate = picked);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE3ECE6)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.event_rounded, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text('Expiry date: ${_expiryDate.day}/${_expiryDate.month}/${_expiryDate.year}')),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: _pickImage,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  icon: const Icon(Icons.image_outlined),
+                  label: Text(_imageBytes == null ? 'Upload image' : 'Image selected'),
+                ),
+                if (_imageBytes != null) ...[
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.memory(_imageBytes!, height: 140, fit: BoxFit.cover),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _submit,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF41B89B),
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Text('Submit deal'),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _dealField({
+    required TextEditingController controller,
+    required String label,
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFE3ECE6)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFE3ECE6)),
+        ),
       ),
     );
   }
@@ -2904,12 +3418,14 @@ class ProfilePage extends StatelessWidget {
     required this.budget,
     required this.goal,
     required this.plan,
+    required this.totalPoints,
     required this.onSignOut,
   });
 
   final double budget;
   final double goal;
   final BudgetPlan plan;
+  final int totalPoints;
   final VoidCallback onSignOut;
 
   @override
@@ -2951,14 +3467,14 @@ class ProfilePage extends StatelessWidget {
                       height: 96,
                     ),
                     const SizedBox(width: 16),
-                    const Column(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Aiman', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white)),
-                        SizedBox(height: 4),
-                        Text('Level 4 | Saver', style: TextStyle(fontSize: 12, color: Colors.white)),
-                        SizedBox(height: 8),
-                        _PointsChip(),
+                        const Text('Aiman', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white)),
+                        const SizedBox(height: 4),
+                        const Text('Level 4 | Saver', style: TextStyle(fontSize: 12, color: Colors.white)),
+                        const SizedBox(height: 8),
+                        _PointsChip(totalPoints: totalPoints),
                       ],
                     ),
                   ],
@@ -3115,7 +3631,9 @@ class ProfilePage extends StatelessWidget {
 }
 
 class _PointsChip extends StatelessWidget {
-  const _PointsChip();
+  const _PointsChip({required this.totalPoints});
+
+  final int totalPoints;
 
   @override
   Widget build(BuildContext context) {
@@ -3125,12 +3643,12 @@ class _PointsChip extends StatelessWidget {
         color: Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 12),
-          SizedBox(width: 4),
-          Text('1,180 pts', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+          const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 12),
+          const SizedBox(width: 4),
+          Text('$totalPoints pts', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
         ],
       ),
     );
