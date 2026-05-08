@@ -21,7 +21,6 @@ async function getTransactionsByUser(userId, limit = 20) {
   const snapshot = await db
     .collection('transactions')
     .where('userId', '==', userId)
-    .orderBy('timestamp', 'desc')
     .limit(limit)
     .get();
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -38,18 +37,22 @@ async function updateUserProfile(userId, updates) {
 
 async function updateResilienceScore(userId, delta) {
   const ref = db.collection('users').doc(userId);
-  await ref.update({
-    resilienceScore: admin.firestore.FieldValue.increment(delta),
+  const doc = await ref.get();
+  const current = doc.exists ? (doc.data().resilienceScore || 50) : 50;
+  await ref.set({
+    resilienceScore: current + delta,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+  }, { merge: true });
 }
 
 async function updateSavingsPocket(userId, amount) {
   const ref = db.collection('users').doc(userId);
-  await ref.update({
-    savingsPocket: admin.firestore.FieldValue.increment(amount),
+  const doc = await ref.get();
+  const current = doc.exists ? (doc.data().savingsPocket || 0) : 0;
+  await ref.set({
+    savingsPocket: current + amount,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+  }, { merge: true });
 }
 
 async function logNudge(userId, nudgeData) {
