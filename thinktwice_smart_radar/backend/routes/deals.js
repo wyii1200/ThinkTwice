@@ -17,6 +17,7 @@ router.get("/", async (req, res) => {
     let deals = snapshot.docs
       .map((doc) => doc.data())
       .filter((deal) => deal.hidden !== true)
+      .filter((deal) => !deal.expiresAt || new Date(deal.expiresAt) > new Date())
       .filter((deal) => !category || deal.category === category)
       .filter((deal) => verified !== "true" || deal.verified === true)
       .sort((a, b) => (b.trustScore || 0) - (a.trustScore || 0))
@@ -82,7 +83,9 @@ router.post("/", async (req, res) => {
     }
 
     const dealRef = db.collection("deals").doc();
-    const now = new Date().toISOString();
+    const now = new Date();
+    const expiresAt = new Date(now);
+    expiresAt.setDate(expiresAt.getDate() + 7); // deals expire after 7 days
 
     const dealData = {
       dealId: dealRef.id,
@@ -99,8 +102,8 @@ router.post("/", async (req, res) => {
       downvotes: 0,
       verified: false,
       hidden: false,
-      createdAt: now,
-      expiresAt: null,
+      createdAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
     };
 
     await dealRef.set(dealData);
@@ -118,7 +121,7 @@ router.post("/:id/upvote", async (req, res) => {
     const { userId } = req.body;
     if (!userId) return res.status(400).json({ success: false, error: "userId required" });
 
-    const result = await upvoteDeal(req.params.id);
+    const result = await upvoteDeal(req.params.id, userId);
 
     // If deal just became verified, reward the contributor
     if (result.verified) {
@@ -128,7 +131,8 @@ router.post("/:id/upvote", async (req, res) => {
 
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    const status = err.message.includes("Already") || err.message.includes("Switch") ? 409 : 500;
+    res.status(status).json({ success: false, error: err.message });
   }
 });
 
@@ -139,7 +143,7 @@ router.post("/:id/downvote", async (req, res) => {
     const { userId } = req.body;
     if (!userId) return res.status(400).json({ success: false, error: "userId required" });
 
-    const result = await downvoteDeal(req.params.id);
+    const result = await downvoteDeal(req.params.id, userId);
     res.json({ success: true, ...result });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

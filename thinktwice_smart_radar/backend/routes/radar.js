@@ -7,8 +7,6 @@ const { calculateNetSavings, aggregateMonthlySavings, recordSavingsProof } = req
 // ─── GET /radar/nearby ────────────────────────────────────────────────────────
 // Returns nearby stores from Google Places + community deals in same area
 // Query params: lat, lng, category, radius (meters, default 2000)
-const { savePlacesToFirestore } = require("../utils/savePlaces");
-
 router.get("/nearby", async (req, res) => {
   try {
     const { lat, lng, category = "grocery", radius = 2000 } = req.query;
@@ -21,9 +19,6 @@ router.get("/nearby", async (req, res) => {
       getNearbyPlaces(parseFloat(lat), parseFloat(lng), category, parseInt(radius)),
       db.collection("deals").limit(100).get(),
     ]);
-
-    // Save Google Places results into Firestore
-    await savePlacesToFirestore(places, category);
 
     const communityDeals = dealsSnapshot.docs
       .map((d) => d.data())
@@ -70,10 +65,11 @@ router.post("/route-optimize", async (req, res) => {
     const addresses = stops.map((s) => s.address || `${s.lat},${s.lng}`);
     const distanceMatrix = await getDistanceMatrix(parseFloat(originLat), parseFloat(originLng), addresses);
 
-    // Estimate savings: compare this route vs buying everything at single closest store
-    // Simple heuristic: multi-stop route saves ~RM2-5 per stop on average price difference
-    const estimatedSavingPerStop = 3; // RM — placeholder, refine with real pricing data
-    const grossSaving = stops.length * estimatedSavingPerStop;
+    // Estimate savings based on grocery list size and number of stops
+    // Logic: more items = more saving potential from price comparison across stores
+    const itemCount = (groceryList || []).length || stops.reduce((n, s) => n + (s.items?.length || 1), 0);
+    const savingPerItem = 1.5; // RM per item saved by shopping at cheapest store
+    const grossSaving = Math.max(stops.length * 2, itemCount * savingPerItem);
     const savings = calculateNetSavings(grossSaving, routeResult.totalDistanceKm);
 
     // Build ordered stops based on Directions API optimization
