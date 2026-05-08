@@ -12,6 +12,7 @@ import 'src/screens/home_page.dart';
 import 'src/screens/insights_page.dart';
 import 'src/screens/profile_screen.dart';
 import 'src/screens/radar_screen.dart';
+import 'src/widgets/shared.dart';
 
 void main() {
   runApp(const ThinkTwiceApp());
@@ -146,6 +147,13 @@ class _AppRootState extends State<AppRoot> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Reward claimed! You earned +${quest.rewardPoints} pts.')),
     );
+    showCelebrationDialog(
+      context,
+      title: 'Reward Claimed',
+      body: 'Your Wallet Guardian just banked +${quest.rewardPoints} pts. Keep the streak glowing.',
+      icon: Icons.emoji_events_rounded,
+      color: context.colors.accentForeground,
+    );
   }
 
   void _redeemRewardShopItem(BuildContext context, String itemId) {
@@ -214,6 +222,13 @@ class _AppRootState extends State<AppRoot> {
     _awardPoints('Protected your streak with a quick save', 40, Icons.savings_rounded);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('RM8 moved to savings. Your dashboard has been updated.')),
+    );
+    showCelebrationDialog(
+      context,
+      title: 'Nice Save',
+      body: 'RM8 is tucked away and your streak just got stronger.',
+      icon: Icons.savings_rounded,
+      color: context.colors.success,
     );
   }
 
@@ -380,6 +395,11 @@ class _AppRootState extends State<AppRoot> {
             currentStreak: _currentStreak,
             recentPoints: _recentPoints,
             transactions: _transactions,
+            breed: _breed,
+            color: _color,
+            accessory: _accessory,
+            outfit: _outfit,
+            cosmetic: _cosmetic,
             showAlert: _showHomeAlert,
             onSaveAlert: () => _saveFromIntervention(context),
             onOpenAlternatives: _openRadarFromIntervention,
@@ -507,7 +527,25 @@ class MainShell extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(bottom: 92),
-                  child: child,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 360),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      final slide = Tween<Offset>(
+                        begin: const Offset(0.04, 0),
+                        end: Offset.zero,
+                      ).animate(animation);
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(position: slide, child: child),
+                      );
+                    },
+                    child: KeyedSubtree(
+                      key: ValueKey(tabIndex),
+                      child: child,
+                    ),
+                  ),
                 ),
                 Positioned(
                   left: 0,

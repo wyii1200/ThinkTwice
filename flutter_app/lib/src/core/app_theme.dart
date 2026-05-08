@@ -1,17 +1,17 @@
 ﻿import 'package:flutter/material.dart';
 ThemeData buildTheme() {
-  const background = Color(0xFFF5FBF7);
-  const foreground = Color(0xFF193C34);
+  const background = Color(0xFFFFFBF3);
+  const foreground = Color(0xFF21423A);
   const card = Colors.white;
-  const muted = Color(0xFFE9F2ED);
-  const mutedForeground = Color(0xFF6B847E);
-  const primary = Color(0xFF41B89B);
-  const primaryGlow = Color(0xFF86D8BF);
-  const accent = Color(0xFFEACB6A);
-  const accentForeground = Color(0xFF66511D);
-  const success = Color(0xFF54C18C);
-  const warning = Color(0xFFE2B14C);
-  const destructive = Color(0xFFE1604F);
+  const muted = Color(0xFFF4EFE3);
+  const mutedForeground = Color(0xFF7D8378);
+  const primary = Color(0xFF48B39B);
+  const primaryGlow = Color(0xFFA7E6D3);
+  const accent = Color(0xFFF6D27A);
+  const accentForeground = Color(0xFF6D4E1F);
+  const success = Color(0xFF5DBB83);
+  const warning = Color(0xFFE9A552);
+  const destructive = Color(0xFFE16E63);
 
   final scheme = ColorScheme.fromSeed(
     seedColor: primary,
@@ -38,10 +38,42 @@ ThemeData buildTheme() {
     textTheme: Typography.blackCupertino.apply(
       bodyColor: foreground,
       displayColor: foreground,
+    ).copyWith(
+      headlineLarge: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, letterSpacing: -0.9),
+      headlineMedium: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.7),
+      titleLarge: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+      titleMedium: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      bodyLarge: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, height: 1.4),
+      bodyMedium: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, height: 1.4),
     ),
     dividerColor: const Color(0xFFE3ECE6),
     cardColor: card,
     appBarTheme: const AppBarTheme(backgroundColor: Colors.transparent, elevation: 0),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: foreground,
+      contentTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        textStyle: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        textStyle: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
+    ),
     extensions: const <ThemeExtension<dynamic>>[
       AppColors(
         background: background,
@@ -56,6 +88,11 @@ ThemeData buildTheme() {
         success: success,
         warning: warning,
         destructive: destructive,
+        guardianGradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFF8E6), Color(0xFFFFE6D7), Color(0xFFDDF7EE)],
+        ),
       ),
     ],
   );
@@ -76,6 +113,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.success,
     required this.warning,
     required this.destructive,
+    required this.guardianGradient,
   });
 
   final Color background;
@@ -90,25 +128,38 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color success;
   final Color warning;
   final Color destructive;
+  final LinearGradient guardianGradient;
 
   LinearGradient get primaryGradient => LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [primary, primaryGlow],
+        colors: [const Color(0xFF3AA98F), primaryGlow, const Color(0xFFF8EBD2)],
+      );
+
+  LinearGradient get softMintGradient => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFFFFCF4), Color(0xFFE9F8F0)],
       );
 
   LinearGradient get warmGradient => const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFFEACB6A), Color(0xFFE49A57)],
+        colors: [Color(0xFFF7D98A), Color(0xFFF1A879)],
       );
 
   List<BoxShadow> get softShadow => [
         BoxShadow(
-          color: primary.withOpacity(0.15),
-          blurRadius: 20,
-          spreadRadius: -4,
-          offset: const Offset(0, 4),
+          color: primary.withOpacity(0.12),
+          blurRadius: 24,
+          spreadRadius: -8,
+          offset: const Offset(0, 10),
+        ),
+        BoxShadow(
+          color: Colors.white.withOpacity(0.7),
+          blurRadius: 16,
+          spreadRadius: -10,
+          offset: const Offset(0, -4),
         ),
       ];
 
@@ -126,6 +177,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? success,
     Color? warning,
     Color? destructive,
+    LinearGradient? guardianGradient,
   }) {
     return AppColors(
       background: background ?? this.background,
@@ -140,6 +192,7 @@ class AppColors extends ThemeExtension<AppColors> {
       success: success ?? this.success,
       warning: warning ?? this.warning,
       destructive: destructive ?? this.destructive,
+      guardianGradient: guardianGradient ?? this.guardianGradient,
     );
   }
 
@@ -159,6 +212,7 @@ class AppColors extends ThemeExtension<AppColors> {
       success: Color.lerp(success, other.success, t)!,
       warning: Color.lerp(warning, other.warning, t)!,
       destructive: Color.lerp(destructive, other.destructive, t)!,
+      guardianGradient: LinearGradient.lerp(guardianGradient, other.guardianGradient, t)!,
     );
   }
 }

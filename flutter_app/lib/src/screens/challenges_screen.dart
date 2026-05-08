@@ -1,8 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
 import '../core/models.dart';
-import '../core/seed_data.dart';
 import '../widgets/shared.dart';
+
 class ChallengesPage extends StatefulWidget {
   const ChallengesPage({
     super.key,
@@ -91,6 +91,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
               accessory: widget.accessory,
               outfit: widget.outfit,
               cosmetic: widget.cosmetic,
+              mood: currentSaveStreak == '7 days' ? AvatarMood.excited : AvatarMood.proud,
               size: 120,
             ),
           ),
@@ -260,15 +261,29 @@ class _ChallengesPageState extends State<ChallengesPage> {
                   const SizedBox(height: 6),
                   Text('Redeem points for badges, avatar upgrades, and unlockables.', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
                   const SizedBox(height: 14),
-                  ...widget.rewardShopItems.map((item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _rewardShopRow(
-                          context,
-                          item,
-                          totalPoints: widget.totalPoints,
-                          onRedeem: () => widget.onRedeemItem(item.id),
-                        ),
-                      )),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: widget.rewardShopItems.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.72,
+                    ),
+                    itemBuilder: (context, index) {
+                      final item = widget.rewardShopItems[index];
+                      return _rewardShopCard(
+                        context,
+                        item,
+                        totalPoints: widget.totalPoints,
+                        isEquipped: (item.category == 'accessory' && item.value == widget.accessory) ||
+                            (item.category == 'outfit' && item.value == widget.outfit) ||
+                            (item.category == 'cosmetic' && item.value == widget.cosmetic),
+                        onRedeem: () => widget.onRedeemItem(item.id),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -330,6 +345,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
                   accessory: widget.accessory,
                   outfit: widget.outfit,
                   cosmetic: widget.cosmetic,
+                  mood: AvatarMood.proud,
                   size: 92,
                 ),
                 const SizedBox(width: 14),
@@ -443,64 +459,101 @@ class _ChallengesPageState extends State<ChallengesPage> {
     );
   }
 
-  Widget _rewardShopRow(
+  Widget _rewardShopCard(
     BuildContext context,
     RewardShopItem item, {
     required int totalPoints,
+    required bool isEquipped,
     required VoidCallback onRedeem,
   }) {
     final canAfford = totalPoints >= item.price;
-    final unlocked = item.owned;
+    final owned = item.owned;
+    final palette = rarityPalette(context, item.rarity);
 
-    return WhiteCard(
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: context.colors.accent.withOpacity(0.22),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            alignment: Alignment.center,
-            child: Icon(item.icon, size: 22, color: context.colors.accentForeground),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.98, end: 1),
+      duration: const Duration(milliseconds: 220),
+      builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+      child: WhiteCard(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Text(item.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 2),
-                Text(
-                  '${formatShopCategory(item.category)} • ${unlocked ? 'Unlocked' : 'Locked'}',
-                  style: TextStyle(fontSize: 11, color: context.colors.mutedForeground),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(unlocked ? 'Owned' : '${item.price} pts', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: unlocked ? context.colors.success : context.colors.primary)),
-              const SizedBox(height: 6),
-              if (!unlocked)
-                SizedBox(
-                  height: 32,
-                  child: FilledButton.tonal(
-                    onPressed: onRedeem,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: canAfford ? context.colors.primary.withOpacity(0.12) : context.colors.muted,
-                      foregroundColor: canAfford ? context.colors.primary : context.colors.mutedForeground,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Redeem', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: palette.$1.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    formatRarityLabel(item.rarity),
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: palette.$2),
                   ),
                 ),
-            ],
-          ),
-        ],
+                const Spacer(),
+                if (isEquipped)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: context.colors.success.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      'Equipped',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: context.colors.success),
+                    ),
+                  )
+                else if (owned)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: context.colors.primary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      'Owned',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: context.colors.primary),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Center(
+              child: RewardItemPreview(
+                item: item,
+                equipped: isEquipped,
+                locked: !owned,
+                size: 104,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(item.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 3),
+            Text(
+              formatShopCategory(item.category),
+              style: TextStyle(fontSize: 11, color: context.colors.mutedForeground),
+            ),
+            const Spacer(),
+            Text(
+              owned ? (isEquipped ? 'Living on your Guardian' : 'Unlocked collectible') : '${item.price} pts',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: owned ? context.colors.success : context.colors.primary),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonal(
+                onPressed: owned ? null : (canAfford ? onRedeem : null),
+                style: FilledButton.styleFrom(
+                  backgroundColor: owned ? context.colors.muted : palette.$1.withOpacity(canAfford ? 0.16 : 0.08),
+                  foregroundColor: owned ? context.colors.mutedForeground : palette.$2,
+                ),
+                child: Text(owned ? (isEquipped ? 'Equipped' : 'Owned') : (canAfford ? 'Unlock' : 'Locked')),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

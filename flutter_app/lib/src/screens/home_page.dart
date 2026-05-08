@@ -14,6 +14,11 @@ class HomePage extends StatelessWidget {
     required this.currentStreak,
     required this.recentPoints,
     required this.transactions,
+    required this.breed,
+    required this.color,
+    required this.accessory,
+    required this.outfit,
+    required this.cosmetic,
     required this.showAlert,
     required this.onSaveAlert,
     required this.onOpenAlternatives,
@@ -29,6 +34,11 @@ class HomePage extends StatelessWidget {
   final int currentStreak;
   final List<PointsEvent> recentPoints;
   final List<TransactionRecord> transactions;
+  final String breed;
+  final String color;
+  final String accessory;
+  final String outfit;
+  final String cosmetic;
   final bool showAlert;
   final VoidCallback onSaveAlert;
   final VoidCallback onOpenAlternatives;
@@ -88,23 +98,40 @@ class HomePage extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Good evening,', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
+                      Text('Good evening,', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.mutedForeground)),
                       const SizedBox(height: 2),
-                      const Text('Aiman', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+                      const Text('Aiman', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
                     ],
                   ),
                   const Spacer(),
-                  Image.asset(
-                    'assets/images/thinktwice-logo.png',
-                    width: 44,
-                    height: 44,
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.96, end: 1.02),
+                    duration: const Duration(milliseconds: 1800),
+                    builder: (context, value, child) => Transform.scale(scale: value, child: child),
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        gradient: context.colors.softMintGradient,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: context.colors.softShadow,
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      child: Image.asset(
+                        'assets/images/thinktwice-logo.png',
+                        width: 44,
+                        height: 44,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              GradientCard(
-                padding: const EdgeInsets.all(20),
-                child: Stack(
+              StaggeredReveal(
+                index: 0,
+                child: GradientCard(
+                  padding: const EdgeInsets.all(20),
+                  child: Stack(
                   children: [
                     Positioned(
                       right: -32,
@@ -129,7 +156,12 @@ class HomePage extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        const Text('RM 1,284.50', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: Colors.white)),
+                        const AnimatedNumberText(
+                          value: 1284.50,
+                          prefix: 'RM ',
+                          decimals: 2,
+                          style: TextStyle(fontSize: 35, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.8),
+                        ),
                         const SizedBox(height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -142,13 +174,26 @@ class HomePage extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(999),
-                          child: LinearProgressIndicator(
-                            value: goalProgress,
-                            minHeight: 8,
-                            backgroundColor: Colors.white24,
-                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                        AnimatedFillBar(
+                          value: goalProgress,
+                          minHeight: 10,
+                          backgroundColor: Colors.white24,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.14),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 14),
+                              SizedBox(width: 6),
+                              Text('Your savings pocket is glowing', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -194,42 +239,116 @@ class HomePage extends StatelessWidget {
                       ],
                     ),
                   ],
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              WhiteCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
+              StaggeredReveal(
+                index: 1,
+                child: WhiteCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        avatarMoodBadge(context, emotion),
-                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Avatar mood', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                              Text('Wallet Guardian', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.accentForeground)),
+                              const SizedBox(height: 4),
+                              const Text('Your premium money companion is watching your vibe.', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                              const SizedBox(height: 6),
                               Text(
                                 moodLabel(emotion),
-                                style: TextStyle(fontSize: 11, color: context.colors.mutedForeground),
+                                style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 12),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: context.colors.primary.withOpacity(0.12),
+                            gradient: context.colors.guardianGradient,
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
                             'Level $level',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.primary),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: context.colors.primary),
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: context.colors.guardianGradient,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Row(
+                        children: [
+                          avatarPreview(
+                            context,
+                            breed: breed,
+                            color: color,
+                            accessory: accessory,
+                            outfit: outfit,
+                            cosmetic: leveledUp ? 'sparkle' : cosmetic,
+                            mood: emotion,
+                            size: 120,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.72),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.auto_awesome_rounded, size: 14, color: context.colors.accentForeground),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        leveledUp ? 'Rare mood drop' : 'Idle companion loop',
+                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: context.colors.accentForeground),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  leveledUp
+                                      ? 'It is sparkling because your saving habits just leveled up.'
+                                      : overspendingRisk
+                                          ? 'It is giving you a soft warning before the streak breaks.'
+                                          : 'It is cozy, alert, and ready to celebrate your next good call.',
+                                  style: TextStyle(fontSize: 12, height: 1.45, color: context.colors.foreground),
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    _guardianChip(context, Icons.favorite_rounded, savingsWin ? 'Comforted' : 'Observing'),
+                                    _guardianChip(context, Icons.inventory_2_rounded, '${nextLevelPoints - pointsIntoLevel} pts to next cosmetic'),
+                                    _guardianChip(context, Icons.local_fire_department_rounded, streakLabel),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -255,13 +374,29 @@ class HomePage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        value: levelProgress,
-                        minHeight: 8,
-                        backgroundColor: context.colors.muted,
-                        valueColor: AlwaysStoppedAnimation<Color>(context.colors.primary),
+                    AnimatedFillBar(
+                      value: levelProgress,
+                      minHeight: 10,
+                      color: context.colors.primary,
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: context.colors.success.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(leveledUp ? Icons.celebration_rounded : Icons.bolt_rounded, size: 16, color: context.colors.success),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              leveledUp ? 'Wallet Guardian is proud. You just hit a stronger resilience tier.' : 'A couple more smart saves and you will unlock your next milestone.',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.foreground),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -295,34 +430,43 @@ class HomePage extends StatelessWidget {
                       );
                     }),
                   ],
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(child: QuickActionCard(icon: Icons.savings_outlined, label: 'Save Now', color: context.colors.primary, onTap: onSaveAlert)),
-                  const SizedBox(width: 10),
-                  Expanded(child: QuickActionCard(icon: Icons.map_rounded, label: 'Radar', color: context.colors.accent, onTap: () => onNavigate(1))),
-                  const SizedBox(width: 10),
-                  Expanded(child: QuickActionCard(icon: Icons.emoji_events_rounded, label: 'Challenges', color: context.colors.warning, onTap: () => onNavigate(2))),
-                ],
+              StaggeredReveal(
+                index: 2,
+                child: Row(
+                  children: [
+                    Expanded(child: QuickActionCard(icon: Icons.savings_outlined, label: 'Save Now', color: context.colors.primary, onTap: onSaveAlert)),
+                    const SizedBox(width: 10),
+                    Expanded(child: QuickActionCard(icon: Icons.map_rounded, label: 'Radar', color: context.colors.accent, onTap: () => onNavigate(1))),
+                    const SizedBox(width: 10),
+                    Expanded(child: QuickActionCard(icon: Icons.emoji_events_rounded, label: 'Challenges', color: context.colors.warning, onTap: () => onNavigate(2))),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
               sectionHeader(context, 'AI Insights', action: 'See all', onTap: () => onNavigate(3)),
               const SizedBox(height: 8),
-              ...insights.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: InsightCard(
-                      icon: item.$1,
-                      tone: item.$2,
-                      title: item.$3,
-                      body: item.$4,
+              ...insights.asMap().entries.map((entry) => StaggeredReveal(
+                    index: 3 + entry.key,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: InsightCard(
+                        icon: entry.value.$1,
+                        tone: entry.value.$2,
+                        title: entry.value.$3,
+                        body: entry.value.$4,
+                      ),
                     ),
                   )),
               const SizedBox(height: 12),
-              WhiteCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
+              StaggeredReveal(
+                index: 6,
+                child: WhiteCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Progress after action', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
@@ -336,13 +480,37 @@ class HomePage extends StatelessWidget {
                         Expanded(child: progressStat(context, 'Score gain', '+12')),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: context.colors.warmGradient,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.celebration_rounded, color: Colors.white, size: 18),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Every good save nudges your future self forward.',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              WhiteCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
+              StaggeredReveal(
+                index: 7,
+                child: WhiteCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
                   children: [
                     Row(
                       children: [
@@ -428,12 +596,15 @@ class HomePage extends StatelessWidget {
                       );
                     }),
                   ],
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              WhiteCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
+              StaggeredReveal(
+                index: 8,
+                child: WhiteCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
                   children: [
                     sectionHeader(context, 'Squad leaderboard', action: 'View', onTap: () => onNavigate(2), compact: true),
                     const SizedBox(height: 8),
@@ -466,6 +637,7 @@ class HomePage extends StatelessWidget {
                       );
                     }),
                   ],
+                  ),
                 ),
               ),
             ],
@@ -487,8 +659,14 @@ class HomePage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.2),
+            Colors.white.withOpacity(0.08),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -501,7 +679,34 @@ class HomePage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.95, end: 1),
+            duration: const Duration(milliseconds: 1200),
+            curve: Curves.easeOutBack,
+            builder: (context, scale, child) => Transform.scale(scale: scale, alignment: Alignment.centerLeft, child: child),
+            child: Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _guardianChip(BuildContext context, IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.74),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: context.colors.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.foreground),
+          ),
         ],
       ),
     );

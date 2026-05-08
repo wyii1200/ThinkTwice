@@ -3,6 +3,7 @@ import '../core/app_theme.dart';
 import '../core/models.dart';
 import '../core/seed_data.dart';
 import '../widgets/shared.dart';
+
 class ProfilePage extends StatelessWidget {
   const ProfilePage({
     super.key,
@@ -65,6 +66,7 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     avatarPreview(
                       context,
@@ -73,18 +75,33 @@ class ProfilePage extends StatelessWidget {
                       accessory: accessory,
                       outfit: outfit,
                       cosmetic: cosmetic,
+                      mood: AvatarMood.proud,
                       size: 96,
                     ),
                     const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Aiman', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white)),
-                        const SizedBox(height: 4),
-                        Text('Level $level | Saver cat', style: const TextStyle(fontSize: 12, color: Colors.white)),
-                        const SizedBox(height: 8),
-                        PointsChip(totalPoints: totalPoints),
-                      ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Wallet Guardian', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white)),
+                          const SizedBox(height: 4),
+                          Text('Level $level collectible companion', style: const TextStyle(fontSize: 12, color: Colors.white)),
+                          const SizedBox(height: 8),
+                          PointsChip(totalPoints: totalPoints),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.14),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Text(
+                              'Cozy fintech familiar with $outfit styling, ${formatAccessoryLabel(accessory).toLowerCase()} flair, and ${formatCosmeticLabel(cosmetic).toLowerCase()}.',
+                              style: const TextStyle(fontSize: 12, height: 1.4, color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -303,6 +320,7 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                     accessory: _selectedAccessory,
                     outfit: _selectedOutfit,
                     cosmetic: _selectedCosmetic,
+                    mood: AvatarMood.excited,
                     size: 132,
                   ),
                 ),
@@ -324,15 +342,15 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                         (item) => Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
-                            color: context.colors.primary.withOpacity(0.08),
+                            color: rarityPalette(context, item.rarity).$1.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(item.icon, size: 16, color: context.colors.primary),
+                              Icon(item.icon, size: 16, color: rarityPalette(context, item.rarity).$2),
                               const SizedBox(width: 6),
-                              Text(item.name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.primary)),
+                              Text(item.name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: rarityPalette(context, item.rarity).$2)),
                             ],
                           ),
                         ),
@@ -342,30 +360,42 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                 const SizedBox(height: 18),
                 const Text('Accessories', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.74,
                   children: [
-                    _equipChip(context, label: 'None', selected: _selectedAccessory == 'none', onTap: () => setState(() => _selectedAccessory = 'none')),
+                    _noneStateCard(context, label: 'No accessory', selected: _selectedAccessory == 'none', onTap: () => setState(() => _selectedAccessory = 'none')),
                     ...avatarItems.where((item) => item.category == 'accessory').map((item) => _buildAvatarItemAction(context, item)),
                   ],
                 ),
                 const SizedBox(height: 18),
                 const Text('Outfits', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.74,
                   children: avatarItems.where((item) => item.category == 'outfit').map((item) => _buildAvatarItemAction(context, item)).toList(),
                 ),
                 const SizedBox(height: 18),
                 const Text('Cosmetics', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.74,
                   children: [
-                    _equipChip(context, label: 'None', selected: _selectedCosmetic == 'none', onTap: () => setState(() => _selectedCosmetic = 'none')),
+                    _noneStateCard(context, label: 'No cosmetic', selected: _selectedCosmetic == 'none', onTap: () => setState(() => _selectedCosmetic = 'none')),
                     ...avatarItems.where((item) => item.category == 'cosmetic').map((item) => _buildAvatarItemAction(context, item)),
                   ],
                 ),
@@ -412,6 +442,7 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
   Widget _buildAvatarItemAction(BuildContext context, RewardShopItem item) {
     final owned = _ownedItemIds.contains(item.id);
     final canAfford = _pointsLeft >= item.price;
+    final palette = rarityPalette(context, item.rarity);
     final selected = switch (item.category) {
       'accessory' => _selectedAccessory == item.value,
       'outfit' => _selectedOutfit == item.value,
@@ -420,25 +451,55 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
     };
 
     return SizedBox(
-      width: 118,
       child: WhiteCard(
         padding: const EdgeInsets.all(12),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: selected ? context.colors.primary.withOpacity(0.15) : context.colors.accent.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              alignment: Alignment.center,
-              child: Icon(item.icon, color: selected ? context.colors.primary : context.colors.accentForeground),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: palette.$1.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    formatRarityLabel(item.rarity),
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: palette.$2),
+                  ),
+                ),
+                const Spacer(),
+                if (selected)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: context.colors.success.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      'Equipped',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: context.colors.success),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 8),
-            Text(item.name, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            Center(
+              child: RewardItemPreview(
+                item: item,
+                equipped: selected,
+                locked: !owned,
+                size: 100,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(item.name, textAlign: TextAlign.left, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
-            Text(owned ? 'Owned' : '${item.price} pts', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: owned ? context.colors.success : context.colors.primary)),
+            Text(
+              owned ? (selected ? 'Living on your Guardian' : 'Owned collectible') : '${item.price} pts',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: owned ? context.colors.success : context.colors.primary),
+            ),
             const SizedBox(height: 8),
             if (owned)
               SizedBox(
@@ -488,11 +549,11 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                           })
                       : null,
                   style: FilledButton.styleFrom(
-                    backgroundColor: canAfford ? context.colors.accent.withOpacity(0.28) : context.colors.muted,
-                    foregroundColor: canAfford ? context.colors.accentForeground : context.colors.mutedForeground,
+                    backgroundColor: canAfford ? palette.$1.withOpacity(0.18) : context.colors.muted,
+                    foregroundColor: canAfford ? palette.$2 : context.colors.mutedForeground,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Buy', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                  child: Text(canAfford ? 'Unlock' : 'Locked', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                 ),
               ),
           ],
@@ -501,19 +562,33 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
     );
   }
 
-  Widget _equipChip(BuildContext context, {required String label, required bool selected, required VoidCallback onTap}) {
+  Widget _noneStateCard(BuildContext context, {required String label, required bool selected, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: selected ? context.colors.primary.withOpacity(0.12) : context.colors.muted.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(14),
-          border: selected ? Border.all(color: context.colors.primary) : null,
+          gradient: context.colors.softMintGradient,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: selected ? context.colors.primary : context.colors.muted),
         ),
-        child: Text(
-          label,
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: selected ? context.colors.primary : context.colors.foreground),
+        child: Column(
+          children: [
+            Expanded(
+              child: Center(
+                child: Icon(Icons.block_rounded, size: 34, color: selected ? context.colors.primary : context.colors.mutedForeground),
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: selected ? context.colors.primary : context.colors.foreground),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              selected ? 'Equipped' : 'Use empty slot',
+              style: TextStyle(fontSize: 11, color: context.colors.mutedForeground),
+            ),
+          ],
         ),
       ),
     );

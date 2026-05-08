@@ -177,6 +177,7 @@ class RewardShopItem {
     required this.price,
     required this.icon,
     required this.category,
+    required this.rarity,
     this.value,
     this.owned = false,
   });
@@ -186,6 +187,7 @@ class RewardShopItem {
   final int price;
   final IconData icon;
   final String category;
+  final String rarity;
   final String? value;
   final bool owned;
 
@@ -195,6 +197,7 @@ class RewardShopItem {
     int? price,
     IconData? icon,
     String? category,
+    String? rarity,
     String? value,
     bool? owned,
   }) {
@@ -204,6 +207,7 @@ class RewardShopItem {
       price: price ?? this.price,
       icon: icon ?? this.icon,
       category: category ?? this.category,
+      rarity: rarity ?? this.rarity,
       value: value ?? this.value,
       owned: owned ?? this.owned,
     );
