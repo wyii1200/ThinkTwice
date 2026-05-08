@@ -1,187 +1,130 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MapPin, Navigation, Plus, ReceiptText, Route, Sparkles, Star } from "lucide-react";
-import { MobileFrame } from "@/components/MobileFrame";
+import { MapPin, ThumbsUp, Coffee, UtensilsCrossed, Route as RouteIcon, Plus, ShoppingBag } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export const Route = createFileRoute("/radar")({ component: Radar });
+export const Route = createFileRoute("/radar")({
+  head: () => ({ meta: [{ title: "Radar — Smart Savings" }] }),
+  component: RadarPage,
+});
 
-const pins = [
-  { x: 30, y: 28, save: 4, label: "Jaya Grocer" },
-  { x: 60, y: 45, save: 14, label: "Tesco" },
-  { x: 45, y: 70, save: 7, label: "Mydin" },
-  { x: 75, y: 22, save: 3, label: "Family Mart" },
+const deals = [
+  { icon: UtensilsCrossed, title: "RM5 Nasi Lemak", place: "Kak Yan Stall · 200m", upvotes: 42, save: "RM7" },
+  { icon: Coffee, title: "20% off Coffee", place: "ZUS Coffee · 450m", upvotes: 28, save: "RM3" },
+  { icon: ShoppingBag, title: "Buy 1 Free 1 Bread", place: "FamilyMart · 600m", upvotes: 19, save: "RM4" },
 ];
 
-function Radar() {
+function RadarPage() {
   return (
-    <MobileFrame>
-      <div className="px-5 pt-3">
-        <div className="flex justify-between items-end">
-          <div>
-            <h1 className="text-2xl font-black">Smart Radar</h1>
-            <p className="text-xs text-muted-foreground">Best deals within 2km · Petaling Jaya</p>
-          </div>
-          <div className="text-right">
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              Potential save
-            </div>
-            <div className="text-2xl font-black text-emerald">RM 14</div>
-          </div>
-        </div>
+    <div className="space-y-5 px-4 pb-6 pt-5">
+      <div>
+        <h1 className="text-2xl font-bold">Smart Radar</h1>
+        <p className="text-sm text-muted-foreground">Deals & savings near you</p>
       </div>
 
+      {/* Savings proof */}
       <div
-        className="mx-5 mt-3 h-72 rounded-3xl relative overflow-hidden border border-border"
-        style={{
-          background:
-            "radial-gradient(circle at 50% 50%, oklch(0.25 0.04 260), oklch(0.16 0.03 260))",
-        }}
+        className="rounded-3xl p-4 text-primary-foreground shadow-[var(--shadow-soft)]"
+        style={{ background: "var(--gradient-primary)" }}
       >
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div
-            key={`h${i}`}
-            className="absolute inset-x-0 border-t border-border/40"
-            style={{ top: `${i * 12.5}%` }}
-          />
-        ))}
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div
-            key={`v${i}`}
-            className="absolute inset-y-0 border-l border-border/40"
-            style={{ left: `${i * 12.5}%` }}
-          />
-        ))}
-        <svg
-          className="absolute inset-0 w-full h-full"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M 50 50 Q 40 35 30 28 T 60 45 T 45 70"
-            stroke="oklch(0.74 0.18 155)"
-            strokeWidth="0.6"
-            fill="none"
-            strokeDasharray="2 1.5"
-          />
-        </svg>
+        <div className="text-xs opacity-90">You saved this month</div>
+        <div className="mt-1 text-3xl font-bold">RM 47.20</div>
+        <div className="mt-1 text-xs opacity-90">via Smart Radar 🎯</div>
+      </div>
+
+      {/* Map mock */}
+      <div className="relative h-44 overflow-hidden rounded-3xl border border-border bg-muted">
         <div
-          className="absolute"
-          style={{ top: "50%", left: "50%", transform: "translate(-50%,-50%)" }}
-        >
-          <div className="absolute inset-0 bg-ai rounded-full animate-pulse-ring w-4 h-4" />
-          <div className="relative w-4 h-4 rounded-full bg-ai border-2 border-background" />
+          className="absolute inset-0 opacity-60"
+          style={{
+            backgroundImage:
+              "linear-gradient(120deg, var(--primary) 0%, transparent 40%), radial-gradient(circle at 30% 50%, var(--accent) 0, transparent 30%), radial-gradient(circle at 70% 60%, var(--primary-glow) 0, transparent 35%)",
+          }}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(transparent_24px,rgba(0,0,0,0.05)_25px),linear-gradient(90deg,transparent_24px,rgba(0,0,0,0.05)_25px)] bg-[length:25px_25px]" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <div className="relative">
+            <div className="absolute inset-0 animate-ping rounded-full bg-primary/40" />
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
+              <MapPin className="h-5 w-5" />
+            </div>
+          </div>
         </div>
-        {pins.map((p, i) => (
+        {[
+          { l: "20%", t: "30%" },
+          { l: "70%", t: "55%" },
+          { l: "40%", t: "70%" },
+        ].map((p, i) => (
           <div
             key={i}
-            className="absolute -translate-x-1/2 -translate-y-full"
-            style={{ top: `${p.y}%`, left: `${p.x}%` }}
-          >
-            <div className="glass-strong rounded-full px-2 py-0.5 text-[10px] font-bold text-emerald whitespace-nowrap mb-1">
-              -RM{p.save}
-            </div>
-            <div className="w-7 h-7 rounded-full bg-grad-emerald glow-emerald flex items-center justify-center mx-auto">
-              <MapPin className="w-3.5 h-3.5 text-emerald-foreground" />
-            </div>
-          </div>
+            className="absolute h-3 w-3 rounded-full bg-warning ring-2 ring-card"
+            style={{ left: p.l, top: p.t }}
+          />
         ))}
       </div>
 
-      <div className="px-5 mt-4 pb-6">
-        <div className="glass-strong rounded-3xl p-4">
-          <div className="flex items-center gap-2 text-xs text-ai font-semibold">
-            <Sparkles className="w-3.5 h-3.5" /> AI ROUTE · Cheapest combo
-          </div>
-          <div className="mt-2 flex items-center gap-3 text-sm font-semibold">
-            <span>Jaya Grocer</span>
-            <Navigation className="w-3 h-3 text-muted-foreground" />
-            <span>Tesco</span>
-            <Navigation className="w-3 h-3 text-muted-foreground" />
-            <span>Mydin</span>
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-1">Rice · Eggs & Milk · Veggies</div>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
-            <div className="rounded-2xl bg-white/8 border border-border p-3">
-              <div className="flex items-center gap-1.5 font-semibold">
-                <ReceiptText className="w-3.5 h-3.5 text-ai" /> Shopping list
-              </div>
-              <div className="mt-1 text-muted-foreground">Rice, Eggs, Bread, Milk</div>
-            </div>
-            <div className="rounded-2xl bg-white/8 border border-border p-3">
-              <div className="flex items-center gap-1.5 font-semibold">
-                <Route className="w-3.5 h-3.5 text-emerald" /> Route logic
-              </div>
-              <div className="mt-1 text-muted-foreground">
-                Optimized using store pricing, distance, and transport cost.
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 flex justify-between items-center">
-            <div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                Estimated savings
-              </div>
-              <div className="text-2xl font-black text-emerald">RM 14.20</div>
-            </div>
-            <button className="px-4 py-2.5 rounded-2xl bg-grad-emerald text-emerald-foreground font-bold text-sm">
-              Start route
-            </button>
-          </div>
+      {/* Cheapest route */}
+      <section className="rounded-3xl bg-card p-4 shadow-sm">
+        <div className="mb-3 flex items-center gap-2">
+          <RouteIcon className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-bold">Cheapest grocery route</h2>
         </div>
-
-        <div className="mt-4 text-sm font-bold flex justify-between items-center">
-          <span>Community deals</span>
-          <button className="text-[10px] text-ai font-semibold flex items-center gap-1">
-            <Plus className="w-3 h-3" /> Submit deal
-          </button>
-        </div>
-        <div className="mt-2 space-y-2">
+        <div className="space-y-2">
           {[
-            { s: "Family Mart", d: "Buy 2 onigiri, free drink", t: 4.8, tag: "Hot" },
-            { s: "MyNews", d: "Maggi pack RM2.50 (save RM1)", t: 4.5 },
-            { s: "Jaya Grocer", d: "Eggs 30s RM12.90", t: 4.7 },
-          ].map((x, i) => (
-            <div key={i} className="glass rounded-2xl p-3 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-grad-emerald flex items-center justify-center">
-                <MapPin className="w-4 h-4 text-emerald-foreground" />
+            { stop: "Mydin", item: "Rice 5kg", price: "RM18" },
+            { stop: "Tesco", item: "Eggs 30pc", price: "RM12" },
+            { stop: "Pasar Borong", item: "Vegetables", price: "RM9" },
+          ].map((s, i) => (
+            <div key={s.stop} className="flex items-center gap-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                {i + 1}
               </div>
               <div className="flex-1">
-                <div className="text-sm font-semibold flex items-center gap-1.5">
-                  {x.s}{" "}
-                  {x.tag && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-risk/20 text-risk">
-                      {x.tag}
-                    </span>
-                  )}
-                </div>
-                <div className="text-[11px] text-muted-foreground">{x.d}</div>
+                <div className="text-sm font-semibold">{s.stop}</div>
+                <div className="text-xs text-muted-foreground">{s.item}</div>
               </div>
-              <div className="flex items-center gap-1 text-xs">
-                <Star className="w-3 h-3 fill-gold text-gold" /> {x.t}
+              <div className="text-sm font-bold">{s.price}</div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex items-center justify-between rounded-2xl bg-success/15 p-3">
+          <span className="text-xs font-semibold text-success">Estimated savings</span>
+          <span className="text-base font-bold text-success">RM 14.00</span>
+        </div>
+        <Button className="mt-3 h-11 w-full rounded-2xl" style={{ background: "var(--gradient-primary)" }}>
+          Use this route
+        </Button>
+      </section>
+
+      {/* Community deals */}
+      <section>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-bold">Community deals</h2>
+          <button className="flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+            <Plus className="h-3 w-3" /> Post
+          </button>
+        </div>
+        <div className="space-y-2">
+          {deals.map((d) => (
+            <div key={d.title} className="flex items-center gap-3 rounded-2xl bg-card p-3 shadow-sm">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-warning/20">
+                <d.icon className="h-6 w-6 text-warning-foreground" />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold">{d.title}</div>
+                <div className="text-xs text-muted-foreground">{d.place}</div>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-bold text-success">
+                  Save {d.save}
+                </span>
+                <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <ThumbsUp className="h-3 w-3" /> {d.upvotes}
+                </div>
               </div>
             </div>
           ))}
         </div>
-
-        <div className="mt-4 glass rounded-3xl p-4">
-          <div className="text-xs text-muted-foreground uppercase tracking-wider">
-            Savings impact
-          </div>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <div>
-              <div className="text-lg font-black text-emerald">RM37</div>
-              <div className="text-[10px] text-muted-foreground">Overspend avoided</div>
-            </div>
-            <div>
-              <div className="text-lg font-black">RM22</div>
-              <div className="text-[10px] text-muted-foreground">Saved through deals</div>
-            </div>
-            <div>
-              <div className="text-lg font-black text-ai">+12</div>
-              <div className="text-[10px] text-muted-foreground">Resilience gain</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </MobileFrame>
+      </section>
+    </div>
   );
 }

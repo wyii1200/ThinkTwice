@@ -9,42 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WelcomeRouteImport } from './routes/welcome'
-import { Route as TransactionsRouteImport } from './routes/transactions'
-import { Route as SquadRouteImport } from './routes/squad'
-import { Route as ResilienceRouteImport } from './routes/resilience'
+import { Route as SplashRouteImport } from './routes/splash'
 import { Route as RadarRouteImport } from './routes/radar'
 import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as NudgeRouteImport } from './routes/nudge'
-import { Route as GxbankRouteImport } from './routes/gxbank'
-import { Route as GamifyRouteImport } from './routes/gamify'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as CoachRouteImport } from './routes/coach'
-import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as InsightsRouteImport } from './routes/insights'
+import { Route as ChallengesRouteImport } from './routes/challenges'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as OnboardingProfileRouteImport } from './routes/onboarding.profile'
-import { Route as OnboardingInitRouteImport } from './routes/onboarding.init'
-import { Route as OnboardingBudgetRouteImport } from './routes/onboarding.budget'
-import { Route as OnboardingAvatarRouteImport } from './routes/onboarding.avatar'
 
-const WelcomeRoute = WelcomeRouteImport.update({
-  id: '/welcome',
-  path: '/welcome',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TransactionsRoute = TransactionsRouteImport.update({
-  id: '/transactions',
-  path: '/transactions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SquadRoute = SquadRouteImport.update({
-  id: '/squad',
-  path: '/squad',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResilienceRoute = ResilienceRouteImport.update({
-  id: '/resilience',
-  path: '/resilience',
+const SplashRoute = SplashRouteImport.update({
+  id: '/splash',
+  path: '/splash',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RadarRoute = RadarRouteImport.update({
@@ -57,34 +33,24 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NudgeRoute = NudgeRouteImport.update({
-  id: '/nudge',
-  path: '/nudge',
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GxbankRoute = GxbankRouteImport.update({
-  id: '/gxbank',
-  path: '/gxbank',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GamifyRoute = GamifyRouteImport.update({
-  id: '/gamify',
-  path: '/gamify',
+const InsightsRoute = InsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CoachRoute = CoachRouteImport.update({
-  id: '/coach',
-  path: '/coach',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AnalyticsRoute = AnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
+const ChallengesRoute = ChallengesRouteImport.update({
+  id: '/challenges',
+  path: '/challenges',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -92,193 +58,89 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OnboardingProfileRoute = OnboardingProfileRouteImport.update({
-  id: '/onboarding/profile',
-  path: '/onboarding/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingInitRoute = OnboardingInitRouteImport.update({
-  id: '/onboarding/init',
-  path: '/onboarding/init',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingBudgetRoute = OnboardingBudgetRouteImport.update({
-  id: '/onboarding/budget',
-  path: '/onboarding/budget',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingAvatarRoute = OnboardingAvatarRouteImport.update({
-  id: '/onboarding/avatar',
-  path: '/onboarding/avatar',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
-  '/coach': typeof CoachRoute
-  '/dashboard': typeof DashboardRoute
-  '/gamify': typeof GamifyRoute
-  '/gxbank': typeof GxbankRoute
-  '/nudge': typeof NudgeRoute
+  '/challenges': typeof ChallengesRoute
+  '/insights': typeof InsightsRoute
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/radar': typeof RadarRoute
-  '/resilience': typeof ResilienceRoute
-  '/squad': typeof SquadRoute
-  '/transactions': typeof TransactionsRoute
-  '/welcome': typeof WelcomeRoute
-  '/onboarding/avatar': typeof OnboardingAvatarRoute
-  '/onboarding/budget': typeof OnboardingBudgetRoute
-  '/onboarding/init': typeof OnboardingInitRoute
-  '/onboarding/profile': typeof OnboardingProfileRoute
+  '/splash': typeof SplashRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
-  '/coach': typeof CoachRoute
-  '/dashboard': typeof DashboardRoute
-  '/gamify': typeof GamifyRoute
-  '/gxbank': typeof GxbankRoute
-  '/nudge': typeof NudgeRoute
+  '/challenges': typeof ChallengesRoute
+  '/insights': typeof InsightsRoute
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/radar': typeof RadarRoute
-  '/resilience': typeof ResilienceRoute
-  '/squad': typeof SquadRoute
-  '/transactions': typeof TransactionsRoute
-  '/welcome': typeof WelcomeRoute
-  '/onboarding/avatar': typeof OnboardingAvatarRoute
-  '/onboarding/budget': typeof OnboardingBudgetRoute
-  '/onboarding/init': typeof OnboardingInitRoute
-  '/onboarding/profile': typeof OnboardingProfileRoute
+  '/splash': typeof SplashRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/analytics': typeof AnalyticsRoute
-  '/coach': typeof CoachRoute
-  '/dashboard': typeof DashboardRoute
-  '/gamify': typeof GamifyRoute
-  '/gxbank': typeof GxbankRoute
-  '/nudge': typeof NudgeRoute
+  '/challenges': typeof ChallengesRoute
+  '/insights': typeof InsightsRoute
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
   '/radar': typeof RadarRoute
-  '/resilience': typeof ResilienceRoute
-  '/squad': typeof SquadRoute
-  '/transactions': typeof TransactionsRoute
-  '/welcome': typeof WelcomeRoute
-  '/onboarding/avatar': typeof OnboardingAvatarRoute
-  '/onboarding/budget': typeof OnboardingBudgetRoute
-  '/onboarding/init': typeof OnboardingInitRoute
-  '/onboarding/profile': typeof OnboardingProfileRoute
+  '/splash': typeof SplashRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/analytics'
-    | '/coach'
-    | '/dashboard'
-    | '/gamify'
-    | '/gxbank'
-    | '/nudge'
+    | '/challenges'
+    | '/insights'
+    | '/login'
+    | '/onboarding'
     | '/profile'
     | '/radar'
-    | '/resilience'
-    | '/squad'
-    | '/transactions'
-    | '/welcome'
-    | '/onboarding/avatar'
-    | '/onboarding/budget'
-    | '/onboarding/init'
-    | '/onboarding/profile'
+    | '/splash'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/analytics'
-    | '/coach'
-    | '/dashboard'
-    | '/gamify'
-    | '/gxbank'
-    | '/nudge'
+    | '/challenges'
+    | '/insights'
+    | '/login'
+    | '/onboarding'
     | '/profile'
     | '/radar'
-    | '/resilience'
-    | '/squad'
-    | '/transactions'
-    | '/welcome'
-    | '/onboarding/avatar'
-    | '/onboarding/budget'
-    | '/onboarding/init'
-    | '/onboarding/profile'
+    | '/splash'
   id:
     | '__root__'
     | '/'
-    | '/analytics'
-    | '/coach'
-    | '/dashboard'
-    | '/gamify'
-    | '/gxbank'
-    | '/nudge'
+    | '/challenges'
+    | '/insights'
+    | '/login'
+    | '/onboarding'
     | '/profile'
     | '/radar'
-    | '/resilience'
-    | '/squad'
-    | '/transactions'
-    | '/welcome'
-    | '/onboarding/avatar'
-    | '/onboarding/budget'
-    | '/onboarding/init'
-    | '/onboarding/profile'
+    | '/splash'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AnalyticsRoute: typeof AnalyticsRoute
-  CoachRoute: typeof CoachRoute
-  DashboardRoute: typeof DashboardRoute
-  GamifyRoute: typeof GamifyRoute
-  GxbankRoute: typeof GxbankRoute
-  NudgeRoute: typeof NudgeRoute
+  ChallengesRoute: typeof ChallengesRoute
+  InsightsRoute: typeof InsightsRoute
+  LoginRoute: typeof LoginRoute
+  OnboardingRoute: typeof OnboardingRoute
   ProfileRoute: typeof ProfileRoute
   RadarRoute: typeof RadarRoute
-  ResilienceRoute: typeof ResilienceRoute
-  SquadRoute: typeof SquadRoute
-  TransactionsRoute: typeof TransactionsRoute
-  WelcomeRoute: typeof WelcomeRoute
-  OnboardingAvatarRoute: typeof OnboardingAvatarRoute
-  OnboardingBudgetRoute: typeof OnboardingBudgetRoute
-  OnboardingInitRoute: typeof OnboardingInitRoute
-  OnboardingProfileRoute: typeof OnboardingProfileRoute
+  SplashRoute: typeof SplashRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/welcome': {
-      id: '/welcome'
-      path: '/welcome'
-      fullPath: '/welcome'
-      preLoaderRoute: typeof WelcomeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/transactions': {
-      id: '/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof TransactionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/squad': {
-      id: '/squad'
-      path: '/squad'
-      fullPath: '/squad'
-      preLoaderRoute: typeof SquadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/resilience': {
-      id: '/resilience'
-      path: '/resilience'
-      fullPath: '/resilience'
-      preLoaderRoute: typeof ResilienceRouteImport
+    '/splash': {
+      id: '/splash'
+      path: '/splash'
+      fullPath: '/splash'
+      preLoaderRoute: typeof SplashRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/radar': {
@@ -295,46 +157,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/nudge': {
-      id: '/nudge'
-      path: '/nudge'
-      fullPath: '/nudge'
-      preLoaderRoute: typeof NudgeRouteImport
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/gxbank': {
-      id: '/gxbank'
-      path: '/gxbank'
-      fullPath: '/gxbank'
-      preLoaderRoute: typeof GxbankRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/gamify': {
-      id: '/gamify'
-      path: '/gamify'
-      fullPath: '/gamify'
-      preLoaderRoute: typeof GamifyRouteImport
+    '/insights': {
+      id: '/insights'
+      path: '/insights'
+      fullPath: '/insights'
+      preLoaderRoute: typeof InsightsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/coach': {
-      id: '/coach'
-      path: '/coach'
-      fullPath: '/coach'
-      preLoaderRoute: typeof CoachRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/analytics': {
-      id: '/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AnalyticsRouteImport
+    '/challenges': {
+      id: '/challenges'
+      path: '/challenges'
+      fullPath: '/challenges'
+      preLoaderRoute: typeof ChallengesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -344,55 +192,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/onboarding/profile': {
-      id: '/onboarding/profile'
-      path: '/onboarding/profile'
-      fullPath: '/onboarding/profile'
-      preLoaderRoute: typeof OnboardingProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding/init': {
-      id: '/onboarding/init'
-      path: '/onboarding/init'
-      fullPath: '/onboarding/init'
-      preLoaderRoute: typeof OnboardingInitRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding/budget': {
-      id: '/onboarding/budget'
-      path: '/onboarding/budget'
-      fullPath: '/onboarding/budget'
-      preLoaderRoute: typeof OnboardingBudgetRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding/avatar': {
-      id: '/onboarding/avatar'
-      path: '/onboarding/avatar'
-      fullPath: '/onboarding/avatar'
-      preLoaderRoute: typeof OnboardingAvatarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AnalyticsRoute: AnalyticsRoute,
-  CoachRoute: CoachRoute,
-  DashboardRoute: DashboardRoute,
-  GamifyRoute: GamifyRoute,
-  GxbankRoute: GxbankRoute,
-  NudgeRoute: NudgeRoute,
+  ChallengesRoute: ChallengesRoute,
+  InsightsRoute: InsightsRoute,
+  LoginRoute: LoginRoute,
+  OnboardingRoute: OnboardingRoute,
   ProfileRoute: ProfileRoute,
   RadarRoute: RadarRoute,
-  ResilienceRoute: ResilienceRoute,
-  SquadRoute: SquadRoute,
-  TransactionsRoute: TransactionsRoute,
-  WelcomeRoute: WelcomeRoute,
-  OnboardingAvatarRoute: OnboardingAvatarRoute,
-  OnboardingBudgetRoute: OnboardingBudgetRoute,
-  OnboardingInitRoute: OnboardingInitRoute,
-  OnboardingProfileRoute: OnboardingProfileRoute,
+  SplashRoute: SplashRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

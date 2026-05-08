@@ -1,100 +1,112 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { MobileFrame } from "@/components/MobileFrame";
-import { PixelCat } from "@/components/PixelCat";
-import { Settings, ChevronRight, Award, BarChart3, Wallet, Target, Moon, Sun } from "lucide-react";
-import { useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import catAvatar from "@/assets/cat-avatar.png";
+import { Settings, Bell, Target, Wallet, ChevronRight, Shirt, Crown, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export const Route = createFileRoute("/profile")({ component: Profile });
+export const Route = createFileRoute("/profile")({
+  head: () => ({ meta: [{ title: "Profile — ThinkTwice" }] }),
+  component: ProfilePage,
+});
 
-function Profile() {
-  const [dark, setDark] = useState(true);
+const tx = [
+  { name: "Starbucks", amt: -12, emoji: "☕", time: "2h ago" },
+  { name: "Tealive", amt: -9, emoji: "🧋", time: "Yesterday" },
+  { name: "GrabFood", amt: -24, emoji: "🍔", time: "Yesterday" },
+  { name: "Salary", amt: 2400, emoji: "💰", time: "3 days ago" },
+  { name: "Shopee", amt: -45, emoji: "🛍️", time: "4 days ago" },
+];
+
+function ProfilePage() {
   return (
-    <MobileFrame>
-      <div className="px-5 pt-3 pb-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-black">Profile</h1>
-          <button className="w-10 h-10 rounded-full glass flex items-center justify-center"><Settings className="w-4 h-4" /></button>
-        </div>
-
-        <div className="mt-4 glass-strong rounded-3xl p-5 relative overflow-hidden">
-          <div className="absolute inset-0 bg-grad-ai opacity-15" />
-          <div className="relative flex items-center gap-4">
-            <div className="bg-secondary/60 rounded-2xl p-2 border border-border">
-              <PixelCat breed="orange-tabby" size={80} hat="crown" glasses />
-            </div>
-            <div>
-              <div className="text-lg font-black">Aiman Hakim</div>
-              <div className="text-xs text-muted-foreground">Universiti Malaya · Y3</div>
-              <div className="font-pixel text-[10px] text-gold mt-2">LVL 4 · BUILDER</div>
+    <div className="space-y-5 px-4 pb-6 pt-5">
+      {/* Avatar */}
+      <section
+        className="relative overflow-hidden rounded-3xl p-5 text-primary-foreground"
+        style={{ background: "var(--gradient-primary)" }}
+      >
+        <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+        <div className="relative flex items-center gap-4">
+          <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/20 backdrop-blur-sm">
+            <img src={catAvatar} alt="cat avatar" className="h-20 w-20" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold">Aiman</h1>
+            <p className="text-xs opacity-90">Level 4 · Saver</p>
+            <div className="mt-2 flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold backdrop-blur-sm">
+              <Sparkles className="h-3 w-3" /> 1,180 pts
             </div>
           </div>
-          <div className="relative mt-4 grid grid-cols-3 gap-2">
-            <Stat v="68" l="Resilience" />
-            <Stat v="14🔥" l="Streak" />
-            <Stat v="9" l="Badges" />
-          </div>
         </div>
+      </section>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          <Tile to="/gxbank" icon={Wallet} label="GXBank Vaults" value="RM 457" tone="emerald" />
-          <Tile to="/analytics" icon={BarChart3} label="Insights" value="12 reports" tone="ai" />
-          <Tile to="/resilience" icon={Award} label="Resilience" value="Builder" tone="gold" />
-          <Tile to="/squad" icon={Target} label="Goals" value="3 active" tone="ai" />
+      {/* Reward shop */}
+      <section>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-bold">Reward shop</h2>
+          <button className="text-xs font-medium text-primary">View all</button>
         </div>
-
-        <div className="mt-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Journey</div>
-        <div className="mt-2 glass-strong rounded-3xl p-4 space-y-3">
+        <div className="grid grid-cols-3 gap-2.5">
           {[
-            { d: "Jan 2026", t: "Joined ThinkTwice", e: "🎉" },
-            { d: "Feb 2026", t: "First RM100 saved", e: "💰" },
-            { d: "Mar 2026", t: "30-day streak unlocked", e: "🔥" },
-            { d: "May 2026", t: "Reached 'Builder' rank", e: "🏗️" },
-          ].map((j, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="text-2xl">{j.e}</div>
-              <div className="flex-1">
-                <div className="text-sm font-semibold">{j.t}</div>
-                <div className="text-[11px] text-muted-foreground">{j.d}</div>
+            { icon: Crown, name: "Crown", price: 200, owned: false },
+            { icon: Shirt, name: "Hoodie", price: 150, owned: true },
+            { icon: Sparkles, name: "Sparkle", price: 350, owned: false },
+          ].map((r) => (
+            <div key={r.name} className="rounded-2xl bg-card p-3 text-center shadow-sm">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/30">
+                <r.icon className="h-6 w-6 text-accent-foreground" />
+              </div>
+              <div className="mt-2 text-xs font-semibold">{r.name}</div>
+              <div className={`mt-0.5 text-[10px] font-bold ${r.owned ? "text-success" : "text-primary"}`}>
+                {r.owned ? "Owned" : `${r.price} pts`}
               </div>
             </div>
           ))}
         </div>
+      </section>
 
-        <div className="mt-4 glass-strong rounded-3xl divide-y divide-border overflow-hidden">
-          <Row icon={dark ? Moon : Sun} label={dark ? "Dark mode" : "Light mode"} right={
-            <button onClick={() => setDark(!dark)} className={`w-11 h-6 rounded-full p-0.5 flex ${dark ? "bg-ai justify-end" : "bg-secondary"}`}><div className="w-5 h-5 rounded-full bg-white" /></button>
-          } />
-          <Row icon={Settings} label="Account & security" />
-          <Row icon={Award} label="Achievements (9)" />
+      {/* Transactions */}
+      <section className="rounded-3xl bg-card p-4 shadow-sm">
+        <h2 className="mb-3 text-sm font-bold">Recent transactions</h2>
+        <div className="space-y-2.5">
+          {tx.map((t, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted text-lg">
+                {t.emoji}
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold">{t.name}</div>
+                <div className="text-[11px] text-muted-foreground">{t.time}</div>
+              </div>
+              <div className={`text-sm font-bold ${t.amt > 0 ? "text-success" : "text-foreground"}`}>
+                {t.amt > 0 ? "+" : ""}RM{Math.abs(t.amt)}
+              </div>
+            </div>
+          ))}
         </div>
+      </section>
 
-        <button className="mt-4 w-full text-sm text-risk py-3">Sign out</button>
-      </div>
-    </MobileFrame>
-  );
-}
+      {/* Settings */}
+      <section className="overflow-hidden rounded-3xl bg-card shadow-sm">
+        {[
+          { icon: Wallet, label: "Budget settings", value: "RM 1,200/mo" },
+          { icon: Target, label: "Savings goal", value: "RM 800" },
+          { icon: Bell, label: "Notifications", value: "On" },
+          { icon: Settings, label: "Auto-save approval", value: "Auto" },
+        ].map((s, i) => (
+          <button key={s.label} className={`flex w-full items-center gap-3 px-4 py-3.5 ${i > 0 ? "border-t border-border" : ""}`}>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted">
+              <s.icon className="h-4 w-4 text-foreground" />
+            </div>
+            <div className="flex-1 text-left text-sm font-medium">{s.label}</div>
+            <div className="text-xs text-muted-foreground">{s.value}</div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </button>
+        ))}
+      </section>
 
-function Stat({ v, l }: { v: string; l: string }) {
-  return <div className="rounded-2xl bg-white/10 backdrop-blur p-2 text-center"><div className="text-sm font-black">{v}</div><div className="text-[9px] text-muted-foreground uppercase tracking-wider">{l}</div></div>;
-}
-
-function Tile({ to, icon: Icon, label, value, tone }: any) {
-  const c = tone === "emerald" ? "bg-grad-emerald" : tone === "gold" ? "bg-grad-gold" : "bg-grad-ai";
-  return (
-    <Link to={to} className="glass-strong rounded-3xl p-4 block">
-      <div className={`w-10 h-10 rounded-xl ${c} flex items-center justify-center`}><Icon className="w-5 h-5 text-white" /></div>
-      <div className="text-[11px] text-muted-foreground mt-2">{label}</div>
-      <div className="text-sm font-bold">{value}</div>
-    </Link>
-  );
-}
-
-function Row({ icon: Icon, label, right }: any) {
-  return (
-    <div className="px-4 py-3 flex items-center gap-3">
-      <Icon className="w-4 h-4 text-muted-foreground" />
-      <div className="flex-1 text-sm font-medium">{label}</div>
-      {right ?? <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+      <Button variant="outline" className="h-12 w-full rounded-2xl text-destructive">
+        Sign out
+      </Button>
     </div>
   );
 }
