@@ -94,6 +94,26 @@ List<QuestProgress> seedQuests() {
 List<RewardShopItem> seedRewardShopItems() {
   return const [
     RewardShopItem(
+      id: 'accessory-ribbon',
+      name: 'Mint Ribbon',
+      price: 0,
+      icon: Icons.sell_rounded,
+      category: 'accessory',
+      rarity: 'common',
+      value: 'ribbon',
+      owned: true,
+    ),
+    RewardShopItem(
+      id: 'accessory-hat',
+      name: 'Fintech Cap',
+      price: 0,
+      icon: Icons.sports_baseball_rounded,
+      category: 'accessory',
+      rarity: 'common',
+      value: 'hat',
+      owned: true,
+    ),
+    RewardShopItem(
       id: 'accessory-crown',
       name: 'Crown',
       price: 200,
@@ -110,6 +130,7 @@ List<RewardShopItem> seedRewardShopItems() {
       category: 'accessory',
       rarity: 'common',
       value: 'glasses',
+      owned: true,
     ),
     RewardShopItem(
       id: 'accessory-scarf',
@@ -130,13 +151,22 @@ List<RewardShopItem> seedRewardShopItems() {
       value: 'headphones',
     ),
     RewardShopItem(
-      id: 'accessory-bag',
-      name: 'Saver Bag',
+      id: 'accessory-backpack',
+      name: 'Saver Backpack',
       price: 180,
       icon: Icons.shopping_bag_rounded,
       category: 'accessory',
       rarity: 'rare',
-      value: 'bag',
+      value: 'backpack',
+    ),
+    RewardShopItem(
+      id: 'accessory-necklace',
+      name: 'Coin Necklace',
+      price: 220,
+      icon: Icons.monetization_on_rounded,
+      category: 'accessory',
+      rarity: 'epic',
+      value: 'necklace',
     ),
     RewardShopItem(
       id: 'outfit-hoodie',

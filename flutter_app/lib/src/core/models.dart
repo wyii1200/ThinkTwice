@@ -216,6 +216,42 @@ class RewardShopItem {
   }
 }
 
+class GuardianProfile {
+  const GuardianProfile({
+    required this.breed,
+    required this.color,
+    required this.expression,
+    required this.accessory,
+    required this.outfit,
+    required this.cosmetic,
+  });
+
+  final String breed;
+  final String color;
+  final String expression;
+  final String accessory;
+  final String outfit;
+  final String cosmetic;
+
+  GuardianProfile copyWith({
+    String? breed,
+    String? color,
+    String? expression,
+    String? accessory,
+    String? outfit,
+    String? cosmetic,
+  }) {
+    return GuardianProfile(
+      breed: breed ?? this.breed,
+      color: color ?? this.color,
+      expression: expression ?? this.expression,
+      accessory: accessory ?? this.accessory,
+      outfit: outfit ?? this.outfit,
+      cosmetic: cosmetic ?? this.cosmetic,
+    );
+  }
+}
+
 class TransactionRecord {
   const TransactionRecord({
     required this.id,

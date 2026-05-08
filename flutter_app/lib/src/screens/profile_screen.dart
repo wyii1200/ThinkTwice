@@ -14,6 +14,7 @@ class ProfilePage extends StatelessWidget {
     required this.transactions,
     required this.breed,
     required this.color,
+    required this.expression,
     required this.accessory,
     required this.outfit,
     required this.cosmetic,
@@ -31,6 +32,7 @@ class ProfilePage extends StatelessWidget {
   final List<TransactionRecord> transactions;
   final String breed;
   final String color;
+  final String expression;
   final String accessory;
   final String outfit;
   final String cosmetic;
@@ -43,6 +45,9 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final level = 1 + (totalPoints ~/ 300);
+    final rarity = _profileRarityLabel(accessory: accessory, outfit: outfit, cosmetic: cosmetic);
+    final accessoryLabel = formatAccessoryLabel(accessory);
+    final cosmeticLabel = formatCosmeticLabel(cosmetic);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
@@ -50,55 +55,141 @@ class ProfilePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           GradientCard(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
             child: Stack(
               children: [
                 Positioned(
-                  right: -24,
-                  top: -24,
+                  right: -36,
+                  top: -28,
                   child: Container(
-                    width: 128,
-                    height: 128,
+                    width: 164,
+                    height: 164,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: Colors.white.withOpacity(0.1), blurRadius: 30, spreadRadius: 18)],
+                      gradient: RadialGradient(
+                        colors: [
+                          Colors.white.withOpacity(0.28),
+                          Colors.white.withOpacity(0.08),
+                          Colors.transparent,
+                        ],
+                      ),
                     ),
                   ),
                 ),
-                Row(
+                Positioned(
+                  left: -26,
+                  bottom: -34,
+                  child: Container(
+                    width: 132,
+                    height: 132,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          const Color(0xFFFFE7AE).withOpacity(0.28),
+                          const Color(0xFFFFE7AE).withOpacity(0.06),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    avatarPreview(
-                      context,
-                      breed: breed,
-                      color: color,
-                      accessory: accessory,
-                      outfit: outfit,
-                      cosmetic: cosmetic,
-                      mood: AvatarMood.proud,
-                      size: 96,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: Colors.white.withOpacity(0.22)),
+                          ),
+                          child: const Text(
+                            'Collectible Companion',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white),
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.16),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            rarity,
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
+                    const SizedBox(height: 16),
+                    const Text('Wallet Guardian', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
+                    const SizedBox(height: 6),
+                    Text(
+                      'A premium AI money familiar with game-quality cosmetics, emotional states, and wearable fintech gear.',
+                      style: TextStyle(fontSize: 13, height: 1.45, color: Colors.white.withOpacity(0.9)),
+                    ),
+                    const SizedBox(height: 18),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(34),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.white.withOpacity(0.18),
+                              Colors.white.withOpacity(0.06),
+                            ],
+                          ),
+                          border: Border.all(color: Colors.white.withOpacity(0.18)),
+                        ),
+                        child: avatarPreview(
+                          context,
+                          breed: breed,
+                          color: color,
+                          accessory: accessory,
+                          outfit: outfit,
+                          cosmetic: cosmetic,
+                          mood: avatarMoodFromId(expression),
+                          size: 172,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        PointsChip(totalPoints: totalPoints),
+                        _premiumChip(Icons.shield_moon_rounded, 'Level $level', Colors.white),
+                        _premiumChip(Icons.checkroom_rounded, outfit, Colors.white),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.14),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Wallet Guardian', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white)),
-                          const SizedBox(height: 4),
-                          Text('Level $level collectible companion', style: const TextStyle(fontSize: 12, color: Colors.white)),
+                          const Text(
+                            'Showcase loadout',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white),
+                          ),
                           const SizedBox(height: 8),
-                          PointsChip(totalPoints: totalPoints),
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.14),
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Text(
-                              'Cozy fintech familiar with $outfit styling, ${formatAccessoryLabel(accessory).toLowerCase()} flair, and ${formatCosmeticLabel(cosmetic).toLowerCase()}.',
-                              style: const TextStyle(fontSize: 12, height: 1.4, color: Colors.white),
-                            ),
+                          Text(
+                            '$accessoryLabel layering with $outfit styling and $cosmeticLabel creates a collectible companion look built for soft motion, rare drop effects, and premium profile presentation.',
+                            style: TextStyle(fontSize: 12, height: 1.45, color: Colors.white.withOpacity(0.94)),
                           ),
                         ],
                       ),
@@ -180,6 +271,45 @@ class ProfilePage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _premiumChip(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _profileRarityLabel({
+    required String accessory,
+    required String outfit,
+    required String cosmetic,
+  }) {
+    if (cosmetic == 'sparkle' || accessory == 'headphones' || outfit == 'Cape') {
+      return 'Legendary build';
+    }
+    if (accessory == 'crown' || outfit == 'Jacket') {
+      return 'Epic build';
+    }
+    if (accessory == 'scarf' || accessory == 'bag' || accessory == 'backpack' || cosmetic == 'coins') {
+      return 'Rare build';
+    }
+    return 'Core build';
   }
 
   Widget _settingsRow(BuildContext context, IconData icon, String label, String value, bool divider) {
@@ -366,7 +496,7 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 0.74,
+                  childAspectRatio: 0.64,
                   children: [
                     _noneStateCard(context, label: 'No accessory', selected: _selectedAccessory == 'none', onTap: () => setState(() => _selectedAccessory = 'none')),
                     ...avatarItems.where((item) => item.category == 'accessory').map((item) => _buildAvatarItemAction(context, item)),
@@ -381,7 +511,7 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 0.74,
+                  childAspectRatio: 0.64,
                   children: avatarItems.where((item) => item.category == 'outfit').map((item) => _buildAvatarItemAction(context, item)).toList(),
                 ),
                 const SizedBox(height: 18),
@@ -393,7 +523,7 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 0.74,
+                  childAspectRatio: 0.64,
                   children: [
                     _noneStateCard(context, label: 'No cosmetic', selected: _selectedCosmetic == 'none', onTap: () => setState(() => _selectedCosmetic = 'none')),
                     ...avatarItems.where((item) => item.category == 'cosmetic').map((item) => _buildAvatarItemAction(context, item)),
@@ -456,7 +586,11 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -469,7 +603,6 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: palette.$2),
                   ),
                 ),
-                const Spacer(),
                 if (selected)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -488,17 +621,27 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
             Center(
               child: RewardItemPreview(
                 item: item,
+                breed: widget.breed,
+                color: widget.color,
                 equipped: selected,
                 locked: !owned,
-                size: 100,
+                size: 94,
               ),
             ),
             const SizedBox(height: 10),
-            Text(item.name, textAlign: TextAlign.left, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+            Text(
+              item.name,
+              textAlign: TextAlign.left,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, height: 1.2),
+            ),
             const SizedBox(height: 4),
             Text(
               owned ? (selected ? 'Living on your Guardian' : 'Owned collectible') : '${item.price} pts',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: owned ? context.colors.success : context.colors.primary),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, height: 1.25, color: owned ? context.colors.success : context.colors.primary),
             ),
             const SizedBox(height: 8),
             if (owned)

@@ -397,6 +397,7 @@ class OnboardingPage extends StatelessWidget {
     required this.step,
     required this.breed,
     required this.color,
+    required this.expression,
     required this.accessory,
     required this.outfit,
     required this.budget,
@@ -412,6 +413,7 @@ class OnboardingPage extends StatelessWidget {
     required this.noAnswers,
     required this.onSetBreed,
     required this.onSetColor,
+    required this.onSetExpression,
     required this.onSetAccessory,
     required this.onSetOutfit,
     required this.onSetBudget,
@@ -429,6 +431,7 @@ class OnboardingPage extends StatelessWidget {
   final int step;
   final String breed;
   final String color;
+  final String expression;
   final String accessory;
   final String outfit;
   final double budget;
@@ -444,6 +447,7 @@ class OnboardingPage extends StatelessWidget {
   final Set<int> noAnswers;
   final ValueChanged<String> onSetBreed;
   final ValueChanged<String> onSetColor;
+  final ValueChanged<String> onSetExpression;
   final ValueChanged<String> onSetAccessory;
   final ValueChanged<String> onSetOutfit;
   final ValueChanged<double> onSetBudget;
@@ -472,9 +476,21 @@ class OnboardingPage extends StatelessWidget {
       ('rose', const Color(0xFFDD7B84), null),
       ('lavender', const Color(0xFFB58ADF), null),
     ];
-    final accessories = ['Top Hat', 'Crown', 'Ribbon', 'Glasses', 'Scarf', 'Headphones'];
-    final accessoryIcons = ['??', '??', '??', '???', '??', '??'];
-    final outfits = ['Hoodie', 'Sweater', 'Jacket', 'T-shirt'];
+    final expressions = [
+      ('happy', 'Happy'),
+      ('neutral', 'Calm'),
+      ('proud', 'Proud'),
+      ('excited', 'Excited'),
+    ];
+    final accessories = [
+      ('none', 'None'),
+      ('ribbon', 'Ribbon'),
+      ('hat', 'Cap'),
+      ('glasses', 'Glasses'),
+      ('scarf', 'Scarf'),
+      ('headphones', 'Headphones'),
+    ];
+    final outfits = ['Hoodie', 'Jacket', 'Cape'];
     final personality = [
       "I overspend when I'm stressed",
       'I love a good deal hunt',
@@ -519,60 +535,29 @@ class OnboardingPage extends StatelessWidget {
                     child: Column(
                       children: [
                         Container(
-                          width: 128,
-                          height: 128,
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            gradient: color == 'mint' ? context.colors.primaryGradient : null,
-                            color: switch (color) {
-                              'peach' => const Color(0xFFE5A36C),
-                              'sky' => const Color(0xFF72B5E8),
-                              'rose' => const Color(0xFFDD7B84),
-                              'lavender' => const Color(0xFFB58ADF),
-                              _ => null,
-                            },
-                            borderRadius: BorderRadius.circular(32),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.white,
+                                context.colors.softMintGradient.colors.last.withOpacity(0.92),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(34),
+                            border: Border.all(color: Colors.white.withOpacity(0.88)),
+                            boxShadow: context.colors.softShadow,
                           ),
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(10),
-                                  child: Image.asset('assets/images/cat-avatar.png', width: 112, height: 112),
-                                ),
-                              ),
-                              Positioned(
-                                right: -4,
-                                top: -4,
-                                child: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: context.colors.card,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.08),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    switch (accessory) {
-                                      'hat' => '??',
-                                      'crown' => '??',
-                                      'ribbon' => '??',
-                                      'glasses' => '???',
-                                      'scarf' => '??',
-                                      _ => '??',
-                                    },
-                                    style: const TextStyle(fontSize: 20),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          child: avatarPreview(
+                            context,
+                            breed: breed,
+                            color: color,
+                            accessory: accessory,
+                            outfit: outfit,
+                            cosmetic: 'none',
+                            mood: avatarMoodFromId(expression),
+                            size: 132,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -619,7 +604,16 @@ class OnboardingPage extends StatelessWidget {
                                       child: Column(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          Image.asset('assets/images/cat-avatar.png', width: 38, height: 38),
+                                          avatarPreview(
+                                            context,
+                                            breed: item.$1,
+                                            color: color,
+                                            accessory: accessory,
+                                            outfit: outfit,
+                                            cosmetic: 'none',
+                                            mood: avatarMoodFromId(expression),
+                                            size: 46,
+                                          ),
                                           const SizedBox(height: 6),
                                           Text(item.$2, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
                                         ],
@@ -654,27 +648,71 @@ class OnboardingPage extends StatelessWidget {
                                 }).toList(),
                               ),
                               const SizedBox(height: 16),
+                              _sectionLabel('Expression', context),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: expressions.map((item) {
+                                  final selected = expression == item.$1;
+                                  return GestureDetector(
+                                    onTap: () => onSetExpression(item.$1),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: selected ? context.colors.primary.withOpacity(0.15) : context.colors.card,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: selected ? Border.all(color: context.colors.primary, width: 2) : Border.all(color: Theme.of(context).dividerColor),
+                                      ),
+                                      child: Text(
+                                        item.$2,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: selected ? context.colors.primary : context.colors.foreground,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 16),
                               _sectionLabel('Accessory', context),
                               GridView.count(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
-                                crossAxisCount: 6,
+                                crossAxisCount: 3,
                                 crossAxisSpacing: 8,
                                 mainAxisSpacing: 8,
-                                childAspectRatio: 1,
+                                childAspectRatio: 0.95,
                                 children: List.generate(accessories.length, (index) {
-                                  final ids = ['hat', 'crown', 'ribbon', 'glasses', 'scarf', 'headphones'];
-                                  final selected = accessory == ids[index];
+                                  final item = accessories[index];
+                                  final selected = accessory == item.$1;
                                   return GestureDetector(
-                                    onTap: () => onSetAccessory(ids[index]),
+                                    onTap: () => onSetAccessory(item.$1),
                                     child: Container(
                                       decoration: BoxDecoration(
                                         color: selected ? context.colors.primary.withOpacity(0.15) : context.colors.card,
                                         borderRadius: BorderRadius.circular(16),
                                         border: selected ? Border.all(color: context.colors.primary, width: 2) : null,
                                       ),
-                                      alignment: Alignment.center,
-                                      child: Text(accessoryIcons[index], style: const TextStyle(fontSize: 24)),
+                                      padding: const EdgeInsets.all(8),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          avatarPreview(
+                                            context,
+                                            breed: breed,
+                                            color: color,
+                                            accessory: item.$1,
+                                            outfit: outfit,
+                                            cosmetic: 'none',
+                                            mood: avatarMoodFromId(expression),
+                                            size: 44,
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(item.$2, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
+                                        ],
+                                      ),
                                     ),
                                   );
                                 }),

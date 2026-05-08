@@ -11,6 +11,7 @@ class ChallengesPage extends StatefulWidget {
     required this.rewardShopItems,
     required this.breed,
     required this.color,
+    required this.expression,
     required this.accessory,
     required this.outfit,
     required this.cosmetic,
@@ -24,6 +25,7 @@ class ChallengesPage extends StatefulWidget {
   final List<RewardShopItem> rewardShopItems;
   final String breed;
   final String color;
+  final String expression;
   final String accessory;
   final String outfit;
   final String cosmetic;
@@ -91,7 +93,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
               accessory: widget.accessory,
               outfit: widget.outfit,
               cosmetic: widget.cosmetic,
-              mood: currentSaveStreak == '7 days' ? AvatarMood.excited : AvatarMood.proud,
+              mood: currentSaveStreak == '7 days' ? AvatarMood.excited : avatarMoodFromId(widget.expression),
               size: 120,
             ),
           ),
@@ -107,8 +109,11 @@ class _ChallengesPageState extends State<ChallengesPage> {
                     children: [
                       const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 24),
                       const SizedBox(height: 8),
-                      Text(currentSaveStreak, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white)),
-                      const Text('Current Save Streak', style: TextStyle(fontSize: 11, color: Colors.white)),
+                      Text(
+                        currentSaveStreak,
+                        style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.6),
+                      ),
+                      Text('Current Save Streak', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.92))),
                     ],
                   ),
                 ),
@@ -122,8 +127,11 @@ class _ChallengesPageState extends State<ChallengesPage> {
                     children: [
                       const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 24),
                       const SizedBox(height: 8),
-                      Text('${widget.totalPoints}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white)),
-                      const Text('Current points', style: TextStyle(fontSize: 11, color: Colors.white)),
+                      Text(
+                        '${widget.totalPoints}',
+                        style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.6),
+                      ),
+                      Text('Current points', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.92))),
                     ],
                   ),
                 ),
@@ -269,7 +277,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
                       crossAxisCount: 2,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 0.72,
+                      childAspectRatio: 0.62,
                     ),
                     itemBuilder: (context, index) {
                       final item = widget.rewardShopItems[index];
@@ -345,7 +353,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
                   accessory: widget.accessory,
                   outfit: widget.outfit,
                   cosmetic: widget.cosmetic,
-                  mood: AvatarMood.proud,
+                  mood: avatarMoodFromId(widget.expression),
                   size: 92,
                 ),
                 const SizedBox(width: 14),
@@ -479,7 +487,11 @@ class _ChallengesPageState extends State<ChallengesPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -492,7 +504,6 @@ class _ChallengesPageState extends State<ChallengesPage> {
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: palette.$2),
                   ),
                 ),
-                const Spacer(),
                 if (isEquipped)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -523,22 +534,31 @@ class _ChallengesPageState extends State<ChallengesPage> {
             Center(
               child: RewardItemPreview(
                 item: item,
+                breed: widget.breed,
+                color: widget.color,
                 equipped: isEquipped,
                 locked: !owned,
-                size: 104,
+                size: 96,
               ),
             ),
             const SizedBox(height: 10),
-            Text(item.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+            Text(
+              item.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, height: 1.2),
+            ),
             const SizedBox(height: 3),
             Text(
               formatShopCategory(item.category),
-              style: TextStyle(fontSize: 11, color: context.colors.mutedForeground),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.mutedForeground),
             ),
             const Spacer(),
             Text(
               owned ? (isEquipped ? 'Living on your Guardian' : 'Unlocked collectible') : '${item.price} pts',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: owned ? context.colors.success : context.colors.primary),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, height: 1.25, color: owned ? context.colors.success : context.colors.primary),
             ),
             const SizedBox(height: 8),
             SizedBox(
