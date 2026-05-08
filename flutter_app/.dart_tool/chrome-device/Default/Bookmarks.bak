@@ -1,0 +1,150 @@
+{
+   "checksum": "2c76b50781856050f00f1a30c5e14304",
+   "roots": {
+      "bookmark_bar": {
+         "children": [ {
+            "date_added": "13391669863522756",
+            "date_last_used": "0",
+            "guid": "651465d8-86d1-455a-a9a6-8ed2fd451262",
+            "id": "11",
+            "name": "Dashboard | HackerRank",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.hackerrank.com/dashboard",
+            "visit_count": 1
+         }, {
+            "date_added": "13391669870654205",
+            "date_last_used": "0",
+            "guid": "264f81ff-7c60-469d-94d4-4a8d0d3f2778",
+            "id": "12",
+            "name": "Java | Iterator | Codecademy",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://www.codecademy.com/resources/docs/java/iterator",
+            "visit_count": 1
+         }, {
+            "date_added": "13391669879394726",
+            "date_last_used": "13396453957952384",
+            "guid": "c02ffc40-1fb8-4dbd-9e32-e1129f833d29",
+            "id": "13",
+            "name": "UM-WIA1002/Lab/Version1/Lab7 - Queue/Q3/Functional/Main.java at main · The-Missing-UMCS/UM-WIA1002 · GitHub",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://github.com/The-Missing-UMCS/UM-WIA1002/blob/main/Lab/Version1/Lab7%20-%20Queue/Q3/Functional/Main.java",
+            "visit_count": 10
+         }, {
+            "date_added": "13394101349106949",
+            "date_last_used": "0",
+            "guid": "c3f1874e-0c71-4d8e-a47b-572d28124e21",
+            "id": "14",
+            "name": "GitHub - youssefHosni/Practical-Machine-Learning: Practical machine learning notebook & articles covers the machine learning end to end life cycle.",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://github.com/youssefHosni/Practical-Machine-Learning",
+            "visit_count": 1
+         }, {
+            "date_added": "13394101374395395",
+            "date_last_used": "13420712764023872",
+            "guid": "4f7ab654-2483-4eef-a14b-91b2cd7bb322",
+            "id": "15",
+            "name": "Pipeline — scikit-learn 1.7.0 documentation",
+            "show_icon": false,
+            "source": "sync",
+            "type": "url",
+            "url": "https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html",
+            "visit_count": 2
+         }, {
+            "date_added": "13422684766507124",
+            "date_last_used": "0",
+            "guid": "0d44a6b7-e635-4448-976f-a7cbb448caaf",
+            "id": "10",
+            "name": "Agoda",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://js.redirect.hp.com/jumpstation?bd=agoda&c=231&locale=*&pf=*&tp=edge&TYPE=3",
+            "visit_count": 0
+         }, {
+            "date_added": "13422684766505902",
+            "date_last_used": "0",
+            "guid": "a6ad3650-c6b5-46c4-9b89-f117c339dfde",
+            "id": "9",
+            "name": "Express VPN",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://js.redirect.hp.com/jumpstation?bd=expressvpn&c=*&locale=en_us&pf=*&s=*&tp=edge",
+            "visit_count": 0
+         }, {
+            "date_added": "13422684766504285",
+            "date_last_used": "0",
+            "guid": "d17b29d0-4bc7-4d04-aec8-79536a61a0bf",
+            "id": "8",
+            "name": "McAfee Security",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://www.mcafee.com/consumer/v/browserfav/hp.html",
+            "visit_count": 0
+         }, {
+            "date_added": "13422684766499712",
+            "date_last_used": "0",
+            "guid": "bfe2dddb-8388-4fcd-9326-81485aa072b1",
+            "id": "7",
+            "name": "LastPass password manager",
+            "show_icon": false,
+            "source": "oem_preload",
+            "type": "url",
+            "url": "https://js.redirect.hp.com/jumpstation?bd=lastpass&c=231&locale=*&pf=*&tp=edge&TYPE=3",
+            "visit_count": 0
+         } ],
+         "date_added": "13422684765862512",
+         "date_last_used": "0",
+         "date_modified": "13422684766507124",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "1",
+         "name": "Favorites bar",
+         "source": "unknown",
+         "type": "folder"
+      },
+      "other": {
+         "children": [  ],
+         "date_added": "13422684765862512",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "2",
+         "name": "Other favorites",
+         "source": "unknown",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [  ],
+         "date_added": "13422684765862512",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "3",
+         "name": "Mobile favorites",
+         "source": "unknown",
+         "type": "folder"
+      },
+      "workspaces_v2": {
+         "children": [  ],
+         "date_added": "13422684765862512",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "75aa6670-344f-549d-b742-660f029506ab",
+         "id": "5",
+         "name": "Workspaces",
+         "source": "unknown",
+         "type": "folder"
+      }
+   },
+   "sync_metadata": "CjEKDgiIgQISCOLmGpCdAQAAEgAqGGs1MEVzS3Y2L0gzOEFEeGdoMlozaEE9PUgDoAYHEo4BCAMSiQEKHG5qZ0R1ODhlQ3J2WHA4NnBEN2ZIR2NxRnA4OD0SJDI4N2E2OGM4LWVhZWUtNTk1Ni1hNjkxLWYxOTQxMTJkNDQ4ZBgAIAAoADD8wZ3IjjE4oI7bwo4xQKCO28KOMUoceXpOQjAxY241NEE3Y1JVMHVUKy9QZ21UdFVvPVoAZQAAAADCPgJgABKtAQgPEqgBChwxc1JPTm5aZGVjZFFGMENJMUV3NGoyRVgyUk09EiQ0ZjdhYjY1NC0yNDgzLTRlZWYtYTE0Yi05MWIyY2Q3YmIzMjIYACAAKAAw4c3rgNkzOLCuxe/1MkCwrsXv9TJKHFVocUVudG5pZkhFQjU3OXRUWW1oMHR1U0swbz1aHyId/zh3QjYwWTlmSnRFUjh0ZFVTeTRIRFV3Y1NYdz1lUo15y8I+AmAFEq0BCA4SqAEKHFRaL0F2MHdLZ3JuMzBpMVE4ZkdxMHJNOWdkVT0SJGMzZjE4NzRlLTBjNzEtNGQ4ZS1hNDdiLTU3MmQyODEyNGUyMRgAIAAoADCQkPPIkjM4jZfD7/UyQI2Xw+/1MkocNEZ4bTFQclJZL2VOcjV0OUlIdDlqNCtwL1dBPVofIh3+N0J2ekF4T01mR25CbUsrQlA0M2VzMWU5SVZBPWWFZ+0Pwj4CYAUSjgEIAhKJAQocWWNTVG9udkVTUHdxQ3M0TDJjclZodjY4TDk4PRIkMmNjYzQ4NjctYzdjNi01YjAyLWExYzMtNWMzMzVjYzJlNTA1GAAgACgAMPzBnciOMTjrjdvCjjFA643bwo4xShxvUFZraHdCUmJWNjVLQ1dSMitJT05IV29PdTg9WgBlAAAAAMI+AmAAEq0BCA0SqAEKHFBLVDhjdkVlaE1TWGc3Q0owM2l0ajh0WmYzYz0SJGMwMmZmYzQwLTFmYjgtNGRiZC05ZTMyLWUxMTI5ZjgzM2QyORgAIAAoADCRkPPIkjM46omO6OwyQOqJjujsMkocL3ZvTDZxb1JsRUkybitpTFZYUjBHZnhZU3djPVofIh39SldTMFV2NXN3c2NPVkNsVnFqRzdpczhqQjZRPWWFZ+0Pwj4CYAUSjgEIARKJAQoceXhKLzZmdmtlY3I3a3A1RVF6QjR0V0xwZGJFPRIkMjVkMDhhNmMtZWQxOC01ZDY0LWJkNjktMmVkYjk3MDE3NjAxGAAgACgAMPzBnciOMTjQjdvCjjFA0I3bwo4xShxhUkNXTGdoRjliNUlucUtJRHZ1Si9qdlFrRmM9WgBlAAAAAMI+AmAAEq0BCAwSqAEKHDZxblFkV0NSUUNESkpPVGpxZ0E2NVVyeW5FOD0SJDI2NGY4MWZmLTdjNjAtNDY5ZC05NGQ0LTRhOGQwZDNmMjc3OBgAIAAoADDIzIu49jI4gsWN6OwyQILFjejsMkocNGQwcng2a3pLNHBxNjlhSUNhYnlhYWd3MEw0PVofIh37QVZHL3ZJU2prVllZMU5nYWo2NWhaZFNRMDkwPWWPmXoNwj4CYAUSrQEICxKoAQocbW1zb2JTV25PMW9yNWdFM2Z3SmNTc1Y5cFp3PRIkNjUxNDY1ZDgtODZkMS00NTVhLWE5YTYtOGVkMmZkNDUxMjYyGAAgACgAMMnMi7j2MjjxjI3o7DJA8YyN6OwyShxocUhBRXJ5NEREK3VZN2ZwQVRJN0xGWm0ycjg9Wh8iHfcyd1BNS3RYc3FCNy91K3hJOFVlU0Y4aWt3Ym89ZS0B98DCPgJgBRKOAQgFEokBChx3UkJyWkwrNlBBOWF2S2dqTlA3SlhETGNmdnM9EiRmZTY4ZjYxMC1jZTdiLTVjNjctOTZiNC0yMzdmODJjMTEyMjAYACAAKAAwnqvry6QzOL6u68ukM0C+ruvLpDNKHG5teDY1c1FEdnhJOFRnRWV2K0ErbnR0b1NuND1aAGUAAAAAwj4CYAAwADgA",
+   "version": 1
+}

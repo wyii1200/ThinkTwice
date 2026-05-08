@@ -1,0 +1,108 @@
+{
+   "checksum": "03d6d18c374b1a286a3edee4ed2d8a70",
+   "roots": {
+      "bookmark_bar": {
+         "children": [ {
+            "date_added": "13391669863522756",
+            "date_last_used": "0",
+            "guid": "651465d8-86d1-455a-a9a6-8ed2fd451262",
+            "id": "11",
+            "name": "Dashboard | HackerRank",
+            "type": "url",
+            "url": "https://www.hackerrank.com/dashboard"
+         }, {
+            "date_added": "13391669870654205",
+            "date_last_used": "0",
+            "guid": "264f81ff-7c60-469d-94d4-4a8d0d3f2778",
+            "id": "12",
+            "name": "Java | Iterator | Codecademy",
+            "type": "url",
+            "url": "https://www.codecademy.com/resources/docs/java/iterator"
+         }, {
+            "date_added": "13391669879394726",
+            "date_last_used": "13396453957952384",
+            "guid": "c02ffc40-1fb8-4dbd-9e32-e1129f833d29",
+            "id": "13",
+            "name": "UM-WIA1002/Lab/Version1/Lab7 - Queue/Q3/Functional/Main.java at main · The-Missing-UMCS/UM-WIA1002 · GitHub",
+            "type": "url",
+            "url": "https://github.com/The-Missing-UMCS/UM-WIA1002/blob/main/Lab/Version1/Lab7%20-%20Queue/Q3/Functional/Main.java"
+         }, {
+            "date_added": "13394101349106949",
+            "date_last_used": "0",
+            "guid": "c3f1874e-0c71-4d8e-a47b-572d28124e21",
+            "id": "14",
+            "name": "GitHub - youssefHosni/Practical-Machine-Learning: Practical machine learning notebook & articles covers the machine learning end to end life cycle.",
+            "type": "url",
+            "url": "https://github.com/youssefHosni/Practical-Machine-Learning"
+         }, {
+            "date_added": "13394101374395395",
+            "date_last_used": "13420712764023872",
+            "guid": "4f7ab654-2483-4eef-a14b-91b2cd7bb322",
+            "id": "15",
+            "name": "Pipeline — scikit-learn 1.7.0 documentation",
+            "type": "url",
+            "url": "https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html"
+         }, {
+            "date_added": "13422684766507124",
+            "date_last_used": "0",
+            "guid": "0d44a6b7-e635-4448-976f-a7cbb448caaf",
+            "id": "10",
+            "name": "Agoda",
+            "type": "url",
+            "url": "https://js.redirect.hp.com/jumpstation?bd=agoda&c=231&locale=*&pf=*&tp=edge&TYPE=3"
+         }, {
+            "date_added": "13422684766505902",
+            "date_last_used": "0",
+            "guid": "a6ad3650-c6b5-46c4-9b89-f117c339dfde",
+            "id": "9",
+            "name": "Express VPN",
+            "type": "url",
+            "url": "https://js.redirect.hp.com/jumpstation?bd=expressvpn&c=*&locale=en_us&pf=*&s=*&tp=edge"
+         }, {
+            "date_added": "13422684766504285",
+            "date_last_used": "0",
+            "guid": "d17b29d0-4bc7-4d04-aec8-79536a61a0bf",
+            "id": "8",
+            "name": "McAfee Security",
+            "type": "url",
+            "url": "https://www.mcafee.com/consumer/v/browserfav/hp.html"
+         }, {
+            "date_added": "13422684766499712",
+            "date_last_used": "0",
+            "guid": "bfe2dddb-8388-4fcd-9326-81485aa072b1",
+            "id": "7",
+            "name": "LastPass password manager",
+            "type": "url",
+            "url": "https://js.redirect.hp.com/jumpstation?bd=lastpass&c=231&locale=*&pf=*&tp=edge&TYPE=3"
+         } ],
+         "date_added": "13422684765862512",
+         "date_last_used": "0",
+         "date_modified": "13422684766507124",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "1",
+         "name": "Bookmarks bar",
+         "type": "folder"
+      },
+      "other": {
+         "children": [  ],
+         "date_added": "13422684765862512",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "2",
+         "name": "Other bookmarks",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [  ],
+         "date_added": "13422684765862512",
+         "date_last_used": "0",
+         "date_modified": "0",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "3",
+         "name": "Mobile bookmarks",
+         "type": "folder"
+      }
+   },
+   "version": 1
+}
