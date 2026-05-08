@@ -1,13 +1,11 @@
 const express = require('express');
 const router = express.Router();
 
-const { saveTransaction, getTransactionsByUser, getUserProfile } = require('../services/firestore');
+const { saveTransaction, getTransactionsByUser, getUserProfile, logNudge } = require('../services/firestore');
 const { analyzeTransaction } = require('../services/aiOrchestrator');
 const { sendFCM } = require('../services/fcm');
-const { logNudge } = require('../services/firestore');
 
 // POST /webhook/transaction
-// Called by GXBank (or your mock) when a transaction happens
 router.post('/transaction', async (req, res) => {
   try {
     const { userId, amount, category, merchant, description } = req.body;
@@ -21,10 +19,8 @@ router.post('/transaction', async (req, res) => {
     console.log(`Transaction saved: ${transactionId}`);
 
     // 2. Get user profile + recent history for AI context
-    const [userProfile, userHistory] = await Promise.all([
-      getUserProfile(userId),
-      getTransactionsByUser(userId, 10),
-    ]);
+    const userProfile = await getUserProfile(userId);
+    const userHistory = await getTransactionsByUser(userId, 10);
 
     // 3. Call AI orchestrator
     const aiResult = await analyzeTransaction({
@@ -38,19 +34,26 @@ router.post('/transaction', async (req, res) => {
 
     console.log(`AI result for ${userId}:`, aiResult);
 
-    // 4. Send push notification if risk is medium or high
-    if (aiResult.riskLevel !== 'low' && aiResult.nudgeText) {
-      await sendFCM(
-        userId,
-        'ThinkTwice 💡',
-        aiResult.nudgeText,
-        {
-          riskLevel: aiResult.riskLevel,
-          suggestedAction: aiResult.suggestedAction || '',
-          saveAmount: String(aiResult.saveAmount || 0),
-          transactionId,
-        }
-      );
+    // 4. Send push notification using FCM payload from AI
+    if (aiResult.riskLevel !== 'low' && aiResult.fcmPayload?.shouldSend) {
+      try {
+        await sendFCM(
+          userId,
+          aiResult.fcmPayload.title || 'ThinkTwice 💡',
+          aiResult.fcmPayload.body || aiResult.nudgeText,
+          {
+            riskLevel: aiResult.riskLevel,
+            finalAction: aiResult.suggestedAction || '',
+            triggerSmartRadar: String(aiResult.triggerSmartRadar),
+            radarCategory: aiResult.radarCategory || '',
+            saveAmount: String(aiResult.saveAmount || 0),
+            transactionId,
+            notificationType: aiResult.fcmPayload.data?.notificationType || '',
+          }
+        );
+      } catch (fcmErr) {
+        console.warn('FCM skipped (no token yet):', fcmErr.message);
+      }
 
       // 5. Log nudge for learning loop
       await logNudge(userId, {
@@ -59,6 +62,8 @@ router.post('/transaction', async (req, res) => {
         riskLevel: aiResult.riskLevel,
         suggestedAction: aiResult.suggestedAction,
         saveAmount: aiResult.saveAmount,
+        triggerSmartRadar: aiResult.triggerSmartRadar,
+        radarCategory: aiResult.radarCategory,
         status: 'sent',
       });
     }
