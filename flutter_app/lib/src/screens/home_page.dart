@@ -148,11 +148,14 @@ class HomePage extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.account_balance_wallet_outlined, size: 14, color: Colors.white),
-                            SizedBox(width: 6),
-                            Text('Current balance', style: TextStyle(fontSize: 12, color: Colors.white)),
+                            Icon(Icons.account_balance_wallet_outlined, size: 15, color: Colors.white.withOpacity(0.96)),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Current balance',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.96)),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -160,16 +163,27 @@ class HomePage extends StatelessWidget {
                           value: 1284.50,
                           prefix: 'RM ',
                           decimals: 2,
-                          style: TextStyle(fontSize: 35, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.8),
+                          style: TextStyle(
+                            fontSize: 39,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: -1.2,
+                            shadows: [
+                              Shadow(color: Color(0x3A173A31), blurRadius: 14, offset: Offset(0, 4)),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Savings goal', style: TextStyle(fontSize: 12, color: Colors.white)),
+                            Text(
+                              'Savings goal',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.9)),
+                            ),
                             Text(
                               'RM ${formatRm(plan.savingsAmount * 0.6)} / RM ${formatRm(goal)}',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white.withOpacity(0.96)),
                             ),
                           ],
                         ),
@@ -184,15 +198,19 @@ class HomePage extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.14),
+                            color: Colors.white.withOpacity(0.16),
                             borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: Colors.white.withOpacity(0.14)),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 14),
-                              SizedBox(width: 6),
-                              Text('Your savings pocket is glowing', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                              Icon(Icons.auto_awesome_rounded, color: Colors.white.withOpacity(0.98), size: 14),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Your savings pocket is glowing',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white.withOpacity(0.98)),
+                              ),
                             ],
                           ),
                         ),
@@ -204,6 +222,7 @@ class HomePage extends StatelessWidget {
                                 icon: Icons.wallet_rounded,
                                 label: 'Resilience',
                                 value: '$resilienceScore',
+                                glowColor: const Color(0xFF92F0D5),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -212,6 +231,7 @@ class HomePage extends StatelessWidget {
                                 icon: Icons.local_fire_department_rounded,
                                 label: 'Current streak',
                                 value: streakLabel,
+                                glowColor: const Color(0xFFFFD58B),
                               ),
                             ),
                           ],
@@ -224,6 +244,7 @@ class HomePage extends StatelessWidget {
                                 icon: Icons.psychology_alt_rounded,
                                 label: 'Smart score',
                                 value: '$smartDecisionScore',
+                                glowColor: const Color(0xFFC7F7E9),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -232,6 +253,7 @@ class HomePage extends StatelessWidget {
                                 icon: Icons.savings_rounded,
                                 label: 'Savings goal',
                                 value: '${formatRm(goalProgress * 100)}%',
+                                glowColor: const Color(0xFFFFE8AF),
                               ),
                             ),
                           ],
@@ -257,13 +279,13 @@ class HomePage extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Wallet Guardian', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.accentForeground)),
+                              Text('Wallet Guardian', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: context.colors.accentForeground)),
                               const SizedBox(height: 4),
-                              const Text('Your premium money companion is watching your vibe.', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                              const Text('Your premium money companion is watching your vibe.', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.3)),
                               const SizedBox(height: 6),
                               Text(
                                 moodLabel(emotion),
-                                style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.mutedForeground),
                               ),
                             ],
                           ),
@@ -272,12 +294,24 @@ class HomePage extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            gradient: context.colors.guardianGradient,
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFFFFF7D8),
+                                const Color(0xFFF7DA8C),
+                              ],
+                            ),
                             borderRadius: BorderRadius.circular(999),
+                            boxShadow: [
+                              BoxShadow(
+                                color: context.colors.accent.withOpacity(0.28),
+                                blurRadius: 14,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
                           child: Text(
                             'Level $level',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: context.colors.primary),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: context.colors.accentForeground),
                           ),
                         ),
                       ],
@@ -287,10 +321,27 @@ class HomePage extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        gradient: context.colors.guardianGradient,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFFFFFCF6),
+                            context.colors.guardianGradient.colors.last.withOpacity(0.96),
+                            const Color(0xFFD9F4EA),
+                          ],
+                        ),
                         borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: context.colors.primary.withOpacity(0.12)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.colors.primary.withOpacity(0.08),
+                            blurRadius: 18,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
                       ),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           avatarPreview(
                             context,
@@ -302,49 +353,71 @@ class HomePage extends StatelessWidget {
                             mood: emotion,
                             size: 120,
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 16),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.72),
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.auto_awesome_rounded, size: 14, color: context.colors.accentForeground),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        leveledUp ? 'Rare mood drop' : 'Idle companion loop',
-                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: context.colors.accentForeground),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  leveledUp
-                                      ? 'It is sparkling because your saving habits just leveled up.'
-                                      : overspendingRisk
-                                          ? 'It is giving you a soft warning before the streak breaks.'
-                                          : 'It is cozy, alert, and ready to celebrate your next good call.',
-                                  style: TextStyle(fontSize: 12, height: 1.45, color: context.colors.foreground),
-                                ),
-                                const SizedBox(height: 12),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    _guardianChip(context, Icons.favorite_rounded, savingsWin ? 'Comforted' : 'Observing'),
-                                    _guardianChip(context, Icons.inventory_2_rounded, '${nextLevelPoints - pointsIntoLevel} pts to next cosmetic'),
-                                    _guardianChip(context, Icons.local_fire_department_rounded, streakLabel),
+                            child: Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    const Color(0xFF2D5C53).withOpacity(0.92),
+                                    const Color(0xFF3D766C).withOpacity(0.8),
                                   ],
                                 ),
-                              ],
+                                borderRadius: BorderRadius.circular(22),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF1C3F38).withOpacity(0.16),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.14),
+                                      borderRadius: BorderRadius.circular(999),
+                                      border: Border.all(color: Colors.white.withOpacity(0.12)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.auto_awesome_rounded, size: 14, color: const Color(0xFFFFE7A3)),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          leveledUp ? 'Rare mood drop' : 'Idle companion loop',
+                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    leveledUp
+                                        ? 'It is sparkling because your saving habits just leveled up.'
+                                        : overspendingRisk
+                                            ? 'It is giving you a soft warning before the streak breaks.'
+                                            : 'It is cozy, alert, and ready to celebrate your next good call.',
+                                    style: TextStyle(fontSize: 12, height: 1.5, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.96)),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      _guardianChip(context, Icons.favorite_rounded, savingsWin ? 'Comforted' : 'Observing'),
+                                      _guardianChip(context, Icons.inventory_2_rounded, '${nextLevelPoints - pointsIntoLevel} pts to next cosmetic'),
+                                      _guardianChip(context, Icons.local_fire_department_rounded, streakLabel),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -411,7 +484,7 @@ class HomePage extends StatelessWidget {
                               width: 34,
                               height: 34,
                               decoration: BoxDecoration(
-                                color: context.colors.primary.withOpacity(0.1),
+                                color: context.colors.primary.withOpacity(0.14),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               alignment: Alignment.center,
@@ -423,7 +496,7 @@ class HomePage extends StatelessWidget {
                             ),
                             Text(
                               '+${item.points}',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.success),
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: context.colors.success),
                             ),
                           ],
                         ),
@@ -655,36 +728,64 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _heroMiniCard({required IconData icon, required String label, required String value}) {
+  Widget _heroMiniCard({required IconData icon, required String label, required String value, required Color glowColor}) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [
-            Colors.white.withOpacity(0.2),
-            Colors.white.withOpacity(0.08),
+            Colors.white.withOpacity(0.24),
+            Colors.white.withOpacity(0.1),
+            glowColor.withOpacity(0.08),
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withOpacity(0.16)),
+        boxShadow: [
+          BoxShadow(
+            color: glowColor.withOpacity(0.16),
+            blurRadius: 16,
+            spreadRadius: -8,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 12, color: Colors.white.withOpacity(0.9)),
-              const SizedBox(width: 4),
-              Text(label, style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.9))),
+              Icon(icon, size: 13, color: Colors.white.withOpacity(0.96)),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.92)),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 6),
           TweenAnimationBuilder<double>(
             tween: Tween(begin: 0.95, end: 1),
             duration: const Duration(milliseconds: 1200),
             curve: Curves.easeOutBack,
             builder: (context, scale, child) => Transform.scale(scale: scale, alignment: Alignment.centerLeft, child: child),
-            child: Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 23,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
+            ),
           ),
         ],
       ),
@@ -695,8 +796,14 @@ class HomePage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.74),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.96),
+            const Color(0xFFF4FFF9).withOpacity(0.92),
+          ],
+        ),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.24)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

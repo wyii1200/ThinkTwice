@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'src/core/app_theme.dart';
 import 'src/core/models.dart';
@@ -41,6 +43,13 @@ class AppRoot extends StatefulWidget {
 }
 
 class _AppRootState extends State<AppRoot> {
+  static const _guardianProfileKey = 'guardian_profile';
+  static const _ownedRewardIdsKey = 'owned_reward_ids';
+  static const _totalPointsKey = 'total_points';
+  static const _resilienceScoreKey = 'resilience_score';
+  static const _smartDecisionScoreKey = 'smart_decision_score';
+  static const _currentStreakKey = 'current_streak';
+
   bool _showSplash = true;
   bool _isAuthed = false;
   int _tabIndex = 0;
@@ -56,11 +65,14 @@ class _AppRootState extends State<AppRoot> {
   int _smartDecisionScore = 0;
   int _currentStreak = 0;
   int _totalPoints = 1180;
-  String _breed = 'tabby';
-  String _color = 'mint';
-  String _accessory = 'ribbon';
-  String _outfit = 'Hoodie';
-  String _cosmetic = 'none';
+  GuardianProfile _guardianProfile = const GuardianProfile(
+    breed: 'tabby',
+    color: 'mint',
+    expression: 'proud',
+    accessory: 'ribbon',
+    outfit: 'Hoodie',
+    cosmetic: 'none',
+  );
   double _budget = 1200;
   double _goal = 800;
   final Set<String> _selectedPriorities = <String>{'Emergency fund', 'Reduce food spending'};
@@ -87,11 +99,133 @@ class _AppRootState extends State<AppRoot> {
   @override
   void initState() {
     super.initState();
+    unawaited(_loadPersistedState());
     Timer(const Duration(milliseconds: 2200), () {
       if (mounted) {
         setState(() => _showSplash = false);
       }
     });
+  }
+
+  Future<void> _loadPersistedState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawGuardian = prefs.getString(_guardianProfileKey);
+    final ownedIds = prefs.getStringList(_ownedRewardIdsKey) ?? const <String>[];
+
+    GuardianProfile guardianProfile = _guardianProfile;
+    if (rawGuardian != null) {
+      final decoded = jsonDecode(rawGuardian);
+      if (decoded is Map<String, dynamic>) {
+        guardianProfile = GuardianProfile(
+          breed: decoded['breed'] as String? ?? guardianProfile.breed,
+          color: decoded['color'] as String? ?? guardianProfile.color,
+          expression: decoded['expression'] as String? ?? guardianProfile.expression,
+          accessory: decoded['accessory'] as String? ?? guardianProfile.accessory,
+          outfit: decoded['outfit'] as String? ?? guardianProfile.outfit,
+          cosmetic: decoded['cosmetic'] as String? ?? guardianProfile.cosmetic,
+        );
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _guardianProfile = guardianProfile;
+      _totalPoints = prefs.getInt(_totalPointsKey) ?? _totalPoints;
+      _resilienceScore = prefs.getInt(_resilienceScoreKey) ?? _resilienceScore;
+      _smartDecisionScore = prefs.getInt(_smartDecisionScoreKey) ?? _smartDecisionScore;
+      _currentStreak = prefs.getInt(_currentStreakKey) ?? _currentStreak;
+      _rewardShopItems = _rewardShopItems
+          .map((item) => ownedIds.contains(item.id) ? item.copyWith(owned: true) : item)
+          .toList();
+    });
+  }
+
+  Future<void> _persistAppState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _guardianProfileKey,
+      jsonEncode({
+        'breed': _guardianProfile.breed,
+        'color': _guardianProfile.color,
+        'expression': _guardianProfile.expression,
+        'accessory': _guardianProfile.accessory,
+        'outfit': _guardianProfile.outfit,
+        'cosmetic': _guardianProfile.cosmetic,
+      }),
+    );
+    await prefs.setStringList(
+      _ownedRewardIdsKey,
+      _rewardShopItems.where((item) => item.owned).map((item) => item.id).toList(),
+    );
+    await prefs.setInt(_totalPointsKey, _totalPoints);
+    await prefs.setInt(_resilienceScoreKey, _resilienceScore);
+    await prefs.setInt(_smartDecisionScoreKey, _smartDecisionScore);
+    await prefs.setInt(_currentStreakKey, _currentStreak);
+  }
+
+  void _updateGuardianProfile(GuardianProfile nextProfile) {
+    setState(() => _guardianProfile = nextProfile);
+    unawaited(_persistAppState());
+  }
+
+  void _resetSessionState() {
+    setState(() {
+      _isAuthed = false;
+      _isLoginMode = true;
+      _showPassword = false;
+      _onboardingStep = 0;
+      _tabIndex = 0;
+      _showHomeAlert = true;
+      _gxBankConnected = true;
+      _totalPoints = 1180;
+      _resilienceScore = 50;
+      _smartDecisionScore = 0;
+      _currentStreak = 0;
+      _guardianProfile = const GuardianProfile(
+        breed: 'tabby',
+        color: 'mint',
+        expression: 'proud',
+        accessory: 'ribbon',
+        outfit: 'Hoodie',
+        cosmetic: 'none',
+      );
+      _communityDeals = seedDeals();
+      _quests = seedQuests();
+      _rewardShopItems = seedRewardShopItems();
+      _transactions = seedTransactions();
+      _radarUserLocation = kDefaultRadarCenter;
+      _notificationsEnabled = true;
+      _autoSaveEnabled = true;
+      _autoSavePercent = 0.1;
+      _selectedPriorities
+        ..clear()
+        ..addAll(const {'Emergency fund', 'Reduce food spending'});
+      _yesAnswers.clear();
+      _noAnswers.clear();
+      _recentPoints
+        ..clear()
+        ..addAll(const [
+          PointsEvent(label: 'Saved under daily limit', points: 120, icon: Icons.savings_outlined),
+          PointsEvent(label: 'Quest completed', points: 80, icon: Icons.emoji_events_rounded),
+          PointsEvent(label: 'Used a smart nudge', points: 35, icon: Icons.auto_awesome_rounded),
+        ]);
+      _categoryPercents = <String, double>{
+        'Food & drinks': 0.35,
+        'Transport': 0.15,
+        'Entertainment': 0.12,
+        'Bills': 0.23,
+        'Shopping': 0.15,
+      };
+    });
+    unawaited(() async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_guardianProfileKey);
+      await prefs.remove(_ownedRewardIdsKey);
+      await prefs.remove(_totalPointsKey);
+      await prefs.remove(_resilienceScoreKey);
+      await prefs.remove(_smartDecisionScoreKey);
+      await prefs.remove(_currentStreakKey);
+    }());
   }
 
   void _awardPoints(String label, int points, IconData icon) {
@@ -102,6 +236,7 @@ class _AppRootState extends State<AppRoot> {
         _recentPoints.removeLast();
       }
     });
+    unawaited(_persistAppState());
   }
 
   void _updateRadarLocation(LatLng location) {
@@ -131,6 +266,7 @@ class _AppRootState extends State<AppRoot> {
           .toList();
       _resilienceScore = (_resilienceScore + 1).clamp(0, 100).toInt();
     });
+    unawaited(_persistAppState());
     _awardPoints('Verified a community deal', 20, Icons.verified_rounded);
   }
 
@@ -143,6 +279,7 @@ class _AppRootState extends State<AppRoot> {
     setState(() {
       _quests[questIndex] = quest.copyWith(isClaimed: true);
     });
+    unawaited(_persistAppState());
     _awardPoints('${quest.title} reward claimed', quest.rewardPoints, Icons.emoji_events_rounded);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Reward claimed! You earned +${quest.rewardPoints} pts.')),
@@ -183,14 +320,26 @@ class _AppRootState extends State<AppRoot> {
     setState(() {
       _totalPoints -= item.price;
       _rewardShopItems[itemIndex] = item.copyWith(owned: true);
+      switch (item.category) {
+        case 'accessory':
+          _guardianProfile = _guardianProfile.copyWith(accessory: item.value);
+          break;
+        case 'outfit':
+          _guardianProfile = _guardianProfile.copyWith(outfit: item.value);
+          break;
+        case 'cosmetic':
+          _guardianProfile = _guardianProfile.copyWith(cosmetic: item.value);
+          break;
+      }
     });
+    unawaited(_persistAppState());
 
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Reward Shop'),
-        content: const Text('Redeemed successfully!'),
+        content: const Text('Redeemed and equipped successfully!'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
@@ -207,6 +356,7 @@ class _AppRootState extends State<AppRoot> {
       _resilienceScore = (_resilienceScore + 6).clamp(0, 100).toInt();
       _smartDecisionScore = (_smartDecisionScore + 10).clamp(0, 100).toInt();
       _currentStreak += 1;
+      _guardianProfile = _guardianProfile.copyWith(expression: 'happy');
       _transactions = [
         const TransactionRecord(
           id: 'tx-auto-save',
@@ -219,6 +369,7 @@ class _AppRootState extends State<AppRoot> {
         ..._transactions.where((tx) => tx.id != 'tx-auto-save'),
       ];
     });
+    unawaited(_persistAppState());
     _awardPoints('Protected your streak with a quick save', 40, Icons.savings_rounded);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('RM8 moved to savings. Your dashboard has been updated.')),
@@ -243,7 +394,9 @@ class _AppRootState extends State<AppRoot> {
     setState(() {
       _showHomeAlert = false;
       _resilienceScore = (_resilienceScore - 2).clamp(0, 100).toInt();
+      _guardianProfile = _guardianProfile.copyWith(expression: 'sad');
     });
+    unawaited(_persistAppState());
   }
 
   Future<void> _openAvatarCustomization(BuildContext context) async {
@@ -254,11 +407,11 @@ class _AppRootState extends State<AppRoot> {
       builder: (context) => AvatarCustomizationSheet(
         totalPoints: _totalPoints,
         rewardShopItems: _rewardShopItems,
-        breed: _breed,
-        color: _color,
-        accessory: _accessory,
-        outfit: _outfit,
-        cosmetic: _cosmetic,
+        breed: _guardianProfile.breed,
+        color: _guardianProfile.color,
+        accessory: _guardianProfile.accessory,
+        outfit: _guardianProfile.outfit,
+        cosmetic: _guardianProfile.cosmetic,
       ),
     );
 
@@ -279,10 +432,13 @@ class _AppRootState extends State<AppRoot> {
       _rewardShopItems = _rewardShopItems
           .map((item) => result.purchasedItemIds.contains(item.id) ? item.copyWith(owned: true) : item)
           .toList();
-      _accessory = result.accessory;
-      _outfit = result.outfit;
-      _cosmetic = result.cosmetic;
+      _guardianProfile = _guardianProfile.copyWith(
+        accessory: result.accessory,
+        outfit: result.outfit,
+        cosmetic: result.cosmetic,
+      );
     });
+    unawaited(_persistAppState());
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -317,10 +473,11 @@ class _AppRootState extends State<AppRoot> {
 
       return OnboardingPage(
         step: _onboardingStep - 1,
-        breed: _breed,
-        color: _color,
-        accessory: _accessory,
-        outfit: _outfit,
+        breed: _guardianProfile.breed,
+        color: _guardianProfile.color,
+        expression: _guardianProfile.expression,
+        accessory: _guardianProfile.accessory,
+        outfit: _guardianProfile.outfit,
         budget: _budget,
         goal: _goal,
         gxBankConnected: _gxBankConnected,
@@ -332,10 +489,11 @@ class _AppRootState extends State<AppRoot> {
         plan: plan,
         yesAnswers: _yesAnswers,
         noAnswers: _noAnswers,
-        onSetBreed: (v) => setState(() => _breed = v),
-        onSetColor: (v) => setState(() => _color = v),
-        onSetAccessory: (v) => setState(() => _accessory = v),
-        onSetOutfit: (v) => setState(() => _outfit = v),
+        onSetBreed: (v) => _updateGuardianProfile(_guardianProfile.copyWith(breed: v)),
+        onSetColor: (v) => _updateGuardianProfile(_guardianProfile.copyWith(color: v)),
+        onSetExpression: (v) => _updateGuardianProfile(_guardianProfile.copyWith(expression: v)),
+        onSetAccessory: (v) => _updateGuardianProfile(_guardianProfile.copyWith(accessory: v)),
+        onSetOutfit: (v) => _updateGuardianProfile(_guardianProfile.copyWith(outfit: v)),
         onSetBudget: (v) => setState(() => _budget = v),
         onSetGoal: (v) => setState(() => _goal = v),
         onSetAutoSavePercent: (v) => setState(() => _autoSavePercent = v),
@@ -395,11 +553,11 @@ class _AppRootState extends State<AppRoot> {
             currentStreak: _currentStreak,
             recentPoints: _recentPoints,
             transactions: _transactions,
-            breed: _breed,
-            color: _color,
-            accessory: _accessory,
-            outfit: _outfit,
-            cosmetic: _cosmetic,
+            breed: _guardianProfile.breed,
+            color: _guardianProfile.color,
+            accessory: _guardianProfile.accessory,
+            outfit: _guardianProfile.outfit,
+            cosmetic: _guardianProfile.cosmetic,
             showAlert: _showHomeAlert,
             onSaveAlert: () => _saveFromIntervention(context),
             onOpenAlternatives: _openRadarFromIntervention,
@@ -418,11 +576,12 @@ class _AppRootState extends State<AppRoot> {
             totalPoints: _totalPoints,
             quests: _quests,
             rewardShopItems: _rewardShopItems,
-            breed: _breed,
-            color: _color,
-            accessory: _accessory,
-            outfit: _outfit,
-            cosmetic: _cosmetic,
+            breed: _guardianProfile.breed,
+            color: _guardianProfile.color,
+            expression: _guardianProfile.expression,
+            accessory: _guardianProfile.accessory,
+            outfit: _guardianProfile.outfit,
+            cosmetic: _guardianProfile.cosmetic,
             onClaimReward: (questId) => _claimQuestReward(context, questId),
             onRedeemItem: (itemId) => _redeemRewardShopItem(context, itemId),
             onCustomizeAvatar: () => _openAvatarCustomization(context),
@@ -434,60 +593,17 @@ class _AppRootState extends State<AppRoot> {
             plan: plan,
             totalPoints: _totalPoints,
             transactions: _transactions,
-            breed: _breed,
-            color: _color,
-            accessory: _accessory,
-            outfit: _outfit,
-            cosmetic: _cosmetic,
+            breed: _guardianProfile.breed,
+            color: _guardianProfile.color,
+            expression: _guardianProfile.expression,
+            accessory: _guardianProfile.accessory,
+            outfit: _guardianProfile.outfit,
+            cosmetic: _guardianProfile.cosmetic,
             notificationsEnabled: _notificationsEnabled,
             autoSaveEnabled: _autoSaveEnabled,
             onNotificationsChanged: (value) => setState(() => _notificationsEnabled = value),
             onAutoSaveChanged: (value) => setState(() => _autoSaveEnabled = value),
-            onSignOut: () => setState(() {
-              _isAuthed = false;
-              _isLoginMode = true;
-              _showPassword = false;
-              _onboardingStep = 0;
-              _tabIndex = 0;
-              _showHomeAlert = true;
-              _gxBankConnected = true;
-              _totalPoints = 1180;
-              _resilienceScore = 50;
-              _smartDecisionScore = 0;
-              _currentStreak = 0;
-              _breed = 'tabby';
-              _color = 'mint';
-              _accessory = 'ribbon';
-              _outfit = 'Hoodie';
-              _cosmetic = 'none';
-              _communityDeals = seedDeals();
-              _quests = seedQuests();
-              _rewardShopItems = seedRewardShopItems();
-              _transactions = seedTransactions();
-              _radarUserLocation = kDefaultRadarCenter;
-              _notificationsEnabled = true;
-              _autoSaveEnabled = true;
-              _autoSavePercent = 0.1;
-              _selectedPriorities
-                ..clear()
-                ..addAll(const {'Emergency fund', 'Reduce food spending'});
-              _yesAnswers.clear();
-              _noAnswers.clear();
-              _recentPoints
-                ..clear()
-                ..addAll(const [
-                  PointsEvent(label: 'Saved under daily limit', points: 120, icon: Icons.savings_outlined),
-                  PointsEvent(label: 'Quest completed', points: 80, icon: Icons.emoji_events_rounded),
-                  PointsEvent(label: 'Used a smart nudge', points: 35, icon: Icons.auto_awesome_rounded),
-                ]);
-              _categoryPercents = <String, double>{
-                'Food & drinks': 0.35,
-                'Transport': 0.15,
-                'Entertainment': 0.12,
-                'Bills': 0.23,
-                'Shopping': 0.15,
-              };
-            }),
+            onSignOut: _resetSessionState,
           ),
         ],
       ),

@@ -17,6 +17,11 @@ dependencies:
   firebase_storage: ^13.3.0
   image_picker: ^1.2.2
   url_launcher: ^6.3.2
+  shared_preferences: ^2.3.2
+  rive: ^0.14.6
+  lottie: ^3.3.3
+  flutter_animate: ^4.5.2
+  flame: ^1.37.0
 
 dev_dependencies:
   flutter_test:
