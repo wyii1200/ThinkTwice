@@ -9,8 +9,14 @@ class HomePage extends StatelessWidget {
     required this.plan,
     required this.goal,
     required this.totalPoints,
+    required this.resilienceScore,
+    required this.smartDecisionScore,
+    required this.currentStreak,
     required this.recentPoints,
+    required this.transactions,
     required this.showAlert,
+    required this.onSaveAlert,
+    required this.onOpenAlternatives,
     required this.onDismissAlert,
     required this.onNavigate,
   });
@@ -18,16 +24,22 @@ class HomePage extends StatelessWidget {
   final BudgetPlan plan;
   final double goal;
   final int totalPoints;
+  final int resilienceScore;
+  final int smartDecisionScore;
+  final int currentStreak;
   final List<PointsEvent> recentPoints;
+  final List<TransactionRecord> transactions;
   final bool showAlert;
+  final VoidCallback onSaveAlert;
+  final VoidCallback onOpenAlternatives;
   final VoidCallback onDismissAlert;
   final ValueChanged<int> onNavigate;
 
   @override
   Widget build(BuildContext context) {
     final overspendingRisk = plan.allocations.firstWhere((item) => item.name == 'Food & drinks').percent >= 0.34;
-    final challengeCompleted = true;
-    final leveledUp = plan.adaptabilityScore >= 84;
+    final challengeCompleted = currentStreak >= 3;
+    final leveledUp = resilienceScore >= 70;
     final savingsWin = plan.savingsRate >= 0.25;
     final emotion = leveledUp
         ? AvatarMood.excited
@@ -40,30 +52,30 @@ class HomePage extends StatelessWidget {
     final pointsIntoLevel = totalPoints % 300;
     final nextLevelPoints = 300;
     final levelProgress = (pointsIntoLevel / nextLevelPoints).clamp(0.0, 1.0);
+    final streakLabel = '$currentStreak day${currentStreak == 1 ? '' : 's'}';
     final insights = [
-      (
-        Icons.wallet_outlined,
-        'primary',
-        'Safe daily limit: RM ${formatRm(plan.dailyLimit)}',
-        'Auto-calculated from your monthly budget and current savings target.',
-      ),
       (
         Icons.restaurant_rounded,
         'warning',
-        'Food budget is capped at ${formatRm((plan.allocations.firstWhere((item) => item.name == 'Food & drinks').percent) * 100)}%',
-        'ThinkTwice will tighten or relax this category as it learns your spending rhythm.',
+        'Food spending is 35% above average today',
+        'AI flagged late food purchases as your main overspending risk right now.',
       ),
       (
-        Icons.shield_outlined,
+        Icons.savings_outlined,
         'success',
-        'Savings protected at RM ${formatRm(plan.savingsAmount)}',
-        'Your plan keeps goal money aside before flexible spending kicks in.',
+        'You avoided RM47 overspending this week',
+        'Your recent nudges and safer swaps kept this week under your flexible budget.',
+      ),
+      (
+        Icons.wallet_outlined,
+        'primary',
+        'You can still save RM20 today',
+        'Staying under your safe daily limit keeps your weekly goal within reach.',
       ),
     ];
     final categories = plan.allocations.where((item) => item.name != 'Savings').take(4).toList();
     final trend = [30, 45, 28, 60, 35, 52, 41];
     final goalProgress = (plan.savingsAmount * 0.6 / goal).clamp(0.0, 1.0);
-
     return Stack(
       children: [
         SingleChildScrollView(
@@ -145,16 +157,36 @@ class HomePage extends StatelessWidget {
                             Expanded(
                               child: _heroMiniCard(
                                 icon: Icons.wallet_rounded,
-                                label: 'Daily safe',
-                                value: 'RM ${formatRm(plan.dailyLimit)}',
+                                label: 'Resilience',
+                                value: '$resilienceScore',
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: _heroMiniCard(
-                                icon: Icons.auto_awesome_rounded,
-                                label: 'Adaptive score',
-                                value: '${plan.adaptabilityScore}',
+                                icon: Icons.local_fire_department_rounded,
+                                label: 'Current streak',
+                                value: streakLabel,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _heroMiniCard(
+                                icon: Icons.psychology_alt_rounded,
+                                label: 'Smart score',
+                                value: '$smartDecisionScore',
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _heroMiniCard(
+                                icon: Icons.savings_rounded,
+                                label: 'Savings goal',
+                                value: '${formatRm(goalProgress * 100)}%',
                               ),
                             ),
                           ],
@@ -268,11 +300,11 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(child: QuickActionCard(icon: Icons.savings_outlined, label: 'Save Now', color: context.colors.primary, onTap: () {})),
+                  Expanded(child: QuickActionCard(icon: Icons.savings_outlined, label: 'Save Now', color: context.colors.primary, onTap: onSaveAlert)),
                   const SizedBox(width: 10),
-                  Expanded(child: QuickActionCard(icon: Icons.map_rounded, label: 'Smart Radar', color: context.colors.accent, onTap: () => onNavigate(1))),
+                  Expanded(child: QuickActionCard(icon: Icons.map_rounded, label: 'Radar', color: context.colors.accent, onTap: () => onNavigate(1))),
                   const SizedBox(width: 10),
-                  Expanded(child: QuickActionCard(icon: Icons.emoji_events_rounded, label: 'Quests', color: context.colors.warning, onTap: () => onNavigate(2))),
+                  Expanded(child: QuickActionCard(icon: Icons.emoji_events_rounded, label: 'Challenges', color: context.colors.warning, onTap: () => onNavigate(2))),
                 ],
               ),
               const SizedBox(height: 20),
@@ -287,6 +319,26 @@ class HomePage extends StatelessWidget {
                       body: item.$4,
                     ),
                   )),
+              const SizedBox(height: 12),
+              WhiteCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Progress after action', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(child: progressStat(context, 'Saved this week', 'RM 37')),
+                        const SizedBox(width: 8),
+                        Expanded(child: progressStat(context, 'Radar savings', 'RM 22')),
+                        const SizedBox(width: 8),
+                        Expanded(child: progressStat(context, 'Score gain', '+12')),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 12),
               WhiteCard(
                 padding: const EdgeInsets.all(16),
@@ -421,7 +473,11 @@ class HomePage extends StatelessWidget {
         ),
         if (showAlert)
           Positioned.fill(
-            child: AIInterventionModal(onClose: onDismissAlert),
+            child: AIInterventionModal(
+              onSaveNow: onSaveAlert,
+              onFindAlternative: onOpenAlternatives,
+              onIgnore: onDismissAlert,
+            ),
           ),
       ],
     );

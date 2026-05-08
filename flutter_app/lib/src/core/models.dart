@@ -210,6 +210,24 @@ class RewardShopItem {
   }
 }
 
+class TransactionRecord {
+  const TransactionRecord({
+    required this.id,
+    required this.merchant,
+    required this.amount,
+    required this.icon,
+    required this.timestampLabel,
+    this.category = 'General',
+  });
+
+  final String id;
+  final String merchant;
+  final double amount;
+  final IconData icon;
+  final String timestampLabel;
+  final String category;
+}
+
 class AvatarCustomizationResult {
   const AvatarCustomizationResult({
     required this.accessory,

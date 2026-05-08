@@ -25,6 +25,8 @@ class InsightsPage extends StatelessWidget {
           const SizedBox(height: 4),
           Text('Your AI financial intelligence', style: TextStyle(fontSize: 14, color: context.colors.mutedForeground)),
           const SizedBox(height: 16),
+          const Text('Personalized insights', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
           ...[
             (Icons.schedule_rounded, true, 'You overspend most after 10PM', '62% of impulse purchases happen late at night.'),
             (
@@ -86,7 +88,7 @@ class InsightsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Adaptive category mix', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                const Text('Category distribution', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 12),
                 ...topAllocations.map((allocation) {
                   return Padding(
@@ -216,6 +218,11 @@ class InsightsPage extends StatelessWidget {
                 Text(
                   plan.recommendations.first,
                   style: const TextStyle(fontSize: 14, color: Colors.white, height: 1.45),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Learning loop: accepted nudges, ignored warnings, savings wins, and Radar usage all refine tomorrow\'s recommendations.',
+                  style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.92), height: 1.4),
                 ),
               ],
             ),

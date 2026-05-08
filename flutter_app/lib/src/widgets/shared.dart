@@ -202,9 +202,16 @@ Widget avatarPreview(
 }
 
 class AIInterventionModal extends StatelessWidget {
-  const AIInterventionModal({super.key, required this.onClose});
+  const AIInterventionModal({
+    super.key,
+    required this.onSaveNow,
+    required this.onFindAlternative,
+    required this.onIgnore,
+  });
 
-  final VoidCallback onClose;
+  final VoidCallback onSaveNow;
+  final VoidCallback onFindAlternative;
+  final VoidCallback onIgnore;
 
   @override
   Widget build(BuildContext context) {
@@ -253,7 +260,7 @@ class AIInterventionModal extends StatelessWidget {
                         ),
                       ),
                       IconButton(
-                        onPressed: onClose,
+                        onPressed: onIgnore,
                         icon: Icon(Icons.close_rounded),
                         color: Color(0xFF6B847E),
                       ),
@@ -267,16 +274,30 @@ class AIInterventionModal extends StatelessWidget {
                       color: context.colors.muted.withOpacity(0.6),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Text(
-                      'Your food spending today is already 42% above average. Save RM8 now to maintain your streak.',
-                      style: TextStyle(fontSize: 14, height: 1.45),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Your food spending today is already 42% above average.',
+                          style: TextStyle(fontSize: 14, height: 1.45),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Move RM8 into savings now to protect your streak and stay under today\'s safe limit.',
+                          style: TextStyle(fontSize: 13, height: 1.45),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const GradientButton(text: 'Save RM8 now', icon: Icons.savings_outlined),
+                  GradientButton(
+                    text: 'Save RM8',
+                    icon: Icons.savings_outlined,
+                    onPressed: onSaveNow,
+                  ),
                   const SizedBox(height: 8),
                   FilledButton.tonal(
-                    onPressed: onClose,
+                    onPressed: onFindAlternative,
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -292,7 +313,7 @@ class AIInterventionModal extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   TextButton(
-                    onPressed: onClose,
+                    onPressed: onIgnore,
                     child: Text('Ignore', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
                   ),
                 ],

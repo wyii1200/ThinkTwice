@@ -10,11 +10,16 @@ class ProfilePage extends StatelessWidget {
     required this.goal,
     required this.plan,
     required this.totalPoints,
+    required this.transactions,
     required this.breed,
     required this.color,
     required this.accessory,
     required this.outfit,
     required this.cosmetic,
+    required this.notificationsEnabled,
+    required this.autoSaveEnabled,
+    required this.onNotificationsChanged,
+    required this.onAutoSaveChanged,
     required this.onSignOut,
   });
 
@@ -22,23 +27,21 @@ class ProfilePage extends StatelessWidget {
   final double goal;
   final BudgetPlan plan;
   final int totalPoints;
+  final List<TransactionRecord> transactions;
   final String breed;
   final String color;
   final String accessory;
   final String outfit;
   final String cosmetic;
+  final bool notificationsEnabled;
+  final bool autoSaveEnabled;
+  final ValueChanged<bool> onNotificationsChanged;
+  final ValueChanged<bool> onAutoSaveChanged;
   final VoidCallback onSignOut;
 
   @override
   Widget build(BuildContext context) {
     final level = 1 + (totalPoints ~/ 300);
-    final tx = [
-      ('Starbucks', -12, Icons.coffee_rounded, '2h ago'),
-      ('Tealive', -9, Icons.local_drink_rounded, 'Yesterday'),
-      ('GrabFood', -24, Icons.lunch_dining_rounded, 'Yesterday'),
-      ('Salary', 2400, Icons.payments_rounded, '3 days ago'),
-      ('Shopee', -45, Icons.shopping_bag_rounded, '4 days ago'),
-    ];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
@@ -78,7 +81,7 @@ class ProfilePage extends StatelessWidget {
                       children: [
                         const Text('Aiman', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white)),
                         const SizedBox(height: 4),
-                        Text('Level $level | Saver', style: const TextStyle(fontSize: 12, color: Colors.white)),
+                        Text('Level $level | Saver cat', style: const TextStyle(fontSize: 12, color: Colors.white)),
                         const SizedBox(height: 8),
                         PointsChip(totalPoints: totalPoints),
                       ],
@@ -96,8 +99,8 @@ class ProfilePage extends StatelessWidget {
               children: [
                 const Text('Recent transactions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 12),
-                ...tx.map((item) {
-                  final positive = item.$2 > 0;
+                ...transactions.map((item) {
+                  final positive = item.amount > 0;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Row(
@@ -107,20 +110,20 @@ class ProfilePage extends StatelessWidget {
                           height: 40,
                           decoration: BoxDecoration(color: context.colors.muted, borderRadius: BorderRadius.circular(16)),
                           alignment: Alignment.center,
-                          child: Icon(item.$3, size: 20, color: context.colors.foreground),
+                          child: Icon(item.icon, size: 20, color: context.colors.foreground),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(item.$1, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                              Text(item.$4, style: TextStyle(fontSize: 11, color: context.colors.mutedForeground)),
+                              Text(item.merchant, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                              Text('${item.category} • ${item.timestampLabel}', style: TextStyle(fontSize: 11, color: context.colors.mutedForeground)),
                             ],
                           ),
                         ),
                         Text(
-                          '${positive ? '+' : ''}RM${item.$2.abs()}',
+                          '${positive ? '+' : '-'}RM${formatRm(item.amount.abs())}',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -142,8 +145,8 @@ class ProfilePage extends StatelessWidget {
                 _settingsRow(context, Icons.account_balance_wallet_outlined, 'Budget settings', 'RM ${formatRm(budget)}/mo', true),
                 _settingsRow(context, Icons.track_changes_rounded, 'Savings goal', 'RM ${formatRm(goal)}', true),
                 _settingsRow(context, Icons.today_outlined, 'Safe daily spend', 'RM ${formatRm(plan.dailyLimit)}', true),
-                _settingsRow(context, Icons.notifications_none_rounded, 'Notifications', 'On', true),
-                _settingsRow(context, Icons.settings_outlined, 'Auto-save approval', '${formatRm(plan.savingsRate * 100)}% auto-save', false),
+                _toggleSettingsRow(context, Icons.notifications_none_rounded, 'Notifications', notificationsEnabled, onNotificationsChanged),
+                _toggleSettingsRow(context, Icons.settings_outlined, 'Auto-save approval', autoSaveEnabled, onAutoSaveChanged),
               ],
             ),
           ),
@@ -188,6 +191,36 @@ class ProfilePage extends StatelessWidget {
           ),
         ),
         if (divider) Divider(height: 1, color: Theme.of(context).dividerColor),
+      ],
+    );
+  }
+
+  Widget _toggleSettingsRow(
+    BuildContext context,
+    IconData icon,
+    String label,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(color: context.colors.muted, borderRadius: BorderRadius.circular(12)),
+                alignment: Alignment.center,
+                child: Icon(icon, size: 18, color: context.colors.foreground),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
+              Switch.adaptive(value: value, onChanged: onChanged),
+            ],
+          ),
+        ),
       ],
     );
   }

@@ -56,7 +56,19 @@ class _ChallengesPageState extends State<ChallengesPage> {
       (3, 'Hafiz', 980, Icons.auto_awesome_rounded),
       (4, 'Lina', 760, Icons.favorite_rounded),
     ];
-    final claimedCount = widget.quests.where((quest) => quest.isClaimed).length;
+    final streakQuest = widget.quests.firstWhere(
+      (quest) => quest.id == 'quest-savings-streak',
+      orElse: () => const QuestProgress(
+        id: 'fallback-streak',
+        title: 'Current Save Streak',
+        progress: 0,
+        progressLabel: '0/7 days',
+        rewardLabel: '+0 pts',
+        rewardPoints: 0,
+        isCompleted: false,
+      ),
+    );
+    final currentSaveStreak = '${streakQuest.progressLabel.split('/').first} days';
     final level = 1 + (widget.totalPoints ~/ 300);
     final pointsIntoLevel = widget.totalPoints % 300;
     final pointsToNextLevel = 300 - pointsIntoLevel;
@@ -67,9 +79,21 @@ class _ChallengesPageState extends State<ChallengesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Quests', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
+          const Text('Challenges', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text('Earn rewards for smart spending', style: TextStyle(fontSize: 14, color: context.colors.mutedForeground)),
+          Text('Streaks, rewards, squads, and unlockables', style: TextStyle(fontSize: 14, color: context.colors.mutedForeground)),
+          const SizedBox(height: 16),
+          Center(
+            child: avatarPreview(
+              context,
+              breed: widget.breed,
+              color: widget.color,
+              accessory: widget.accessory,
+              outfit: widget.outfit,
+              cosmetic: widget.cosmetic,
+              size: 120,
+            ),
+          ),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -82,8 +106,8 @@ class _ChallengesPageState extends State<ChallengesPage> {
                     children: [
                       const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 24),
                       const SizedBox(height: 8),
-                      Text('$claimedCount', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white)),
-                      const Text('Rewards claimed', style: TextStyle(fontSize: 11, color: Colors.white)),
+                      Text(currentSaveStreak, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white)),
+                      const Text('Current Save Streak', style: TextStyle(fontSize: 11, color: Colors.white)),
                     ],
                   ),
                 ),
@@ -111,6 +135,16 @@ class _ChallengesPageState extends State<ChallengesPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const Text('Streaks', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: progressStat(context, 'Risk avoidance', currentSaveStreak)),
+                    const SizedBox(width: 10),
+                    Expanded(child: progressStat(context, 'Smart spending', '5 days')),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     const Text('Level progress', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
@@ -136,14 +170,14 @@ class _ChallengesPageState extends State<ChallengesPage> {
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _questSectionToggle(context, 'Quests', 0)),
+              Expanded(child: _questSectionToggle(context, 'Challenges', 0)),
               const SizedBox(width: 10),
-              Expanded(child: _questSectionToggle(context, 'Reward Shop', 1)),
+              Expanded(child: _questSectionToggle(context, 'Rewards', 1)),
             ],
           ),
           const SizedBox(height: 16),
           if (_sectionIndex == 0) ...[
-            const Text('Active quests', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+            const Text('Challenge cards', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             ...widget.quests.map((quest) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -218,13 +252,13 @@ class _ChallengesPageState extends State<ChallengesPage> {
                 children: [
                   Row(
                     children: [
-                      const Text('Reward Shop', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      const Text('Rewards', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                       const Spacer(),
                       PointsChip(totalPoints: widget.totalPoints),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text('Redeem points for avatar items, badges, and cosmetics.', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
+                  Text('Redeem points for badges, avatar upgrades, and unlockables.', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
                   const SizedBox(height: 14),
                   ...widget.rewardShopItems.map((item) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
@@ -455,7 +489,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
                 SizedBox(
                   height: 32,
                   child: FilledButton.tonal(
-                    onPressed: canAfford ? onRedeem : null,
+                    onPressed: onRedeem,
                     style: FilledButton.styleFrom(
                       backgroundColor: canAfford ? context.colors.primary.withOpacity(0.12) : context.colors.muted,
                       foregroundColor: canAfford ? context.colors.primary : context.colors.mutedForeground,

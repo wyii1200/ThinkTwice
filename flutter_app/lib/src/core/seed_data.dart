@@ -153,6 +153,51 @@ List<RewardShopItem> seedRewardShopItems() {
   ];
 }
 
+List<TransactionRecord> seedTransactions() {
+  return const [
+    TransactionRecord(
+      id: 'tx-1',
+      merchant: 'Starbucks',
+      amount: -12,
+      icon: Icons.coffee_rounded,
+      timestampLabel: '2h ago',
+      category: 'Food & drinks',
+    ),
+    TransactionRecord(
+      id: 'tx-2',
+      merchant: 'Tealive',
+      amount: -9,
+      icon: Icons.local_drink_rounded,
+      timestampLabel: 'Yesterday',
+      category: 'Food & drinks',
+    ),
+    TransactionRecord(
+      id: 'tx-3',
+      merchant: 'GrabFood',
+      amount: -24,
+      icon: Icons.lunch_dining_rounded,
+      timestampLabel: 'Yesterday',
+      category: 'Food & drinks',
+    ),
+    TransactionRecord(
+      id: 'tx-4',
+      merchant: 'Salary',
+      amount: 2400,
+      icon: Icons.payments_rounded,
+      timestampLabel: '3 days ago',
+      category: 'Income',
+    ),
+    TransactionRecord(
+      id: 'tx-5',
+      merchant: 'Shopee',
+      amount: -45,
+      icon: Icons.shopping_bag_rounded,
+      timestampLabel: '4 days ago',
+      category: 'Shopping',
+    ),
+  ];
+}
+
 BudgetPlan buildBudgetPlan({
   required double monthlyBudget,
   required double savingsGoal,

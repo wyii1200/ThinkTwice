@@ -401,6 +401,11 @@ class OnboardingPage extends StatelessWidget {
     required this.outfit,
     required this.budget,
     required this.goal,
+    required this.gxBankConnected,
+    required this.notificationsEnabled,
+    required this.autoSaveEnabled,
+    required this.autoSavePercent,
+    required this.selectedPriorities,
     required this.categoryPercents,
     required this.plan,
     required this.yesAnswers,
@@ -411,6 +416,10 @@ class OnboardingPage extends StatelessWidget {
     required this.onSetOutfit,
     required this.onSetBudget,
     required this.onSetGoal,
+    required this.onSetAutoSavePercent,
+    required this.onToggleNotifications,
+    required this.onToggleAutoSave,
+    required this.onTogglePriority,
     required this.onSetCategoryPercent,
     required this.onTogglePersonality,
     required this.onBack,
@@ -424,6 +433,11 @@ class OnboardingPage extends StatelessWidget {
   final String outfit;
   final double budget;
   final double goal;
+  final bool gxBankConnected;
+  final bool notificationsEnabled;
+  final bool autoSaveEnabled;
+  final double autoSavePercent;
+  final Set<String> selectedPriorities;
   final Map<String, double> categoryPercents;
   final BudgetPlan plan;
   final Set<int> yesAnswers;
@@ -434,6 +448,10 @@ class OnboardingPage extends StatelessWidget {
   final ValueChanged<String> onSetOutfit;
   final ValueChanged<double> onSetBudget;
   final ValueChanged<double> onSetGoal;
+  final ValueChanged<double> onSetAutoSavePercent;
+  final ValueChanged<bool> onToggleNotifications;
+  final ValueChanged<bool> onToggleAutoSave;
+  final ValueChanged<String> onTogglePriority;
   final void Function(String key, double value) onSetCategoryPercent;
   final void Function(int index, bool yes) onTogglePersonality;
   final VoidCallback onBack;
@@ -462,6 +480,12 @@ class OnboardingPage extends StatelessWidget {
       'I love a good deal hunt',
       'I forget to track expenses',
       'I want to save for something specific',
+    ];
+    final priorities = [
+      'Emergency fund',
+      'Reduce food spending',
+      'Avoid overspending',
+      'Build saving habit',
     ];
 
     return Scaffold(
@@ -692,13 +716,94 @@ class OnboardingPage extends StatelessWidget {
                         1 => Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Tell us your money style', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+                              const Text('Set goals and preferences', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
                               const SizedBox(height: 4),
                               Text(
-                                'Set your monthly income and savings goal. We will calculate your safe daily spending limit automatically.',
+                                'Choose your priorities, budget setup, and intervention preferences. ThinkTwice will build your first baseline from this.',
                                 style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
                               ),
+                              const SizedBox(height: 16),
+                              WhiteCard(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 36,
+                                          height: 36,
+                                          decoration: BoxDecoration(
+                                            color: context.colors.primary.withOpacity(0.12),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Icon(Icons.account_balance_rounded, color: context.colors.primary),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              const Text('GXBank account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                                              Text(
+                                                gxBankConnected ? 'Connected securely for transaction streaming' : 'Not connected yet',
+                                                style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: gxBankConnected ? context.colors.success.withOpacity(0.14) : context.colors.warning.withOpacity(0.16),
+                                            borderRadius: BorderRadius.circular(999),
+                                          ),
+                                          child: Text(
+                                            gxBankConnected ? 'Connected' : 'Pending',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: gxBankConnected ? context.colors.success : context.colors.accentForeground,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
                               const SizedBox(height: 20),
+                              _sectionLabel('Priority goals', context),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: priorities.map((item) {
+                                  final selected = selectedPriorities.contains(item);
+                                  return GestureDetector(
+                                    onTap: () => onTogglePriority(item),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: selected ? context.colors.primary.withOpacity(0.12) : context.colors.card,
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: selected ? context.colors.primary : Theme.of(context).dividerColor,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        item,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: selected ? context.colors.primary : context.colors.foreground,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 16),
                               AmountSliderCard(
                                 icon: Icons.account_balance_wallet_outlined,
                                 label: 'Monthly income / budget',
@@ -750,40 +855,66 @@ class OnboardingPage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 18),
-                              _sectionLabel('Spending categories', context),
-                              Text(
-                                'Adjust how your spending pool is split across categories.',
-                                style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
+                              WhiteCard(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Automation preferences', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            'Auto-save approval',
+                                            style: TextStyle(fontSize: 13, color: context.colors.foreground),
+                                          ),
+                                        ),
+                                        Switch.adaptive(value: autoSaveEnabled, onChanged: onToggleAutoSave),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Micro-saving amount: ${formatRm(autoSavePercent * 100)}%',
+                                      style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
+                                    ),
+                                    SliderTheme(
+                                      data: SliderTheme.of(context).copyWith(
+                                        activeTrackColor: context.colors.success,
+                                        inactiveTrackColor: context.colors.muted,
+                                        thumbColor: context.colors.success,
+                                      ),
+                                      child: Slider(
+                                        value: autoSavePercent.clamp(0.05, 0.3),
+                                        min: 0.05,
+                                        max: 0.3,
+                                        divisions: 5,
+                                        onChanged: onSetAutoSavePercent,
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            'Spending alerts',
+                                            style: TextStyle(fontSize: 13, color: context.colors.foreground),
+                                          ),
+                                        ),
+                                        Switch.adaptive(value: notificationsEnabled, onChanged: onToggleNotifications),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                              const SizedBox(height: 10),
-                              ...categoryPercents.entries.map((entry) {
-                                final colorMap = <String, Color>{
-                                  'Food & drinks': context.colors.warning,
-                                  'Transport': context.colors.primary,
-                                  'Entertainment': context.colors.accent,
-                                  'Bills': context.colors.success,
-                                  'Shopping': context.colors.accentForeground,
-                                };
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: AllocationSliderCard(
-                                    label: entry.key,
-                                    percent: entry.value,
-                                    amount: plan.flexibleSpend * entry.value,
-                                    color: colorMap[entry.key] ?? context.colors.primary,
-                                    onChanged: (value) => onSetCategoryPercent(entry.key, value),
-                                  ),
-                                );
-                              }),
                             ],
                           ),
                         _ => Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Quick personality check', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+                              const Text('Baseline and behaviour setup', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
                               const SizedBox(height: 4),
                               Text(
-                                'Optional, but useful. These signals help ThinkTwice fine-tune your limits and rebalance categories over time.',
+                                'These inputs shape your AI baseline, first resilience score, and the interventions you will see after transactions stream in.',
                                 style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
                               ),
                               const SizedBox(height: 12),
@@ -824,6 +955,31 @@ class OnboardingPage extends StatelessWidget {
                                             ],
                                           ),
                                         )),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              WhiteCard(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Initial dashboard state', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      children: [
+                                        Expanded(child: progressStat(context, 'Resilience', '50')),
+                                        const SizedBox(width: 8),
+                                        Expanded(child: progressStat(context, 'Streak', '0')),
+                                        const SizedBox(width: 8),
+                                        Expanded(child: progressStat(context, 'Smart decisions', '0')),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      'Once your GXBank transactions stream in, ThinkTwice will analyze spending velocity, risk, time patterns, and intervention outcomes daily.',
+                                      style: TextStyle(fontSize: 12, height: 1.35, color: context.colors.mutedForeground),
+                                    ),
                                   ],
                                 ),
                               ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/app_theme.dart';
 import '../core/models.dart';
 import '../core/seed_data.dart';
@@ -156,6 +157,21 @@ class _RadarPageState extends State<RadarPage> {
     );
   }
 
+  Future<void> _openNavigation(CommunityDeal deal) async {
+    final uri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=${deal.latitude},${deal.longitude}&travelmode=driving',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Could not open Google Maps on this device.')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final sortedDeals = widget.deals.map(_withDistance).toList()
@@ -167,7 +183,7 @@ class _RadarPageState extends State<RadarPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Smart Radar', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
+          const Text('Radar', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text('Deals, routes, and community savings near you', style: TextStyle(fontSize: 14, color: context.colors.mutedForeground)),
           const SizedBox(height: 20),
@@ -187,6 +203,53 @@ class _RadarPageState extends State<RadarPage> {
                   _loadingLocation ? 'Detecting your location...' : 'Live nearby deals and estimated savings',
                   style: const TextStyle(fontSize: 12, color: Colors.white),
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          WhiteCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Nearby deals', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 10),
+                ...sortedDeals.take(2).map((deal) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: context.colors.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(Icons.local_offer_rounded, color: context.colors.primary),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(deal.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                              Text(
+                                '${deal.storeName} • ${deal.distanceKm?.toStringAsFixed(2) ?? '--'} km away',
+                                style: TextStyle(fontSize: 11, color: context.colors.mutedForeground),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          'RM ${formatRm(deal.dealPrice)}',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.colors.success),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
               ],
             ),
           ),
@@ -267,10 +330,51 @@ class _RadarPageState extends State<RadarPage> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => _openNavigation(selected),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: context.colors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: const Text('Use This Route'),
+                    ),
+                  ),
                 ],
               ),
             ),
           const SizedBox(height: 16),
+          if (selected != null)
+            WhiteCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Cheapest route', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 10),
+                  _routeStop(context, 'Store A', selected.storeName, selected.title),
+                  const SizedBox(height: 8),
+                  _routeStop(context, 'Store B', 'Fresh Mart', 'Eggs and pantry top-up'),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: context.colors.warning.withOpacity(0.16),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      'Estimated savings: RM ${formatRm(selected.estimatedSavings + 6)}',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.colors.accentForeground),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (selected != null) const SizedBox(height: 16),
           Row(
             children: [
               const Text('Community deals', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
@@ -289,11 +393,24 @@ class _RadarPageState extends State<RadarPage> {
                   children: [
                     Icon(Icons.add_rounded, size: 14),
                     SizedBox(width: 4),
-                    Text('Post Community Deal', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    Text('Post Deal', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: context.colors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Text(
+              'You saved RM ${formatRm(widget.deals.fold<double>(0, (sum, deal) => sum + deal.estimatedSavings))} using Radar this month.',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.colors.primary),
+            ),
           ),
           const SizedBox(height: 10),
           ...sortedDeals.map((deal) {
@@ -386,6 +503,34 @@ class _RadarPageState extends State<RadarPage> {
           }),
         ],
       ),
+    );
+  }
+
+  Widget _routeStop(BuildContext context, String label, String store, String item) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: context.colors.muted,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.center,
+          child: Text(label.split(' ').last, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(store, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+              Text(item, style: TextStyle(fontSize: 11, color: context.colors.mutedForeground)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

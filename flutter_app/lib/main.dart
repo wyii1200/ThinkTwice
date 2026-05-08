@@ -46,7 +46,14 @@ class _AppRootState extends State<AppRoot> {
   bool _showHomeAlert = true;
   bool _isLoginMode = true;
   bool _showPassword = false;
+  bool _gxBankConnected = true;
+  bool _notificationsEnabled = true;
+  bool _autoSaveEnabled = true;
+  double _autoSavePercent = 0.1;
   int _onboardingStep = 0;
+  int _resilienceScore = 50;
+  int _smartDecisionScore = 0;
+  int _currentStreak = 0;
   int _totalPoints = 1180;
   String _breed = 'tabby';
   String _color = 'mint';
@@ -55,6 +62,7 @@ class _AppRootState extends State<AppRoot> {
   String _cosmetic = 'none';
   double _budget = 1200;
   double _goal = 800;
+  final Set<String> _selectedPriorities = <String>{'Emergency fund', 'Reduce food spending'};
   LatLng _radarUserLocation = kDefaultRadarCenter;
   Map<String, double> _categoryPercents = <String, double>{
     'Food & drinks': 0.35,
@@ -66,6 +74,7 @@ class _AppRootState extends State<AppRoot> {
   List<CommunityDeal> _communityDeals = seedDeals();
   List<QuestProgress> _quests = seedQuests();
   List<RewardShopItem> _rewardShopItems = seedRewardShopItems();
+  List<TransactionRecord> _transactions = seedTransactions();
   final List<PointsEvent> _recentPoints = <PointsEvent>[
     const PointsEvent(label: 'Saved under daily limit', points: 120, icon: Icons.savings_outlined),
     const PointsEvent(label: 'Quest completed', points: 80, icon: Icons.emoji_events_rounded),
@@ -101,6 +110,7 @@ class _AppRootState extends State<AppRoot> {
   void _postCommunityDeal(CommunityDeal deal) {
     setState(() {
       _communityDeals = [deal, ..._communityDeals];
+      _smartDecisionScore += 3;
     });
     _awardPoints('Posted a community deal', 90, Icons.campaign_rounded);
   }
@@ -118,6 +128,7 @@ class _AppRootState extends State<AppRoot> {
       _communityDeals = _communityDeals
           .map((deal) => deal.id == id ? deal.copyWith(verifications: deal.verifications + 1) : deal)
           .toList();
+      _resilienceScore = (_resilienceScore + 1).clamp(0, 100).toInt();
     });
     _awardPoints('Verified a community deal', 20, Icons.verified_rounded);
   }
@@ -144,8 +155,19 @@ class _AppRootState extends State<AppRoot> {
     if (item.owned) return;
 
     if (_totalPoints < item.price) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Not enough points yet for this reward.')),
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Reward Shop'),
+          content: const Text('Not enough points yet.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
       );
       return;
     }
@@ -155,9 +177,58 @@ class _AppRootState extends State<AppRoot> {
       _rewardShopItems[itemIndex] = item.copyWith(owned: true);
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${item.name} unlocked for ${item.price} pts.')),
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Reward Shop'),
+        content: const Text('Redeemed successfully!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
     );
+  }
+
+  void _saveFromIntervention(BuildContext context) {
+    setState(() {
+      _showHomeAlert = false;
+      _resilienceScore = (_resilienceScore + 6).clamp(0, 100).toInt();
+      _smartDecisionScore = (_smartDecisionScore + 10).clamp(0, 100).toInt();
+      _currentStreak += 1;
+      _transactions = [
+        const TransactionRecord(
+          id: 'tx-auto-save',
+          merchant: 'Pocket Save',
+          amount: 8,
+          icon: Icons.savings_rounded,
+          timestampLabel: 'Just now',
+          category: 'Savings',
+        ),
+        ..._transactions.where((tx) => tx.id != 'tx-auto-save'),
+      ];
+    });
+    _awardPoints('Protected your streak with a quick save', 40, Icons.savings_rounded);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('RM8 moved to savings. Your dashboard has been updated.')),
+    );
+  }
+
+  void _openRadarFromIntervention() {
+    setState(() {
+      _showHomeAlert = false;
+      _tabIndex = 1;
+    });
+  }
+
+  void _ignoreIntervention() {
+    setState(() {
+      _showHomeAlert = false;
+      _resilienceScore = (_resilienceScore - 2).clamp(0, 100).toInt();
+    });
   }
 
   Future<void> _openAvatarCustomization(BuildContext context) async {
@@ -237,6 +308,11 @@ class _AppRootState extends State<AppRoot> {
         outfit: _outfit,
         budget: _budget,
         goal: _goal,
+        gxBankConnected: _gxBankConnected,
+        notificationsEnabled: _notificationsEnabled,
+        autoSaveEnabled: _autoSaveEnabled,
+        autoSavePercent: _autoSavePercent,
+        selectedPriorities: _selectedPriorities,
         categoryPercents: _categoryPercents,
         plan: plan,
         yesAnswers: _yesAnswers,
@@ -247,6 +323,16 @@ class _AppRootState extends State<AppRoot> {
         onSetOutfit: (v) => setState(() => _outfit = v),
         onSetBudget: (v) => setState(() => _budget = v),
         onSetGoal: (v) => setState(() => _goal = v),
+        onSetAutoSavePercent: (v) => setState(() => _autoSavePercent = v),
+        onToggleNotifications: (value) => setState(() => _notificationsEnabled = value),
+        onToggleAutoSave: (value) => setState(() => _autoSaveEnabled = value),
+        onTogglePriority: (label) => setState(() {
+          if (_selectedPriorities.contains(label)) {
+            _selectedPriorities.remove(label);
+          } else {
+            _selectedPriorities.add(label);
+          }
+        }),
         onSetCategoryPercent: (key, value) => setState(() {
           _categoryPercents = rebalanceCategoryPercents(_categoryPercents, key, value);
         }),
@@ -289,9 +375,15 @@ class _AppRootState extends State<AppRoot> {
             plan: plan,
             goal: _goal,
             totalPoints: _totalPoints,
+            resilienceScore: _resilienceScore,
+            smartDecisionScore: _smartDecisionScore,
+            currentStreak: _currentStreak,
             recentPoints: _recentPoints,
+            transactions: _transactions,
             showAlert: _showHomeAlert,
-            onDismissAlert: () => setState(() => _showHomeAlert = false),
+            onSaveAlert: () => _saveFromIntervention(context),
+            onOpenAlternatives: _openRadarFromIntervention,
+            onDismissAlert: _ignoreIntervention,
             onNavigate: (index) => setState(() => _tabIndex = index),
           ),
           RadarPage(
@@ -321,11 +413,16 @@ class _AppRootState extends State<AppRoot> {
             goal: _goal,
             plan: plan,
             totalPoints: _totalPoints,
+            transactions: _transactions,
             breed: _breed,
             color: _color,
             accessory: _accessory,
             outfit: _outfit,
             cosmetic: _cosmetic,
+            notificationsEnabled: _notificationsEnabled,
+            autoSaveEnabled: _autoSaveEnabled,
+            onNotificationsChanged: (value) => setState(() => _notificationsEnabled = value),
+            onAutoSaveChanged: (value) => setState(() => _autoSaveEnabled = value),
             onSignOut: () => setState(() {
               _isAuthed = false;
               _isLoginMode = true;
@@ -333,7 +430,11 @@ class _AppRootState extends State<AppRoot> {
               _onboardingStep = 0;
               _tabIndex = 0;
               _showHomeAlert = true;
+              _gxBankConnected = true;
               _totalPoints = 1180;
+              _resilienceScore = 50;
+              _smartDecisionScore = 0;
+              _currentStreak = 0;
               _breed = 'tabby';
               _color = 'mint';
               _accessory = 'ribbon';
@@ -342,7 +443,14 @@ class _AppRootState extends State<AppRoot> {
               _communityDeals = seedDeals();
               _quests = seedQuests();
               _rewardShopItems = seedRewardShopItems();
+              _transactions = seedTransactions();
               _radarUserLocation = kDefaultRadarCenter;
+              _notificationsEnabled = true;
+              _autoSaveEnabled = true;
+              _autoSavePercent = 0.1;
+              _selectedPriorities
+                ..clear()
+                ..addAll(const {'Emergency fund', 'Reduce food spending'});
               _yesAnswers.clear();
               _noAnswers.clear();
               _recentPoints
@@ -384,7 +492,7 @@ class MainShell extends StatelessWidget {
     final tabs = [
       _ShellTab('Home', Icons.home_rounded),
       _ShellTab('Radar', Icons.map_rounded),
-      _ShellTab('Quests', Icons.emoji_events_rounded),
+      _ShellTab('Challenges', Icons.emoji_events_rounded),
       _ShellTab('Insights', Icons.bar_chart_rounded),
       _ShellTab('Profile', Icons.person_rounded),
     ];
