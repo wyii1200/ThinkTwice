@@ -5,24 +5,28 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/app_theme.dart';
+import '../core/models.dart';
+import '../services/radar_api_service.dart';
+import '../widgets/shared.dart';
+
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/app_theme.dart';
 import '../core/models.dart';
 import '../services/radar_api_service.dart';
 import '../widgets/shared.dart';
 
-// ─── Radar Page ───────────────────────────────────────────────────────────────
-// Replaces seed_data deals with live data from the Smart Radar backend.
-// All callbacks (onPostDeal, onUpvoteDeal, onVerifyDeal) are preserved so
-// Person 3's main app shell doesn't need to change its wiring at all.
-
-// Local helper — mirrors formatRm from shared.dart
 String _fmt(double amount) => amount.toStringAsFixed(2);
-
 class RadarPage extends StatefulWidget {
   const RadarPage({
     super.key,
-    required this.deals,               // kept for compatibility — used as fallback
+    required this.deals,
     required this.userLocation,
     required this.onLocationChanged,
     required this.onPostDeal,
@@ -46,14 +50,23 @@ class _RadarPageState extends State<RadarPage> {
   CommunityDeal? _selectedDeal;
   bool _loadingLocation = false;
 
-  // ── API state ──────────────────────────────────────────────────────────────
+  // API state
   List<ApiDeal> _apiDeals = [];
   MonthlySummary? _monthlySummary;
   bool _loadingDeals = true;
   String? _dealsError;
   String? _activeCategory = 'food';
 
-  // Hardcoded userId — replace with real auth uid once Person 1 sets up auth
+  // FIX 2 & 3: Route state — only generated when user requests it
+  RouteResult? _routeResult;
+  bool _loadingRoute = false;
+  String? _routeError;
+  final List<String> _groceryItems = [];
+
+  // FIX 1: Change this to your laptop WiFi IP when testing on physical device
+  // Run `ipconfig` in PowerShell → IPv4 Address under WiFi adapter
+  // e.g. 'http://192.168.1.105:4000'
+  // Emulator: 'http://10.0.2.2:4000'  |  Web/desktop: 'http://localhost:4000'
   static const String _userId = 'test_user_001';
 
   @override
@@ -67,7 +80,6 @@ class _RadarPageState extends State<RadarPage> {
   @override
   void didUpdateWidget(covariant RadarPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Sync selected deal if parent updates the list
     if (_selectedDeal != null) {
       final updated = _apiDeals.where((d) => d.dealId == _selectedDeal!.id);
       if (updated.isNotEmpty) {
@@ -82,6 +94,7 @@ class _RadarPageState extends State<RadarPage> {
     setState(() {
       _loadingDeals = true;
       _dealsError = null;
+      _routeResult = null;
       if (category != null) _activeCategory = category;
     });
 
@@ -105,7 +118,6 @@ class _RadarPageState extends State<RadarPage> {
       setState(() {
         _dealsError = e.toString();
         _loadingDeals = false;
-        // Fall back to seed data so screen isn't empty
         _apiDeals = widget.deals.map(_communityDealToApiDeal).toList();
       });
     }
@@ -113,13 +125,10 @@ class _RadarPageState extends State<RadarPage> {
 
   Future<void> _loadMonthlySummary() async {
     try {
-      final summary =
-          await RadarApiService.getMonthlySummary(userId: _userId);
+      final summary = await RadarApiService.getMonthlySummary(userId: _userId);
       if (!mounted) return;
       setState(() => _monthlySummary = summary);
-    } catch (_) {
-      // Non-fatal — summary card will show fallback value
-    }
+    } catch (_) {}
   }
 
   // ── Location ───────────────────────────────────────────────────────────────
@@ -142,14 +151,109 @@ class _RadarPageState extends State<RadarPage> {
 
       widget.onLocationChanged(current);
       _mapController?.animateCamera(CameraUpdate.newLatLng(current));
-
-      // Reload deals centred on real location
       await _loadDeals();
     } catch (_) {
-      // Keep default center
     } finally {
       if (mounted) setState(() => _loadingLocation = false);
     }
+  }
+
+  // ── FIX 2 & 3: Route generation — user-triggered with grocery input ────────
+
+  Future<void> _openGroceryInputSheet() async {
+    if (_selectedDeal == null) return;
+
+    final items = await showModalBottomSheet<List<String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _GroceryInputSheet(
+        storeName: _selectedDeal!.storeName,
+        initialItems: _groceryItems,
+      ),
+    );
+
+    if (items == null || items.isEmpty || !mounted) return;
+
+    setState(() {
+      _groceryItems
+        ..clear()
+        ..addAll(items);
+      _loadingRoute = true;
+      _routeError = null;
+    });
+
+    try {
+      final stops = [
+        {
+          'storeName': _selectedDeal!.storeName,
+          'address': _selectedDeal!.storeName,
+          'lat': _selectedDeal!.latitude,
+          'lng': _selectedDeal!.longitude,
+          'items': items.take((items.length / 2).ceil()).toList(),
+        },
+        {
+          'storeName': 'Fresh Mart',
+          'address': 'Nearby grocery store',
+          'lat': widget.userLocation.latitude + 0.008,
+          'lng': widget.userLocation.longitude + 0.005,
+          'items': items.skip((items.length / 2).ceil()).toList(),
+        },
+      ];
+
+      final result = await RadarApiService.optimizeRoute(
+        userId: _userId,
+        originLat: widget.userLocation.latitude,
+        originLng: widget.userLocation.longitude,
+        groceryList: items,
+        stops: stops,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _routeResult = result;
+        _loadingRoute = false;
+      });
+
+      _animateMapToRoute();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _routeError = e.toString();
+        _loadingRoute = false;
+      });
+    }
+  }
+
+  void _animateMapToRoute() {
+    if (_selectedDeal == null) return;
+
+    final stopBLat = widget.userLocation.latitude + 0.008;
+    final stopBLng = widget.userLocation.longitude + 0.005;
+
+    final allLats = [
+      widget.userLocation.latitude,
+      _selectedDeal!.latitude,
+      stopBLat,
+    ];
+    final allLngs = [
+      widget.userLocation.longitude,
+      _selectedDeal!.longitude,
+      stopBLng,
+    ];
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        allLats.reduce((a, b) => a < b ? a : b) - 0.005,
+        allLngs.reduce((a, b) => a < b ? a : b) - 0.005,
+      ),
+      northeast: LatLng(
+        allLats.reduce((a, b) => a > b ? a : b) + 0.005,
+        allLngs.reduce((a, b) => a > b ? a : b) + 0.005,
+      ),
+    );
+
+    _mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 60));
   }
 
   // ── Voting ─────────────────────────────────────────────────────────────────
@@ -158,40 +262,58 @@ class _RadarPageState extends State<RadarPage> {
     try {
       await RadarApiService.upvoteDeal(dealId: dealId, userId: _userId);
       widget.onUpvoteDeal(dealId);
-      await _loadDeals(); // refresh list so trust score updates
+      await _loadDeals();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Upvoted! Trust score updated.'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Color(0xFF41B89B),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Upvoted! Trust score updated.'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Color(0xFF41B89B),
+      ));
     } on AlreadyVotedException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message),
+        behavior: SnackBarBehavior.floating,
+      ));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), behavior: SnackBarBehavior.floating),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error: $e'),
+        behavior: SnackBarBehavior.floating,
+      ));
     }
   }
 
   Future<void> _handleVerify(String dealId) async {
-    // "Verify" in UI maps to downvote in trust system for flagging bad deals,
-    // OR you can re-map this to a separate verify endpoint later.
-    // For now, treat it as a community validation upvote.
     await _handleUpvote(dealId);
     widget.onVerifyDeal(dealId);
   }
 
-  // ── Deal submission ────────────────────────────────────────────────────────
+  Future<void> _handleDownvote(String dealId) async {
+    try {
+      await RadarApiService.downvoteDeal(dealId: dealId, userId: _userId);
+      await _loadDeals();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Downvoted — trust score reduced.'),
+        behavior: SnackBarBehavior.floating,
+      ));
+    } on AlreadyVotedException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message),
+        behavior: SnackBarBehavior.floating,
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Error: $e'),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
+  // ── Post deal ──────────────────────────────────────────────────────────────
 
   Future<void> _openPostDealSheet() async {
     final result = await showModalBottomSheet<_PostDealResult>(
@@ -216,7 +338,6 @@ class _RadarPageState extends State<RadarPage> {
         imageBytes: result.imageBytes,
       );
 
-      // Convert to CommunityDeal for the parent callback
       final communityDeal = _apiDealToCommunityDeal(apiDeal);
       widget.onPostDeal(communityDeal);
 
@@ -229,29 +350,24 @@ class _RadarPageState extends State<RadarPage> {
           CameraUpdate.newLatLng(LatLng(apiDeal.lat, apiDeal.lng)));
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Deal posted! You earned points for helping others save.'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Color(0xFF41B89B),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Deal posted! You earned points for helping others save.'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Color(0xFF41B89B),
+      ));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to post deal: $e'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Failed to post deal: $e'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.red,
+      ));
     }
   }
 
-  // ── Use a deal route ───────────────────────────────────────────────────────
+  // ── Use route ──────────────────────────────────────────────────────────────
 
   Future<void> _openNavigation(CommunityDeal deal) async {
-    // Record the savings proof in the backend
     try {
       await RadarApiService.useDeal(
         userId: _userId,
@@ -259,10 +375,15 @@ class _RadarPageState extends State<RadarPage> {
         amountSaved: deal.estimatedSavings,
         category: deal.category,
       );
-      await _loadMonthlySummary(); // update savings card
-    } catch (_) {
-      // Non-fatal — still open navigation
-    }
+      if (_routeResult != null) {
+        await RadarApiService.acceptRoute(
+          userId: _userId,
+          routeId: _routeResult!.routeId,
+          actualSavingsRM: _routeResult!.savings.netSavingRM,
+        );
+      }
+      await _loadMonthlySummary();
+    } catch (_) {}
 
     final uri = Uri.parse(
       'https://www.google.com/maps/dir/?api=1'
@@ -274,24 +395,18 @@ class _RadarPageState extends State<RadarPage> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
       return;
     }
-
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Could not open Google Maps on this device.')),
+      const SnackBar(content: Text('Could not open Google Maps.')),
     );
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  double _distanceTo(double lat, double lng) {
-    return Geolocator.distanceBetween(
-          widget.userLocation.latitude,
-          widget.userLocation.longitude,
-          lat,
-          lng,
-        ) /
-        1000;
-  }
+  double _distanceTo(double lat, double lng) =>
+      Geolocator.distanceBetween(widget.userLocation.latitude,
+          widget.userLocation.longitude, lat, lng) /
+      1000;
 
   CommunityDeal _apiDealToCommunityDeal(ApiDeal d) {
     final distKm = _distanceTo(d.lat, d.lng);
@@ -302,11 +417,12 @@ class _RadarPageState extends State<RadarPage> {
       category: d.category,
       description: '${d.category} deal at ${d.storeName}',
       expiryDate: d.expiresAt != null
-          ? DateTime.tryParse(d.expiresAt!) ?? DateTime.now().add(const Duration(days: 7))
+          ? DateTime.tryParse(d.expiresAt!) ??
+              DateTime.now().add(const Duration(days: 7))
           : DateTime.now().add(const Duration(days: 7)),
       latitude: d.lat,
       longitude: d.lng,
-      originalPrice: d.price * 1.2,   // estimate original as 20% above deal price
+      originalPrice: d.price * 1.2,
       dealPrice: d.price,
       discountLabel: 'Save RM ${_fmt(d.price * 0.2)}',
       upvotes: d.upvotes,
@@ -315,7 +431,6 @@ class _RadarPageState extends State<RadarPage> {
     );
   }
 
-  // Fallback: convert CommunityDeal (from seed) → ApiDeal shape for offline mode
   ApiDeal _communityDealToApiDeal(CommunityDeal d) => ApiDeal(
         dealId: d.id,
         title: d.title,
@@ -334,42 +449,103 @@ class _RadarPageState extends State<RadarPage> {
         createdAt: DateTime.now().toIso8601String(),
       );
 
-  Set<Marker> _markers(BuildContext context) {
-    return {
+  // FIX 4: Markers with labeled route stops
+  Set<Marker> _markers() {
+    final markers = <Marker>{
       Marker(
         markerId: const MarkerId('user'),
         position: widget.userLocation,
         infoWindow: const InfoWindow(title: 'You are here'),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
       ),
-      ..._apiDeals.map((deal) {
-        return Marker(
-          markerId: MarkerId(deal.dealId),
-          position: LatLng(deal.lat, deal.lng),
-          infoWindow: InfoWindow(
-            title: deal.title,
-            snippet: '${deal.storeName} • RM ${_fmt(deal.price)}',
-          ),
-          onTap: () => setState(
-              () => _selectedDeal = _apiDealToCommunityDeal(deal)),
-        );
-      }),
     };
+
+    // Community deal markers
+    for (final deal in _apiDeals) {
+      markers.add(Marker(
+        markerId: MarkerId(deal.dealId),
+        position: LatLng(deal.lat, deal.lng),
+        infoWindow: InfoWindow(
+          title: deal.title,
+          snippet: '${deal.storeName} • RM ${_fmt(deal.price)}',
+        ),
+        icon: BitmapDescriptor.defaultMarkerWithHue(
+          deal.verified ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueOrange,
+        ),
+        onTap: () =>
+            setState(() => _selectedDeal = _apiDealToCommunityDeal(deal)),
+      ));
+    }
+
+    // Route stop markers — only shown when route is generated
+    if (_routeResult != null && _selectedDeal != null) {
+      // Stop A — selected deal
+      markers.add(Marker(
+        markerId: const MarkerId('stop_A'),
+        position: LatLng(_selectedDeal!.latitude, _selectedDeal!.longitude),
+        infoWindow: InfoWindow(
+          title: 'Stop A — ${_selectedDeal!.storeName}',
+          snippet: _groceryItems.take(3).join(', '),
+        ),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+      ));
+      // Stop B — nearby store
+      markers.add(Marker(
+        markerId: const MarkerId('stop_B'),
+        position: LatLng(
+          widget.userLocation.latitude + 0.008,
+          widget.userLocation.longitude + 0.005,
+        ),
+        infoWindow: InfoWindow(
+          title: 'Stop B — Fresh Mart',
+          snippet: _groceryItems
+              .skip((_groceryItems.length / 2).ceil())
+              .take(3)
+              .join(', '),
+        ),
+        icon:
+            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+      ));
+    }
+
+    return markers;
   }
 
   Set<Polyline> _polylines() {
-    if (_selectedDeal == null) return {};
-    return {
-      Polyline(
-        polylineId: const PolylineId('selected-route'),
-        width: 5,
-        color: const Color(0xFF41B89B),
-        points: [
-          widget.userLocation,
-          LatLng(_selectedDeal!.latitude, _selectedDeal!.longitude),
-        ],
-      ),
-    };
+    if (_routeResult != null && _selectedDeal != null) {
+      return {
+        Polyline(
+          polylineId: const PolylineId('route-full'),
+          width: 5,
+          color: const Color(0xFF41B89B),
+          points: [
+            widget.userLocation,
+            LatLng(_selectedDeal!.latitude, _selectedDeal!.longitude),
+            LatLng(
+              widget.userLocation.latitude + 0.008,
+              widget.userLocation.longitude + 0.005,
+            ),
+          ],
+          patterns: [PatternItem.dash(20), PatternItem.gap(10)],
+        ),
+      };
+    }
+
+    if (_selectedDeal != null) {
+      return {
+        Polyline(
+          polylineId: const PolylineId('selected-route'),
+          width: 4,
+          color: const Color(0xFF41B89B),
+          points: [
+            widget.userLocation,
+            LatLng(_selectedDeal!.latitude, _selectedDeal!.longitude),
+          ],
+        ),
+      };
+    }
+
+    return {};
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -385,7 +561,6 @@ class _RadarPageState extends State<RadarPage> {
     final selected = _selectedDeal ??
         (sortedDeals.isNotEmpty ? sortedDeals.first : null);
 
-    // Savings shown: prefer live summary, fall back to sum of deal prices
     final totalSaved = _monthlySummary?.totalSavedRM ??
         _apiDeals.fold<double>(0, (s, d) => s + d.price * 0.2);
 
@@ -399,43 +574,48 @@ class _RadarPageState extends State<RadarPage> {
           const SizedBox(height: 4),
           Text('Deals, routes, and community savings near you',
               style: TextStyle(
-                  fontSize: 14,
-                  color: context.colors.mutedForeground)),
+                  fontSize: 14, color: context.colors.mutedForeground)),
 
           const SizedBox(height: 20),
 
-          // ── Savings summary card ──────────────────────────────────────────
-          GradientCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('You saved this month',
-                    style: TextStyle(fontSize: 12, color: Colors.white)),
-                const SizedBox(height: 4),
-                Text(
-                  'RM ${_fmt(totalSaved)}',
-                  style: const TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _loadingLocation
-                      ? 'Detecting your location...'
-                      : _monthlySummary != null
-                          ? '${_monthlySummary!.recordCount} savings recorded this month'
-                          : 'Live nearby deals and estimated savings',
-                  style: const TextStyle(fontSize: 12, color: Colors.white),
-                ),
-              ],
+          // ── Savings card — tap to see breakdown ───────────────────────────
+          GestureDetector(
+            onTap: () => _showSavingsRecords(context),
+            child: GradientCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    const Text('You saved this month',
+                        style: TextStyle(fontSize: 12, color: Colors.white)),
+                    const Spacer(),
+                    const Icon(Icons.chevron_right_rounded,
+                        color: Colors.white70, size: 16),
+                  ]),
+                  const SizedBox(height: 4),
+                  Text('RM ${_fmt(totalSaved)}',
+                      style: const TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white)),
+                  const SizedBox(height: 4),
+                  Text(
+                    _loadingLocation
+                        ? 'Detecting your location...'
+                        : _monthlySummary != null
+                            ? '${_monthlySummary!.recordCount} savings recorded · tap to view'
+                            : 'Tap to view savings records',
+                    style: const TextStyle(fontSize: 12, color: Colors.white),
+                  ),
+                ],
+              ),
             ),
           ),
 
           const SizedBox(height: 16),
 
-          // ── Category filter chips ─────────────────────────────────────────
+          // ── Category chips ────────────────────────────────────────────────
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -447,8 +627,7 @@ class _RadarPageState extends State<RadarPage> {
                     label: Text(cat[0].toUpperCase() + cat.substring(1)),
                     selected: isActive,
                     onSelected: (_) => _loadDeals(category: cat),
-                    selectedColor:
-                        context.colors.primary.withOpacity(0.15),
+                    selectedColor: context.colors.primary.withOpacity(0.15),
                     checkmarkColor: context.colors.primary,
                   ),
                 );
@@ -464,27 +643,26 @@ class _RadarPageState extends State<RadarPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Text('Nearby deals',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w700)),
-                    const Spacer(),
-                    if (_loadingDeals)
-                      const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2)),
-                    if (_dealsError != null && !_loadingDeals)
-                      Icon(Icons.wifi_off_rounded,
-                          size: 16, color: Colors.orange.shade700),
-                  ],
-                ),
+                Row(children: [
+                  const Text('Nearby deals',
+                      style: TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  if (_loadingDeals)
+                    const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2)),
+                  if (_dealsError != null && !_loadingDeals)
+                    Icon(Icons.wifi_off_rounded,
+                        size: 16, color: Colors.orange.shade700),
+                ]),
                 const SizedBox(height: 10),
                 if (_dealsError != null && _apiDeals.isEmpty)
-                  Text('Showing offline data • ${_dealsError!}',
+                  Text('Showing offline data',
                       style: TextStyle(
-                          fontSize: 11, color: context.colors.mutedForeground))
+                          fontSize: 11,
+                          color: context.colors.mutedForeground))
                 else
                   ...sortedDeals.take(2).map((deal) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
@@ -510,20 +688,33 @@ class _RadarPageState extends State<RadarPage> {
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700)),
                                   Text(
-                                    '${deal.storeName} • '
-                                    '${deal.distanceKm?.toStringAsFixed(2) ?? '--'} km away',
+                                    '${deal.storeName} • ${deal.distanceKm?.toStringAsFixed(2) ?? '--'} km away',
                                     style: TextStyle(
                                         fontSize: 11,
                                         color: context.colors.mutedForeground),
                                   ),
                                 ]),
                           ),
-                          Text(
-                            'RM ${_fmt(deal.dealPrice)}',
-                            style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: context.colors.success),
+                          // FIX 5: Original vs deal price
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'RM ${_fmt(deal.originalPrice)}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  decoration: TextDecoration.lineThrough,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              Text(
+                                'RM ${_fmt(deal.dealPrice)}',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.colors.success),
+                              ),
+                            ],
                           ),
                         ]),
                       )),
@@ -533,26 +724,61 @@ class _RadarPageState extends State<RadarPage> {
 
           const SizedBox(height: 16),
 
-          // ── Map ───────────────────────────────────────────────────────────
+          // ── FIX 4: Map with labeled route markers + legend overlay ────────
           Container(
-            height: 260,
+            height: 280,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: Theme.of(context).dividerColor),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: GoogleMap(
-                initialCameraPosition: CameraPosition(
-                    target: widget.userLocation, zoom: 14.2),
-                myLocationEnabled: true,
-                myLocationButtonEnabled: false,
-                zoomControlsEnabled: false,
-                markers: _markers(context),
-                polylines: _polylines(),
-                onMapCreated: (c) => _mapController = c,
-                onTap: (_) => setState(() => _selectedDeal = null),
-              ),
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: GoogleMap(
+                    initialCameraPosition:
+                        CameraPosition(target: widget.userLocation, zoom: 14.2),
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: false,
+                    zoomControlsEnabled: false,
+                    markers: _markers(),
+                    polylines: _polylines(),
+                    onMapCreated: (c) => _mapController = c,
+                    onTap: (_) => setState(() => _selectedDeal = null),
+                  ),
+                ),
+                // Legend — only visible when route is active
+                if (_routeResult != null)
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.93),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: const [
+                          BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 4,
+                              offset: Offset(0, 2))
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _legendRow(Colors.blue, '📍 You'),
+                          const SizedBox(height: 4),
+                          _legendRow(const Color(0xFF41B89B),
+                              'A — ${selected?.storeName ?? ''}'),
+                          const SizedBox(height: 4),
+                          _legendRow(Colors.purple, 'B — Fresh Mart'),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
 
@@ -565,6 +791,7 @@ class _RadarPageState extends State<RadarPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header row
                   Row(children: [
                     Container(
                       width: 42,
@@ -584,14 +811,14 @@ class _RadarPageState extends State<RadarPage> {
                           children: [
                             Text(selected.title,
                                 style: const TextStyle(
-                                    fontSize: 15, fontWeight: FontWeight.w700)),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700)),
                             Text(selected.storeName,
                                 style: TextStyle(
                                     fontSize: 12,
                                     color: context.colors.mutedForeground)),
                           ]),
                     ),
-                    // Verified badge
                     if (_apiDeals
                         .any((d) => d.dealId == selected.id && d.verified))
                       Container(
@@ -601,58 +828,152 @@ class _RadarPageState extends State<RadarPage> {
                           color: context.colors.success.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(999),
                         ),
-                        child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.verified_rounded,
-                                  size: 12, color: context.colors.success),
-                              const SizedBox(width: 4),
-                              Text('Verified',
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      color: context.colors.success,
-                                      fontWeight: FontWeight.w600)),
-                            ]),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.verified_rounded,
+                              size: 12, color: context.colors.success),
+                          const SizedBox(width: 4),
+                          Text('Verified',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: context.colors.success,
+                                  fontWeight: FontWeight.w600)),
+                        ]),
                       ),
                   ]),
+
                   const SizedBox(height: 14),
+
+                  // Distance + FIX 5: price comparison stat
                   Row(children: [
                     Expanded(
                         child: progressStat(context, 'Distance',
                             '${selected.distanceKm?.toStringAsFixed(2) ?? '--'} km')),
                     const SizedBox(width: 10),
                     Expanded(
-                        child: progressStat(context, 'Estimated savings',
-                            'RM ${_fmt(selected.estimatedSavings)}')),
-                  ]),
-                  const SizedBox(height: 12),
-                  Text(selected.description,
-                      style: TextStyle(
-                          fontSize: 12,
-                          height: 1.4,
-                          color: context.colors.mutedForeground)),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: context.colors.success.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: context.colors.success.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Price',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: context.colors.mutedForeground)),
+                            const SizedBox(height: 2),
+                            Row(children: [
+                              Text(
+                                'RM ${_fmt(selected.originalPrice)}',
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    decoration: TextDecoration.lineThrough,
+                                    color: Colors.grey),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'RM ${_fmt(selected.dealPrice)}',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.colors.success),
+                              ),
+                            ]),
+                            Text(
+                              'You save RM ${_fmt(selected.originalPrice - selected.dealPrice)}',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: context.colors.success,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: Row(children: [
-                      Text('Deal route ready',
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: context.colors.success)),
-                      const Spacer(),
-                      Text(
-                          'Save ${selected.discountLabel.replaceFirst('Save ', '')}',
+                  ]),
+
+                  const SizedBox(height: 14),
+
+                  // FIX 3: Generate route button — only before route exists
+                  if (_routeResult == null && !_loadingRoute)
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _openGroceryInputSheet,
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                          side: BorderSide(color: context.colors.primary),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        icon: Icon(Icons.add_shopping_cart_rounded,
+                            color: context.colors.primary),
+                        label: Text(
+                          'Add grocery list & generate route',
+                          style: TextStyle(color: context.colors.primary),
+                        ),
+                      ),
+                    ),
+
+                  if (_loadingRoute)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2)),
+                            SizedBox(width: 10),
+                            Text('Optimising your route...'),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  if (_routeError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text('Route error: $_routeError',
+                          style: const TextStyle(
+                              color: Colors.red, fontSize: 12)),
+                    ),
+
+                  // Route ready banner
+                  if (_routeResult != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: context.colors.success.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(children: [
+                        Icon(Icons.check_circle_rounded,
+                            size: 16, color: context.colors.success),
+                        const SizedBox(width: 6),
+                        Text('Route ready',
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: context.colors.success)),
+                        const Spacer(),
+                        Text(
+                          'Net save RM ${_fmt(_routeResult!.savings.netSavingRM)}',
                           style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: context.colors.success)),
-                    ]),
-                  ),
+                              color: context.colors.success),
+                        ),
+                      ]),
+                    ),
+                  ],
+
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
@@ -673,48 +994,106 @@ class _RadarPageState extends State<RadarPage> {
 
             const SizedBox(height: 16),
 
-            // ── Cheapest route stops card ─────────────────────────────────
-            WhiteCard(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Cheapest route',
-                      style: TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 10),
-                  _routeStop(context, 'Store A', selected.storeName,
-                      selected.title),
-                  const SizedBox(height: 8),
-                  _routeStop(context, 'Store B', 'Fresh Mart',
-                      'Eggs and pantry top-up'),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: context.colors.warning.withOpacity(0.16),
-                      borderRadius: BorderRadius.circular(16),
+            // ── Route stops + savings breakdown (only after route generated) ─
+            if (_routeResult != null) ...[
+              WhiteCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      const Text('Optimised route',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w700)),
+                      const Spacer(),
+                      Text(
+                        '${_routeResult!.totalDistanceKm} km • ${_routeResult!.totalDurationMinutes} min',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: context.colors.mutedForeground),
+                      ),
+                    ]),
+                    const SizedBox(height: 12),
+
+                    _routeStop(context,
+                        label: 'A',
+                        color: const Color(0xFF41B89B),
+                        store: selected.storeName,
+                        items: _groceryItems
+                            .take((_groceryItems.length / 2).ceil())
+                            .toList()),
+                    _routeConnector(),
+                    _routeStop(context,
+                        label: 'B',
+                        color: Colors.purple,
+                        store: 'Fresh Mart',
+                        items: _groceryItems
+                            .skip((_groceryItems.length / 2).ceil())
+                            .toList()),
+
+                    const SizedBox(height: 14),
+
+                    // FIX 5: Savings breakdown with gross/travel/net
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: context.colors.warning.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Savings breakdown',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 8),
+                          _savingsRow('Gross savings',
+                              _routeResult!.savings.grossSavingRM,
+                              isPositive: true),
+                          _savingsRow('Est. travel cost',
+                              _routeResult!.savings.travelCostRM,
+                              isPositive: false),
+                          const Divider(height: 16),
+                          _savingsRow('Net savings',
+                              _routeResult!.savings.netSavingRM,
+                              isPositive: true, isBold: true),
+                          if (!_routeResult!.savings.worthIt)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                '⚠️ Travel cost exceeds savings — consider ordering online.',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.orange.shade700),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                    child: Text(
-                      'Estimated savings: RM ${_fmt(selected.estimatedSavings + 6)}',
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: context.colors.accentForeground),
+
+                    const SizedBox(height: 10),
+                    TextButton.icon(
+                      onPressed: () => setState(() {
+                        _routeResult = null;
+                        _groceryItems.clear();
+                      }),
+                      icon: const Icon(Icons.refresh_rounded, size: 14),
+                      label: const Text('Change grocery list',
+                          style: TextStyle(fontSize: 12)),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+            ],
           ],
 
-          // ── Community deals list ──────────────────────────────────────────
+          // ── Community deals ───────────────────────────────────────────────
           Row(children: [
             const Text('Community deals',
-                style:
-                    TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
             const Spacer(),
             FilledButton(
               onPressed: _openPostDealSheet,
@@ -733,8 +1112,8 @@ class _RadarPageState extends State<RadarPage> {
                   Icon(Icons.add_rounded, size: 14),
                   SizedBox(width: 4),
                   Text('Post Deal',
-                      style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w600)),
+                      style:
+                          TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
@@ -742,7 +1121,6 @@ class _RadarPageState extends State<RadarPage> {
 
           const SizedBox(height: 10),
 
-          // Savings banner
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(14),
@@ -761,7 +1139,6 @@ class _RadarPageState extends State<RadarPage> {
 
           const SizedBox(height: 10),
 
-          // Deal cards
           if (_loadingDeals && _apiDeals.isEmpty)
             const Center(
                 child: Padding(
@@ -781,7 +1158,8 @@ class _RadarPageState extends State<RadarPage> {
                               width: 52,
                               height: 52,
                               decoration: BoxDecoration(
-                                color: context.colors.warning.withOpacity(0.16),
+                                color:
+                                    context.colors.warning.withOpacity(0.16),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               clipBehavior: Clip.antiAlias,
@@ -795,7 +1173,8 @@ class _RadarPageState extends State<RadarPage> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
                                   children: [
                                     Text(deal.title,
                                         style: const TextStyle(
@@ -806,9 +1185,28 @@ class _RadarPageState extends State<RadarPage> {
                                         '${deal.storeName} • ${deal.category}',
                                         style: TextStyle(
                                             fontSize: 12,
-                                            color:
-                                                context.colors.mutedForeground)),
+                                            color: context
+                                                .colors.mutedForeground)),
                                     const SizedBox(height: 4),
+                                    // FIX 5: Price comparison in list
+                                    Row(children: [
+                                      Text(
+                                        'RM ${_fmt(deal.originalPrice)}',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            decoration:
+                                                TextDecoration.lineThrough,
+                                            color: Colors.grey),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'RM ${_fmt(deal.dealPrice)}',
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: context.colors.success),
+                                      ),
+                                    ]),
                                     Text(
                                       '${deal.distanceKm?.toStringAsFixed(2) ?? '--'} km away'
                                       ' • expires ${deal.expiryDate.day}/${deal.expiryDate.month}',
@@ -823,14 +1221,15 @@ class _RadarPageState extends State<RadarPage> {
                               onTap: () {
                                 setState(() => _selectedDeal = deal);
                                 _mapController?.animateCamera(
-                                    CameraUpdate.newLatLng(
-                                        LatLng(deal.latitude, deal.longitude)));
+                                    CameraUpdate.newLatLng(LatLng(
+                                        deal.latitude, deal.longitude)));
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: context.colors.success.withOpacity(0.14),
+                                  color: context.colors.success
+                                      .withOpacity(0.14),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: Text(
@@ -851,13 +1250,27 @@ class _RadarPageState extends State<RadarPage> {
                             style: OutlinedButton.styleFrom(
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14)),
+                              foregroundColor: const Color(0xFF41B89B),
                             ),
-                            icon: const Icon(Icons.thumb_up_alt_outlined,
-                                size: 16),
-                            label: Text('Upvote ${deal.upvotes}'),
+                            icon: const Icon(Icons.thumb_up_alt_outlined, size: 16),
+                            label: Text('${deal.upvotes}'),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _handleDownvote(deal.id),
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                              foregroundColor: Colors.red.shade400,
+                              side: BorderSide(color: Colors.red.shade200),
+                            ),
+                            icon: const Icon(Icons.thumb_down_alt_outlined, size: 16),
+                            label: Text('${_apiDeals.firstWhere((d) => d.dealId == deal.id, orElse: () => _communityDealToApiDeal(deal)).downvotes}'),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
                         Expanded(
                           child: FilledButton.tonalIcon(
                             onPressed: () => _handleVerify(deal.id),
@@ -865,9 +1278,8 @@ class _RadarPageState extends State<RadarPage> {
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14)),
                             ),
-                            icon:
-                                const Icon(Icons.verified_rounded, size: 16),
-                            label: Text('Verify ${deal.verifications}'),
+                            icon: const Icon(Icons.verified_rounded, size: 16),
+                            label: Text('${deal.verifications}'),
                           ),
                         ),
                       ]),
@@ -879,37 +1291,395 @@ class _RadarPageState extends State<RadarPage> {
     );
   }
 
+  // ── Savings records modal ─────────────────────────────────────────────────
+
+  void _showSavingsRecords(BuildContext context) {
+    final summary = _monthlySummary;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: const Color(0xFFE3ECE6),
+                    borderRadius: BorderRadius.circular(999)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Savings this month',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(
+              summary != null
+                  ? '${summary.month} · ${summary.recordCount} records'
+                  : 'Loading...',
+              style: TextStyle(fontSize: 12, color: Theme.of(ctx).hintColor),
+            ),
+            const SizedBox(height: 20),
+
+            // Total
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF41B89B), Color(0xFF2E9B82)],
+                ),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Total saved',
+                      style: TextStyle(fontSize: 12, color: Colors.white70)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'RM ${_fmt(summary?.totalSavedRM ?? 0)}',
+                    style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Breakdown by type
+            if (summary != null && summary.byType.isNotEmpty) ...[
+              const Text('Breakdown',
+                  style:
+                      TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 10),
+              ...summary.byType.entries.map((entry) {
+                final icon = switch (entry.key) {
+                  'deal_used' => Icons.local_offer_rounded,
+                  'route_used' => Icons.route_rounded,
+                  'nudge_accepted' => Icons.notifications_rounded,
+                  _ => Icons.savings_rounded,
+                };
+                final label = switch (entry.key) {
+                  'deal_used' => 'Deals used',
+                  'route_used' => 'Routes followed',
+                  'nudge_accepted' => 'Nudges accepted',
+                  _ => entry.key,
+                };
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF41B89B).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(icon,
+                          color: const Color(0xFF41B89B), size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(label,
+                          style: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w500)),
+                    ),
+                    Text(
+                      '+ RM ${_fmt(entry.value)}',
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF41B89B)),
+                    ),
+                  ]),
+                );
+              }),
+            ] else
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    summary == null
+                        ? 'Loading records...'
+                        : 'No savings recorded yet.Start using deals and routes!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 13, color: Theme.of(ctx).hintColor),
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Sub-widgets ────────────────────────────────────────────────────────────
+
+  Widget _legendRow(Color color, String label) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+      const SizedBox(width: 6),
+      Text(label,
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500)),
+    ]);
+  }
+
   Widget _routeStop(
-      BuildContext context, String label, String store, String item) {
+    BuildContext context, {
+    required String label,
+    required Color color,
+    required String store,
+    required List<String> items,
+  }) {
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          color: context.colors.muted,
-          borderRadius: BorderRadius.circular(12),
-        ),
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         alignment: Alignment.center,
-        child: Text(label.split(' ').last,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+        child: Text(label,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700)),
       ),
-      const SizedBox(width: 10),
+      const SizedBox(width: 12),
       Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(store,
-              style:
-                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-          Text(item,
-              style: TextStyle(
-                  fontSize: 11, color: context.colors.mutedForeground)),
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w700)),
+          if (items.isNotEmpty)
+            Text(items.join(', '),
+                style: TextStyle(
+                    fontSize: 11, color: context.colors.mutedForeground)),
         ]),
       ),
     ]);
   }
+
+  Widget _routeConnector() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 15, top: 4, bottom: 4),
+      child:
+          Container(width: 2, height: 20, color: Colors.grey.withOpacity(0.3)),
+    );
+  }
+
+  Widget _savingsRow(String label, double amount,
+      {required bool isPositive, bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight:
+                    isBold ? FontWeight.w700 : FontWeight.normal)),
+        const Spacer(),
+        Text(
+          '${isPositive ? '+' : '-'} RM ${_fmt(amount.abs())}',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isBold ? FontWeight.w700 : FontWeight.normal,
+            color:
+                isPositive ? const Color(0xFF41B89B) : Colors.red.shade400,
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ─── Grocery Input Sheet ──────────────────────────────────────────────────────
+
+class _GroceryInputSheet extends StatefulWidget {
+  const _GroceryInputSheet(
+      {required this.storeName, required this.initialItems});
+
+  final String storeName;
+  final List<String> initialItems;
+
+  @override
+  State<_GroceryInputSheet> createState() => _GroceryInputSheetState();
+}
+
+class _GroceryInputSheetState extends State<_GroceryInputSheet> {
+  final _controller = TextEditingController();
+  late List<String> _items;
+
+  @override
+  void initState() {
+    super.initState();
+    _items = List.from(widget.initialItems);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _addItem() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _items.add(text);
+      _controller.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+          20, 14, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 44,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: const Color(0xFFE3ECE6),
+                  borderRadius: BorderRadius.circular(999)),
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text('What do you need to buy?',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text("We'll find the cheapest route across nearby stores.",
+              style:
+                  TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
+          const SizedBox(height: 16),
+
+          // Quick-add chips
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: ['Rice', 'Eggs', 'Bread', 'Milk', 'Vegetables']
+                .map((item) => ActionChip(
+                      label:
+                          Text(item, style: const TextStyle(fontSize: 12)),
+                      onPressed: () =>
+                          setState(() => _items.add(item.toLowerCase())),
+                    ))
+                .toList(),
+          ),
+
+          const SizedBox(height: 12),
+
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                decoration: InputDecoration(
+                  hintText: 'Add item (e.g. cooking oil)',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Color(0xFFE3ECE6)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Color(0xFFE3ECE6)),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 12),
+                ),
+                onSubmitted: (_) => _addItem(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
+              onPressed: _addItem,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF41B89B),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                minimumSize: const Size(48, 48),
+              ),
+              child: const Icon(Icons.add_rounded),
+            ),
+          ]),
+
+          const SizedBox(height: 12),
+
+          if (_items.isNotEmpty) ...[
+            const Text('Your list:',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: _items
+                  .map((item) => Chip(
+                        label:
+                            Text(item, style: const TextStyle(fontSize: 12)),
+                        deleteIcon: const Icon(Icons.close, size: 14),
+                        onDeleted: () => setState(() => _items.remove(item)),
+                      ))
+                  .toList(),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed:
+                  _items.isEmpty ? null : () => Navigator.of(context).pop(_items),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF41B89B),
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+              ),
+              child: Text(
+                _items.isEmpty
+                    ? 'Add at least one item'
+                    : 'Generate cheapest route (${_items.length} items)',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ─── Post Deal Sheet ──────────────────────────────────────────────────────────
-// Internal result type — carries form data back to RadarPage for API call
+
 class _PostDealResult {
   final String title;
   final String storeName;
@@ -944,10 +1714,11 @@ class PostDealSheet extends StatefulWidget {
 class _PostDealSheetState extends State<PostDealSheet> {
   final _titleController = TextEditingController();
   final _storeController = TextEditingController();
-  final _categoryController = TextEditingController(text: 'food');
   final _priceController = TextEditingController();
-  final _addressController = TextEditingController(text: 'Current location');
+  final _addressController =
+      TextEditingController(text: 'Current location');
   final _descriptionController = TextEditingController();
+  String _selectedCategory = 'food';
   DateTime _expiryDate = DateTime.now().add(const Duration(days: 7));
   Uint8List? _imageBytes;
   bool _submitting = false;
@@ -956,7 +1727,6 @@ class _PostDealSheetState extends State<PostDealSheet> {
   void dispose() {
     _titleController.dispose();
     _storeController.dispose();
-    _categoryController.dispose();
     _priceController.dispose();
     _addressController.dispose();
     _descriptionController.dispose();
@@ -965,8 +1735,8 @@ class _PostDealSheetState extends State<PostDealSheet> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final image =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final image = await picker.pickImage(
+        source: ImageSource.gallery, imageQuality: 70);
     if (image == null) return;
     final bytes = await image.readAsBytes();
     if (!mounted) return;
@@ -975,24 +1745,18 @@ class _PostDealSheetState extends State<PostDealSheet> {
 
   void _submit() {
     final price = double.tryParse(_priceController.text) ?? 0;
-
     if (_titleController.text.trim().isEmpty ||
         _storeController.text.trim().isEmpty ||
         price <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content:
-                Text('Please fill in title, store name, and price.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Please fill in title, store name, and price.')));
       return;
     }
-
     setState(() => _submitting = true);
-
     Navigator.of(context).pop(_PostDealResult(
       title: _titleController.text.trim(),
       storeName: _storeController.text.trim(),
-      category: _categoryController.text.trim().toLowerCase(),
+      category: _selectedCategory,
       price: price,
       lat: widget.userLocation.latitude + 0.0025,
       lng: widget.userLocation.longitude + 0.0025,
@@ -1025,9 +1789,8 @@ class _PostDealSheetState extends State<PostDealSheet> {
                   width: 44,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE3ECE6),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
+                      color: const Color(0xFFE3ECE6),
+                      borderRadius: BorderRadius.circular(999)),
                 ),
               ),
               const SizedBox(height: 14),
@@ -1044,31 +1807,31 @@ class _PostDealSheetState extends State<PostDealSheet> {
               const SizedBox(height: 10),
               _field(controller: _storeController, label: 'Store name'),
               const SizedBox(height: 10),
-              // Category dropdown
               DropdownButtonFormField<String>(
-                value: _categoryController.text,
+                value: _selectedCategory,
                 decoration: InputDecoration(
                   labelText: 'Category',
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Color(0xFFE3ECE6)),
-                  ),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide:
+                          const BorderSide(color: Color(0xFFE3ECE6))),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Color(0xFFE3ECE6)),
-                  ),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide:
+                          const BorderSide(color: Color(0xFFE3ECE6))),
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'food', child: Text('Food & drinks')),
+                  DropdownMenuItem(
+                      value: 'food', child: Text('Food & drinks')),
                   DropdownMenuItem(
                       value: 'grocery', child: Text('Grocery')),
                   DropdownMenuItem(
                       value: 'transport', child: Text('Transport')),
                 ],
                 onChanged: (v) {
-                  if (v != null) _categoryController.text = v;
+                  if (v != null) setState(() => _selectedCategory = v);
                 },
               ),
               const SizedBox(height: 10),
@@ -1084,7 +1847,6 @@ class _PostDealSheetState extends State<PostDealSheet> {
                   label: 'Description (optional)',
                   maxLines: 3),
               const SizedBox(height: 10),
-              // Expiry date picker
               InkWell(
                 onTap: () async {
                   final picked = await showDatePicker(
