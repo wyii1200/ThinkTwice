@@ -88,7 +88,7 @@ ThemeData buildTheme() {
         success: success,
         warning: warning,
         destructive: destructive,
-        guardianGradient: const LinearGradient(
+        guardianGradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [Color(0xFFFFF8E6), Color(0xFFFFE6D7), Color(0xFFDDF7EE)],

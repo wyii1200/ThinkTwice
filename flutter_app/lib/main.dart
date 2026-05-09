@@ -43,7 +43,7 @@ class AppRoot extends StatefulWidget {
 }
 
 class _AppRootState extends State<AppRoot> {
-  static const _guardianProfileKey = 'guardian_profile';
+  static const _avatarProfileKey = 'avatar_profile';
   static const _ownedRewardIdsKey = 'owned_reward_ids';
   static const _totalPointsKey = 'total_points';
   static const _resilienceScoreKey = 'resilience_score';
@@ -84,10 +84,11 @@ class _AppRootState extends State<AppRoot> {
   GuardianProfile _guardianProfile = const GuardianProfile(
     breed: 'tabby',
     color: 'mint',
+  CatAvatarProfile _avatarProfile = const CatAvatarProfile(
+    breed: 'siamese',
     expression: 'proud',
     accessory: 'ribbon',
-    outfit: 'Hoodie',
-    cosmetic: 'none',
+    effect: 'none',
   );
   double _budget = 1200;
   double _goal = 800;
@@ -123,27 +124,27 @@ class _AppRootState extends State<AppRoot> {
 
   Future<void> _loadPersistedState() async {
     final prefs = await SharedPreferences.getInstance();
-    final rawGuardian = prefs.getString(_guardianProfileKey);
+    final rawAvatar = prefs.getString(_avatarProfileKey);
     final ownedIds = prefs.getStringList(_ownedRewardIdsKey) ?? const <String>[];
 
-    GuardianProfile guardianProfile = _guardianProfile;
-    if (rawGuardian != null) {
-      final decoded = jsonDecode(rawGuardian);
+    CatAvatarProfile avatarProfile = _avatarProfile;
+    if (rawAvatar != null) {
+      final decoded = jsonDecode(rawAvatar);
       if (decoded is Map<String, dynamic>) {
-        guardianProfile = GuardianProfile(
-          breed: decoded['breed'] as String? ?? guardianProfile.breed,
-          color: decoded['color'] as String? ?? guardianProfile.color,
-          expression: decoded['expression'] as String? ?? guardianProfile.expression,
-          accessory: decoded['accessory'] as String? ?? guardianProfile.accessory,
-          outfit: decoded['outfit'] as String? ?? guardianProfile.outfit,
-          cosmetic: decoded['cosmetic'] as String? ?? guardianProfile.cosmetic,
+        avatarProfile = CatAvatarProfile(
+          breed: decoded['breed'] as String? ?? avatarProfile.breed,
+          expression: decoded['expression'] as String? ?? avatarProfile.expression,
+          accessory: decoded['accessory'] as String? ?? avatarProfile.accessory,
+          effect: (decoded['effect'] as String?) ??
+              (decoded['cosmetic'] as String?)?.replaceAll('sparkle', 'sparkle_aura').replaceAll('coins', 'glow_outline') ??
+              avatarProfile.effect,
         );
       }
     }
 
     if (!mounted) return;
     setState(() {
-      _guardianProfile = guardianProfile;
+      _avatarProfile = avatarProfile;
       _totalPoints = prefs.getInt(_totalPointsKey) ?? _totalPoints;
       _resilienceScore = prefs.getInt(_resilienceScoreKey) ?? _resilienceScore;
       _smartDecisionScore = prefs.getInt(_smartDecisionScoreKey) ?? _smartDecisionScore;
@@ -226,14 +227,12 @@ class _AppRootState extends State<AppRoot> {
   Future<void> _persistAppState() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-      _guardianProfileKey,
+      _avatarProfileKey,
       jsonEncode({
-        'breed': _guardianProfile.breed,
-        'color': _guardianProfile.color,
-        'expression': _guardianProfile.expression,
-        'accessory': _guardianProfile.accessory,
-        'outfit': _guardianProfile.outfit,
-        'cosmetic': _guardianProfile.cosmetic,
+        'breed': _avatarProfile.breed,
+        'expression': _avatarProfile.expression,
+        'accessory': _avatarProfile.accessory,
+        'effect': _avatarProfile.effect,
       }),
     );
     await prefs.setStringList(
@@ -246,8 +245,8 @@ class _AppRootState extends State<AppRoot> {
     await prefs.setInt(_currentStreakKey, _currentStreak);
   }
 
-  void _updateGuardianProfile(GuardianProfile nextProfile) {
-    setState(() => _guardianProfile = nextProfile);
+  void _updateAvatarProfile(CatAvatarProfile nextProfile) {
+    setState(() => _avatarProfile = nextProfile);
     unawaited(_persistAppState());
   }
 
@@ -279,8 +278,7 @@ class _AppRootState extends State<AppRoot> {
         color: 'mint',
         expression: 'proud',
         accessory: 'ribbon',
-        outfit: 'Hoodie',
-        cosmetic: 'none',
+        effect: 'none',
       );
       _communityDeals = seedDeals();
       _quests = seedQuests();
@@ -312,7 +310,7 @@ class _AppRootState extends State<AppRoot> {
     });
     unawaited(() async {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_guardianProfileKey);
+      await prefs.remove(_avatarProfileKey);
       await prefs.remove(_ownedRewardIdsKey);
       await prefs.remove(_totalPointsKey);
       await prefs.remove(_resilienceScoreKey);
@@ -378,7 +376,7 @@ class _AppRootState extends State<AppRoot> {
     showCelebrationDialog(
       context,
       title: 'Reward Claimed',
-      body: 'Your Wallet Guardian just banked +${quest.rewardPoints} pts. Keep the streak glowing.',
+      body: 'Your cat companion just banked +${quest.rewardPoints} pts. Keep the streak glowing.',
       icon: Icons.emoji_events_rounded,
       color: context.colors.accentForeground,
     );
@@ -412,14 +410,14 @@ class _AppRootState extends State<AppRoot> {
       _totalPoints -= item.price;
       _rewardShopItems[itemIndex] = item.copyWith(owned: true);
       switch (item.category) {
-        case 'accessory':
-          _guardianProfile = _guardianProfile.copyWith(accessory: item.value);
+        case 'accessories':
+          _avatarProfile = _avatarProfile.copyWith(accessory: item.value);
           break;
-        case 'outfit':
-          _guardianProfile = _guardianProfile.copyWith(outfit: item.value);
+        case 'breeds':
+          _avatarProfile = _avatarProfile.copyWith(breed: item.value);
           break;
-        case 'cosmetic':
-          _guardianProfile = _guardianProfile.copyWith(cosmetic: item.value);
+        case 'effects':
+          _avatarProfile = _avatarProfile.copyWith(effect: item.value);
           break;
       }
     });
@@ -456,7 +454,7 @@ class _AppRootState extends State<AppRoot> {
         _smartDecisionScore = (_smartDecisionScore + 10).clamp(0, 100);
         _savingsPocket += 8;
         _currentStreak += 1;
-        _guardianProfile = _guardianProfile.copyWith(expression: 'happy');
+        _avatarProfile = _avatarProfile.copyWith(expression: 'happy');
         _transactions = [
           const TransactionRecord(
             id: 'tx-auto-save',
@@ -487,7 +485,7 @@ class _AppRootState extends State<AppRoot> {
         _resilienceScore = (_resilienceScore + 6).clamp(0, 100);
         _smartDecisionScore = (_smartDecisionScore + 10).clamp(0, 100);
         _currentStreak += 1;
-        _guardianProfile = _guardianProfile.copyWith(expression: 'happy');
+        _avatarProfile = _avatarProfile.copyWith(expression: 'happy');
         _transactions = [
           const TransactionRecord(
             id: 'tx-auto-save',
@@ -521,7 +519,7 @@ class _AppRootState extends State<AppRoot> {
     setState(() {
       _showHomeAlert = false;
       _resilienceScore = (_resilienceScore - 2).clamp(0, 100).toInt();
-      _guardianProfile = _guardianProfile.copyWith(expression: 'sad');
+      _avatarProfile = _avatarProfile.copyWith(expression: 'sad');
     });
     unawaited(_persistAppState());
     try {
@@ -537,11 +535,9 @@ class _AppRootState extends State<AppRoot> {
       builder: (context) => AvatarCustomizationSheet(
         totalPoints: _totalPoints,
         rewardShopItems: _rewardShopItems,
-        breed: _guardianProfile.breed,
-        color: _guardianProfile.color,
-        accessory: _guardianProfile.accessory,
-        outfit: _guardianProfile.outfit,
-        cosmetic: _guardianProfile.cosmetic,
+        breed: _avatarProfile.breed,
+        accessory: _avatarProfile.accessory,
+        effect: _avatarProfile.effect,
       ),
     );
 
@@ -562,10 +558,10 @@ class _AppRootState extends State<AppRoot> {
       _rewardShopItems = _rewardShopItems
           .map((item) => result.purchasedItemIds.contains(item.id) ? item.copyWith(owned: true) : item)
           .toList();
-      _guardianProfile = _guardianProfile.copyWith(
+      _avatarProfile = _avatarProfile.copyWith(
+        breed: result.breed,
         accessory: result.accessory,
-        outfit: result.outfit,
-        cosmetic: result.cosmetic,
+        effect: result.effect,
       );
     });
     unawaited(_persistAppState());
@@ -657,11 +653,10 @@ class _AppRootState extends State<AppRoot> {
 
       return OnboardingPage(
         step: _onboardingStep - 1,
-        breed: _guardianProfile.breed,
-        color: _guardianProfile.color,
-        expression: _guardianProfile.expression,
-        accessory: _guardianProfile.accessory,
-        outfit: _guardianProfile.outfit,
+        breed: _avatarProfile.breed,
+        expression: _avatarProfile.expression,
+        accessory: _avatarProfile.accessory,
+        effect: _avatarProfile.effect,
         budget: _budget,
         goal: _goal,
         gxBankConnected: _gxBankConnected,
@@ -673,11 +668,10 @@ class _AppRootState extends State<AppRoot> {
         plan: plan,
         yesAnswers: _yesAnswers,
         noAnswers: _noAnswers,
-        onSetBreed: (v) => _updateGuardianProfile(_guardianProfile.copyWith(breed: v)),
-        onSetColor: (v) => _updateGuardianProfile(_guardianProfile.copyWith(color: v)),
-        onSetExpression: (v) => _updateGuardianProfile(_guardianProfile.copyWith(expression: v)),
-        onSetAccessory: (v) => _updateGuardianProfile(_guardianProfile.copyWith(accessory: v)),
-        onSetOutfit: (v) => _updateGuardianProfile(_guardianProfile.copyWith(outfit: v)),
+        onSetBreed: (v) => _updateAvatarProfile(_avatarProfile.copyWith(breed: v)),
+        onSetExpression: (v) => _updateAvatarProfile(_avatarProfile.copyWith(expression: v)),
+        onSetAccessory: (v) => _updateAvatarProfile(_avatarProfile.copyWith(accessory: v)),
+        onSetEffect: (v) => _updateAvatarProfile(_avatarProfile.copyWith(effect: v)),
         onSetBudget: (v) => setState(() => _budget = v),
         onSetGoal: (v) => setState(() => _goal = v),
         onSetAutoSavePercent: (v) => setState(() => _autoSavePercent = v),
@@ -739,11 +733,9 @@ class _AppRootState extends State<AppRoot> {
             currentStreak: _currentStreak,
             recentPoints: _recentPoints,
             transactions: _transactions,
-            breed: _guardianProfile.breed,
-            color: _guardianProfile.color,
-            accessory: _guardianProfile.accessory,
-            outfit: _guardianProfile.outfit,
-            cosmetic: _guardianProfile.cosmetic,
+            breed: _avatarProfile.breed,
+            accessory: _avatarProfile.accessory,
+            effect: _avatarProfile.effect,
             showAlert: _showHomeAlert,
             onSaveAlert: () => _saveFromIntervention(context),
             onOpenAlternatives: _openRadarFromIntervention,
@@ -770,12 +762,10 @@ class _AppRootState extends State<AppRoot> {
             totalPoints: _totalPoints,
             quests: _quests,
             rewardShopItems: _rewardShopItems,
-            breed: _guardianProfile.breed,
-            color: _guardianProfile.color,
-            expression: _guardianProfile.expression,
-            accessory: _guardianProfile.accessory,
-            outfit: _guardianProfile.outfit,
-            cosmetic: _guardianProfile.cosmetic,
+            breed: _avatarProfile.breed,
+            expression: _avatarProfile.expression,
+            accessory: _avatarProfile.accessory,
+            effect: _avatarProfile.effect,
             onClaimReward: (questId) => _claimQuestReward(context, questId),
             onRedeemItem: (itemId) => _redeemRewardShopItem(context, itemId),
             onCustomizeAvatar: () => _openAvatarCustomization(context),
@@ -794,12 +784,10 @@ class _AppRootState extends State<AppRoot> {
             plan: plan,
             totalPoints: _totalPoints,
             transactions: _transactions,
-            breed: _guardianProfile.breed,
-            color: _guardianProfile.color,
-            expression: _guardianProfile.expression,
-            accessory: _guardianProfile.accessory,
-            outfit: _guardianProfile.outfit,
-            cosmetic: _guardianProfile.cosmetic,
+            breed: _avatarProfile.breed,
+            expression: _avatarProfile.expression,
+            accessory: _avatarProfile.accessory,
+            effect: _avatarProfile.effect,
             notificationsEnabled: _notificationsEnabled,
             autoSaveEnabled: _autoSaveEnabled,
             onNotificationsChanged: (value) => setState(() => _notificationsEnabled = value),

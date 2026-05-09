@@ -16,10 +16,8 @@ class HomePage extends StatelessWidget {
     required this.recentPoints,
     required this.transactions,
     required this.breed,
-    required this.color,
     required this.accessory,
-    required this.outfit,
-    required this.cosmetic,
+    required this.effect,
     required this.showAlert,
     required this.onSaveAlert,
     required this.onOpenAlternatives,
@@ -44,10 +42,8 @@ class HomePage extends StatelessWidget {
   final List<PointsEvent> recentPoints;
   final List<TransactionRecord> transactions;
   final String breed;
-  final String color;
   final String accessory;
-  final String outfit;
-  final String cosmetic;
+  final String effect;
   final bool showAlert;
   final VoidCallback onSaveAlert;
   final VoidCallback onOpenAlternatives;
@@ -321,9 +317,9 @@ class HomePage extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Wallet Guardian', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: context.colors.accentForeground)),
+                              Text('Cat Companion', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: context.colors.accentForeground)),
                               const SizedBox(height: 4),
-                              const Text('Your premium money companion is watching your vibe.', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.3)),
+                              const Text('Your collectible cat is watching your spending vibe.', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.3)),
                               const SizedBox(height: 6),
                               Text(
                                 moodLabel(emotion),
@@ -388,10 +384,8 @@ class HomePage extends StatelessWidget {
                           avatarPreview(
                             context,
                             breed: breed,
-                            color: color,
                             accessory: accessory,
-                            outfit: outfit,
-                            cosmetic: leveledUp ? 'sparkle' : cosmetic,
+                            effect: leveledUp ? 'sparkle_aura' : effect,
                             mood: emotion,
                             size: 120,
                           ),
@@ -433,7 +427,7 @@ class HomePage extends StatelessWidget {
                                         Icon(Icons.auto_awesome_rounded, size: 14, color: const Color(0xFFFFE7A3)),
                                         const SizedBox(width: 6),
                                         Text(
-                                          leveledUp ? 'Rare mood drop' : 'Idle companion loop',
+                                          leveledUp ? 'Epic mood sparkle' : 'Gentle idle loop',
                                           style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white),
                                         ),
                                       ],
@@ -442,10 +436,10 @@ class HomePage extends StatelessWidget {
                                   const SizedBox(height: 12),
                                   Text(
                                     leveledUp
-                                        ? 'It is sparkling because your saving habits just leveled up.'
+                                        ? 'It is glowing because your saving habits just leveled up.'
                                         : overspendingRisk
-                                            ? 'It is giving you a soft warning before the streak breaks.'
-                                            : 'It is cozy, alert, and ready to celebrate your next good call.',
+                                            ? 'Its face is warning you softly before the streak breaks.'
+                                            : 'It is calm, alert, and ready to celebrate your next good call.',
                                     style: TextStyle(fontSize: 12, height: 1.5, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.96)),
                                   ),
                                   const SizedBox(height: 12),
@@ -454,7 +448,7 @@ class HomePage extends StatelessWidget {
                                     runSpacing: 8,
                                     children: [
                                       _guardianChip(context, Icons.favorite_rounded, savingsWin ? 'Comforted' : 'Observing'),
-                                      _guardianChip(context, Icons.inventory_2_rounded, '${nextLevelPoints - pointsIntoLevel} pts to next cosmetic'),
+                                      _guardianChip(context, Icons.inventory_2_rounded, '${nextLevelPoints - pointsIntoLevel} pts to next unlock'),
                                       _guardianChip(context, Icons.local_fire_department_rounded, streakLabel),
                                     ],
                                   ),
@@ -507,7 +501,7 @@ class HomePage extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              leveledUp ? 'Wallet Guardian is proud. You just hit a stronger resilience tier.' : 'A couple more smart saves and you will unlock your next milestone.',
+                              leveledUp ? 'Your cat is proud. You just hit a stronger resilience tier.' : 'A couple more smart saves and you will unlock your next collectible.',
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.foreground),
                             ),
                           ),
@@ -724,9 +718,9 @@ class HomePage extends StatelessWidget {
                     sectionHeader(context, 'Squad leaderboard', action: 'View', onTap: () => onNavigate(2), compact: true),
                     const SizedBox(height: 8),
                     ...[
-                      (1, 'Mira', 1240, false),
-                      (2, 'You', 1180, true),
-                      (3, 'Hafiz', 980, false),
+                      (1, 'Mira', 1240, false, 'british_shorthair', 'glasses', 'glow_outline'),
+                      (2, 'You', totalPoints, true, breed, accessory, effect),
+                      (3, 'Hafiz', 980, false, 'orange_tabby', 'headphones', 'sparkle_aura'),
                     ].map((item) {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 8),
@@ -745,6 +739,8 @@ class HomePage extends StatelessWidget {
                               child: Text('${item.$1}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                             ),
                             const SizedBox(width: 12),
+                            avatarPreview(context, breed: item.$5, accessory: item.$6, effect: item.$7, mood: item.$4 ? AvatarMood.proud : AvatarMood.happy, size: 44, showBackground: false),
+                            const SizedBox(width: 10),
                             Expanded(child: Text(item.$2, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
                             Text('${item.$3} pts', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.colors.primary)),
                           ],

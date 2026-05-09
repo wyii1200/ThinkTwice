@@ -1,17 +1,11 @@
-require('dotenv').config();
-
 const axios = require("axios");
 
 const BASE = "https://maps.googleapis.com/maps/api";
 // Read at call time, not at module load — ensures dotenv is already initialised
 const getKey = () => {
-
   const key = process.env.GOOGLE_MAPS_API_KEY;
   if (!key) throw new Error("GOOGLE_MAPS_API_KEY is not set in .env");
   return key;
-  console.log("Google Maps API Key:", process.env.GOOGLE_MAPS_API_KEY);
-
-
 };
 
 // Find nearby stores/deals by category and user location
@@ -50,25 +44,60 @@ async function getNearbyPlaces(lat, lng, category = "grocery_or_supermarket", ra
 }
 
 // Optimize multi-stop grocery route using Directions API
-// stops = [{ address or lat/lng }, ...]
+// stops = [{ lat, lng, storeName, items[] }, ...]
+// ALWAYS uses coordinates — never address strings (Google NOT_FOUND fix)
 async function getOptimizedRoute(originLat, originLng, stops) {
   if (!stops || stops.length === 0) {
     throw new Error("At least one stop is required");
   }
 
-  const origin = `${originLat},${originLng}`;
-  const destination = stops[stops.length - 1].address || `${stops[stops.length - 1].lat},${stops[stops.length - 1].lng}`;
+  // ── Validate all inputs are real numbers ───────────────────────────────────
+  const oLat = parseFloat(originLat);
+  const oLng = parseFloat(originLng);
 
-  const waypoints = stops
-    .slice(0, -1)
-    .map((s) => s.address || `${s.lat},${s.lng}`)
-    .join("|");
+  if (isNaN(oLat) || isNaN(oLng)) {
+    throw new Error(`Invalid origin coordinates: ${originLat}, ${originLng}`);
+  }
+
+  // Validate each stop has usable coordinates
+  const validatedStops = stops.map((s, i) => {
+    const lat = parseFloat(s.lat ?? s.latitude);
+    const lng = parseFloat(s.lng ?? s.longitude);
+
+    if (isNaN(lat) || isNaN(lng)) {
+      throw new Error(
+        `Stop ${i} ("${s.storeName || "unknown"}") has invalid coordinates: lat=${s.lat}, lng=${s.lng}`
+      );
+    }
+
+    return { ...s, lat, lng };
+  });
+
+  // ── Always use lat,lng format — never address strings ─────────────────────
+  // Address strings like "FamilyMart" or "Nearby Store" cause NOT_FOUND
+  const toCoord = (stop) => `${stop.lat},${stop.lng}`;
+
+  const origin = `${oLat},${oLng}`;
+  const destination = toCoord(validatedStops[validatedStops.length - 1]);
+  const middleStops = validatedStops.slice(0, -1);
+
+  const waypointStr = middleStops.length > 0
+    ? `optimize:true|${middleStops.map(toCoord).join("|")}`
+    : undefined;
+
+  // ── Log exactly what we're sending (helps debug future issues) ─────────────
+  console.log("Directions API request:", {
+    origin,
+    destination,
+    waypoints: waypointStr,
+    stopCount: validatedStops.length,
+  });
 
   const url = `${BASE}/directions/json`;
   const params = {
     origin,
     destination,
-    waypoints: waypoints ? `optimize:true|${waypoints}` : undefined,
+    ...(waypointStr && { waypoints: waypointStr }),
     mode: "driving",
     key: getKey(),
   };
@@ -76,7 +105,9 @@ async function getOptimizedRoute(originLat, originLng, stops) {
   const res = await axios.get(url, { params });
 
   if (res.data.status !== "OK") {
-    throw new Error(`Directions API error: ${res.data.status}`);
+    // Log the full error detail from Google for easier debugging
+    console.error("Directions API error:", res.data.status, res.data.error_message || "");
+    throw new Error(`Directions API error: ${res.data.status}${res.data.error_message ? " — " + res.data.error_message : ""}`);
   }
 
   const route = res.data.routes[0];
@@ -85,10 +116,8 @@ async function getOptimizedRoute(originLat, originLng, stops) {
   const totalDistanceMeters = legs.reduce((sum, leg) => sum + leg.distance.value, 0);
   const totalDurationSeconds = legs.reduce((sum, leg) => sum + leg.duration.value, 0);
 
-  const optimizedOrder = route.waypoint_order || [];
-
   return {
-    optimizedStopOrder: optimizedOrder,
+    optimizedStopOrder: route.waypoint_order || [],
     totalDistanceKm: parseFloat((totalDistanceMeters / 1000).toFixed(2)),
     totalDurationMinutes: Math.round(totalDurationSeconds / 60),
     legs: legs.map((leg) => ({
@@ -101,12 +130,18 @@ async function getOptimizedRoute(originLat, originLng, stops) {
   };
 }
 
-// Estimate travel cost between user and a set of stores
-async function getDistanceMatrix(originLat, originLng, destinationAddresses) {
+// Estimate travel cost between user and a set of stops
+// Pass stops as objects with lat/lng, not address strings
+async function getDistanceMatrix(originLat, originLng, stops) {
+  // Accept either array of stop objects {lat,lng} or legacy array of strings
+  const destinations = stops.map((s) =>
+    typeof s === "string" ? s : `${parseFloat(s.lat)},${parseFloat(s.lng)}`
+  ).join("|");
+
   const url = `${BASE}/distancematrix/json`;
   const params = {
-    origins: `${originLat},${originLng}`,
-    destinations: destinationAddresses.join("|"),
+    origins: `${parseFloat(originLat)},${parseFloat(originLng)}`,
+    destinations,
     mode: "driving",
     key: getKey(),
   };

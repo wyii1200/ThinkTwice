@@ -2,21 +2,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-// Change this to your machine's local IP when testing on a physical device.
-// Use 10.0.2.2 for Android emulator, localhost for web/desktop.
-//const String _baseUrl = 'http://10.0.2.2:4000';
 
-// For physical device — use your PC's actual local IP
-// Run `ipconfig` in cmd → find IPv4 under your WiFi adapter
-//const String _baseUrl = 'http://192.168.x.x:4000';  // ← your PC's IP
-
-// For web (flutter run -d chrome)
- const String _baseUrl = 'https://thinktwice-zu5d.onrender.com';
-
-// For Android emulator only
-// const String _baseUrl = 'http://10.0.2.2:4000';
-
+const String _baseUrl = 'https://thinktwice-zu5d.onrender.com/';
+//const String _baseUrl = 'http://localhost:4000';
 // ─── Response models ──────────────────────────────────────────────────────────
 
 class ApiDeal {
@@ -323,7 +311,15 @@ class RadarApiService {
     final body = jsonDecode(res.body) as Map<String, dynamic>;
 
     if (res.statusCode == 409) {
-      throw AlreadyVotedException(body['error'] as String? ?? 'Already voted');
+      final error = body['error'] as String? ?? '';
+      // "Already downvoted" = true duplicate → block
+      // "Cannot downvote your own deal" → block
+      // Anything else at 409 = was previously upvoted → already switched by backend, treat as success
+      if (error.contains('Already downvoted') || error.contains('Cannot downvote')) {
+        throw AlreadyVotedException(error);
+      }
+      // Should not happen with updated backend, but handle gracefully
+      throw AlreadyVotedException(error);
     }
     if (body['success'] != true) {
       throw Exception(body['error'] ?? 'Downvote failed');

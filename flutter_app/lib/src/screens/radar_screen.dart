@@ -10,19 +10,9 @@ import '../core/models.dart';
 import '../services/radar_api_service.dart';
 import '../widgets/shared.dart';
 
-import 'dart:typed_data';
-import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-import '../core/app_theme.dart';
-import '../core/models.dart';
-import '../services/radar_api_service.dart';
-import '../widgets/shared.dart';
 
 String _fmt(double amount) => amount.toStringAsFixed(2);
+final Map<String, String> _dealImageUrls = {};
 class RadarPage extends StatefulWidget {
   const RadarPage({
     super.key,
@@ -108,6 +98,14 @@ class _RadarPageState extends State<RadarPage> {
       if (!mounted) return;
       setState(() {
         _apiDeals = deals;
+
+//for image caching in map markers — avoids re-downloading when deal list refreshes
+        for (final d in deals) {
+          if (d.imageUrl != null && d.imageUrl!.isNotEmpty) {
+            _dealImageUrls[d.dealId] = d.imageUrl!;
+          }
+        }
+
         _loadingDeals = false;
         if (_selectedDeal == null && deals.isNotEmpty) {
           _selectedDeal = _apiDealToCommunityDeal(deals.first);
@@ -184,17 +182,16 @@ class _RadarPageState extends State<RadarPage> {
     });
 
     try {
+      // Only send lat/lng — never address strings (causes Directions API NOT_FOUND)
       final stops = [
         {
           'storeName': _selectedDeal!.storeName,
-          'address': _selectedDeal!.storeName,
           'lat': _selectedDeal!.latitude,
           'lng': _selectedDeal!.longitude,
           'items': items.take((items.length / 2).ceil()).toList(),
         },
         {
           'storeName': 'Fresh Mart',
-          'address': 'Nearby grocery store',
           'lat': widget.userLocation.latitude + 0.008,
           'lng': widget.userLocation.longitude + 0.005,
           'items': items.skip((items.length / 2).ceil()).toList(),
@@ -260,25 +257,28 @@ class _RadarPageState extends State<RadarPage> {
 
   Future<void> _handleUpvote(String dealId) async {
     try {
-      await RadarApiService.upvoteDeal(dealId: dealId, userId: _userId);
+      final result = await RadarApiService.upvoteDeal(dealId: dealId, userId: _userId);
       widget.onUpvoteDeal(dealId);
-      await _loadDeals();
+      await _loadDeals(); // sync Firestore → UI
+      if (!mounted) return;
+      final switched = result['switched'] == true;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(switched
+            ? 'Switched to upvote — trust score updated.'
+            : 'Upvoted! Trust score updated.'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF41B89B),
+      ));
+    } on AlreadyVotedException {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Upvoted! Trust score updated.'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Color(0xFF41B89B),
-      ));
-    } on AlreadyVotedException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message),
+        content: Text('You already upvoted this deal.'),
         behavior: SnackBarBehavior.floating,
       ));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Error: $e'),
+        content: Text('Could not upvote: $e'),
         behavior: SnackBarBehavior.floating,
       ));
     }
@@ -291,23 +291,30 @@ class _RadarPageState extends State<RadarPage> {
 
   Future<void> _handleDownvote(String dealId) async {
     try {
-      await RadarApiService.downvoteDeal(dealId: dealId, userId: _userId);
-      await _loadDeals();
+      final result = await RadarApiService.downvoteDeal(dealId: dealId, userId: _userId);
+      await _loadDeals(); // sync Firestore data back to UI
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Downvoted — trust score reduced.'),
+      final switched = result['switched'] == true;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(switched
+            ? 'Switched to downvote — trust score updated.'
+            : 'Downvoted — trust score reduced.'),
         behavior: SnackBarBehavior.floating,
       ));
     } on AlreadyVotedException catch (e) {
       if (!mounted) return;
+      // "Already downvoted" or "own deal" — show clean message
+      final msg = e.message.contains('own deal')
+          ? 'You cannot downvote your own deal.'
+          : 'You already downvoted this deal.';
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.message),
+        content: Text(msg),
         behavior: SnackBarBehavior.floating,
       ));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Error: $e'),
+        content: Text('Could not downvote: $e'),
         behavior: SnackBarBehavior.floating,
       ));
     }
@@ -343,6 +350,10 @@ class _RadarPageState extends State<RadarPage> {
 
       setState(() {
         _apiDeals = [apiDeal, ..._apiDeals];
+        // Cache image URL for the new deal
+        if (apiDeal.imageUrl != null && apiDeal.imageUrl!.isNotEmpty) {
+          _dealImageUrls[apiDeal.dealId] = apiDeal.imageUrl!;
+        }
         _selectedDeal = communityDeal;
       });
 
@@ -399,6 +410,36 @@ class _RadarPageState extends State<RadarPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Could not open Google Maps.')),
     );
+  }
+
+
+  // ── UI components ───────────────────────────────────────────────────────────
+  Widget _buildDealImage(CommunityDeal deal) {
+    if (deal.imageBytes != null) {
+      return Image.memory(deal.imageBytes!, fit: BoxFit.cover);
+    }
+
+    final url = _dealImageUrls[deal.id];
+    if (url != null && url.isNotEmpty) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        loadingBuilder: (ctx, child, progress) => progress == null
+            ? child
+            : const Center(
+                child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2))),
+        errorBuilder: (ctx, _, __) => Icon(
+            Icons.storefront_rounded,
+            size: 24,
+            color: Theme.of(ctx).colorScheme.secondary),
+      );
+    }
+
+    return Icon(Icons.storefront_rounded,
+        size: 24, color: Theme.of(context).colorScheme.secondary);
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -801,8 +842,7 @@ class _RadarPageState extends State<RadarPage> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       alignment: Alignment.center,
-                      child: Icon(Icons.route_rounded,
-                          color: context.colors.primary),
+                      child: Icon(Icons.route_rounded, color: context.colors.primary),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1163,12 +1203,7 @@ class _RadarPageState extends State<RadarPage> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               clipBehavior: Clip.antiAlias,
-                              child: deal.imageBytes != null
-                                  ? Image.memory(deal.imageBytes!,
-                                      fit: BoxFit.cover)
-                                  : Icon(Icons.storefront_rounded,
-                                      size: 24,
-                                      color: context.colors.accentForeground),
+                              child:_buildDealImage(deal),
                             ),
                             const SizedBox(width: 12),
                             Expanded(

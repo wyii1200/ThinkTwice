@@ -1,9 +1,12 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+
 import '../core/app_theme.dart';
 import '../core/models.dart';
 import '../core/seed_data.dart';
 import '../widgets/shared.dart';
+
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
 
@@ -17,8 +20,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))
-      ..repeat(reverse: true);
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))..repeat(reverse: true);
   }
 
   @override
@@ -57,11 +59,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                   children: [
                     ScaleTransition(
                       scale: Tween<double>(begin: 0.92, end: 1.04).animate(_controller),
-                      child: Image.asset(
-                        'assets/images/thinktwice-logo.png',
-                        width: 150,
-                        height: 150,
-                      ),
+                      child: Image.asset('assets/images/thinktwice-logo.png', width: 150, height: 150),
                     ),
                     const SizedBox(height: 24),
                     Row(
@@ -71,12 +69,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                         SizedBox(width: 6),
                         Text(
                           'ThinkTwice',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 30,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.5,
-                          ),
+                          style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w700, letterSpacing: -0.5),
                         ),
                       ],
                     ),
@@ -84,29 +77,6 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                     const Text(
                       'Financial resilience becomes automatic.',
                       style: TextStyle(color: Colors.white, fontSize: 14),
-                    ),
-                    const SizedBox(height: 28),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(3, (index) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 3),
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0.8, end: 1.15),
-                            duration: Duration(milliseconds: 550 + (index * 130)),
-                            curve: Curves.easeInOut,
-                            builder: (context, value, child) => Transform.translate(
-                              offset: Offset(0, -2 * math.sin(_controller.value * math.pi * 2 + index)),
-                              child: Transform.scale(scale: value, child: child),
-                            ),
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                            ),
-                          ),
-                        );
-                      }),
                     ),
                   ],
                 ),
@@ -162,21 +132,9 @@ class LoginPage extends StatelessWidget {
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        Positioned(
-                          right: -6,
-                          top: -6,
-                          child: _floatingDot(context.colors.accent, 32),
-                        ),
-                        Positioned(
-                          left: -8,
-                          bottom: -6,
-                          child: _floatingDot(context.colors.warning, 24),
-                        ),
-                        Image.asset(
-                          'assets/images/thinktwice-logo.png',
-                          width: 160,
-                          height: 160,
-                        ),
+                        Positioned(right: -6, top: -6, child: _floatingDot(context.colors.accent, 32)),
+                        Positioned(left: -8, bottom: -6, child: _floatingDot(context.colors.warning, 24)),
+                        Image.asset('assets/images/thinktwice-logo.png', width: 160, height: 160),
                       ],
                     ),
                   ),
@@ -188,9 +146,7 @@ class LoginPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    isLoginMode
-                        ? 'Sign in to continue your savings streak'
-                        : 'Build financial resilience, one tap at a time',
+                    isLoginMode ? 'Sign in to continue your savings streak' : 'Build financial resilience, one tap at a time',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, color: context.colors.mutedForeground),
                   ),
@@ -209,18 +165,11 @@ class LoginPage extends StatelessWidget {
                         Container(
                           width: 20,
                           height: 20,
-                          decoration: BoxDecoration(
-                            color: context.colors.accent,
-                            shape: BoxShape.circle,
-                          ),
+                          decoration: BoxDecoration(color: context.colors.accent, shape: BoxShape.circle),
                           alignment: Alignment.center,
                           child: Text(
                             'GX',
-                            style: TextStyle(
-                              color: context.colors.accentForeground,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                            ),
+                            style: TextStyle(color: context.colors.accentForeground, fontSize: 9, fontWeight: FontWeight.w900),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -234,14 +183,7 @@ class LoginPage extends StatelessWidget {
                       Expanded(child: Divider(color: Theme.of(context).dividerColor)),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          'OR',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: context.colors.mutedForeground,
-                          ),
-                        ),
+                        child: Text('OR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: context.colors.mutedForeground)),
                       ),
                       Expanded(child: Divider(color: Theme.of(context).dividerColor)),
                     ],
@@ -250,13 +192,8 @@ class LoginPage extends StatelessWidget {
                   _inputShell(
                     context,
                     icon: Icons.mail_outline_rounded,
-                    suffix: null,
                     child: const TextField(
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        hintText: 'aiman@think.co',
-                        isDense: true,
-                      ),
+                      decoration: InputDecoration(border: InputBorder.none, hintText: 'aiman@think.co', isDense: true),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -265,41 +202,15 @@ class LoginPage extends StatelessWidget {
                     icon: Icons.lock_outline_rounded,
                     suffix: IconButton(
                       onPressed: onTogglePassword,
-                      icon: Icon(
-                        showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                        size: 18,
-                        color: context.colors.mutedForeground,
-                      ),
+                      icon: Icon(showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: context.colors.mutedForeground),
                     ),
                     child: TextField(
                       obscureText: !showPassword,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: '........',
-                        isDense: true,
-                      ),
+                      decoration: const InputDecoration(border: InputBorder.none, hintText: '........', isDense: true),
                     ),
                   ),
-                  if (isLoginMode) ...[
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {},
-                        style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                        child: Text(
-                          'Forgot password?',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.primary),
-                        ),
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: 8),
-                  GradientButton(
-                    text: isLoginMode ? 'Sign in' : 'Get started',
-                    icon: Icons.arrow_forward_rounded,
-                    onPressed: onContinue,
-                  ),
+                  GradientButton(text: isLoginMode ? 'Sign in' : 'Get started', icon: Icons.arrow_forward_rounded, onPressed: onContinue),
                   const SizedBox(height: 12),
                   OutlinedButton(
                     onPressed: onContinue,
@@ -338,13 +249,6 @@ class LoginPage extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Text(
-                      'Skip for now',
-                      style: TextStyle(fontSize: 11, color: context.colors.mutedForeground),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -360,12 +264,7 @@ class LoginPage extends StatelessWidget {
       duration: const Duration(seconds: 2),
       curve: Curves.easeInOut,
       builder: (context, value, child) => Transform.translate(offset: Offset(0, value), child: child),
-      onEnd: () {},
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      ),
+      child: Container(width: size, height: size, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
     );
   }
 
@@ -396,10 +295,9 @@ class OnboardingPage extends StatelessWidget {
     super.key,
     required this.step,
     required this.breed,
-    required this.color,
     required this.expression,
     required this.accessory,
-    required this.outfit,
+    required this.effect,
     required this.budget,
     required this.goal,
     required this.gxBankConnected,
@@ -412,10 +310,9 @@ class OnboardingPage extends StatelessWidget {
     required this.yesAnswers,
     required this.noAnswers,
     required this.onSetBreed,
-    required this.onSetColor,
     required this.onSetExpression,
     required this.onSetAccessory,
-    required this.onSetOutfit,
+    required this.onSetEffect,
     required this.onSetBudget,
     required this.onSetGoal,
     required this.onSetAutoSavePercent,
@@ -430,10 +327,9 @@ class OnboardingPage extends StatelessWidget {
 
   final int step;
   final String breed;
-  final String color;
   final String expression;
   final String accessory;
-  final String outfit;
+  final String effect;
   final double budget;
   final double goal;
   final bool gxBankConnected;
@@ -446,10 +342,9 @@ class OnboardingPage extends StatelessWidget {
   final Set<int> yesAnswers;
   final Set<int> noAnswers;
   final ValueChanged<String> onSetBreed;
-  final ValueChanged<String> onSetColor;
   final ValueChanged<String> onSetExpression;
   final ValueChanged<String> onSetAccessory;
-  final ValueChanged<String> onSetOutfit;
+  final ValueChanged<String> onSetEffect;
   final ValueChanged<double> onSetBudget;
   final ValueChanged<double> onSetGoal;
   final ValueChanged<double> onSetAutoSavePercent;
@@ -463,19 +358,7 @@ class OnboardingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final breeds = [
-      ('tabby', 'Tabby', 'Cat'),
-      ('calico', 'Calico', 'Calico'),
-      ('black', 'Shadow', 'Shadow'),
-      ('persian', 'Fluffy', 'Fluffy'),
-    ];
-    final colors = [
-      ('mint', null, context.colors.primaryGradient),
-      ('peach', const Color(0xFFE5A36C), null),
-      ('sky', const Color(0xFF72B5E8), null),
-      ('rose', const Color(0xFFDD7B84), null),
-      ('lavender', const Color(0xFFB58ADF), null),
-    ];
+    final breeds = catBreedConfigs.map((item) => (item.id, item.label)).toList();
     final expressions = [
       ('happy', 'Happy'),
       ('neutral', 'Calm'),
@@ -485,12 +368,21 @@ class OnboardingPage extends StatelessWidget {
     final accessories = [
       ('none', 'None'),
       ('ribbon', 'Ribbon'),
-      ('hat', 'Cap'),
-      ('glasses', 'Glasses'),
-      ('scarf', 'Scarf'),
+      ('crown', 'Crown'),
       ('headphones', 'Headphones'),
+      ('glasses', 'Glasses'),
+      ('flower', 'Flower'),
+      ('wizard_hat', 'Wizard Hat'),
+      ('sleeping_cap', 'Sleeping Cap'),
+      ('halo', 'Halo'),
+      ('coin_clip', 'Coin Clip'),
     ];
-    final outfits = ['Hoodie', 'Jacket', 'Cape'];
+    final effects = [
+      ('none', 'No effect'),
+      ('sparkle_aura', 'Sparkle aura'),
+      ('glow_outline', 'Glow outline'),
+      ('floating_hearts', 'Floating hearts'),
+    ];
     final personality = [
       "I overspend when I'm stressed",
       'I love a good deal hunt',
@@ -522,557 +414,21 @@ class OnboardingPage extends StatelessWidget {
                           margin: EdgeInsets.only(right: index == 2 ? 0 : 6),
                           height: 6,
                           decoration: BoxDecoration(
-                            color: active ? null : context.colors.muted,
                             gradient: active ? context.colors.primaryGradient : null,
+                            color: active ? null : context.colors.muted,
                             borderRadius: BorderRadius.circular(999),
                           ),
                         ),
                       );
                     }),
                   ),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Colors.white,
-                                context.colors.softMintGradient.colors.last.withOpacity(0.92),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(34),
-                            border: Border.all(color: Colors.white.withOpacity(0.88)),
-                            boxShadow: context.colors.softShadow,
-                          ),
-                          child: avatarPreview(
-                            context,
-                            breed: breed,
-                            color: color,
-                            accessory: accessory,
-                            outfit: outfit,
-                            cosmetic: 'none',
-                            mood: avatarMoodFromId(expression),
-                            size: 132,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${breeds.firstWhere((item) => item.$1 == breed).$2} · $outfit',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.mutedForeground),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
                   Expanded(
                     child: SingleChildScrollView(
                       child: switch (step) {
-                        0 => Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Pick your cat', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Your finance buddy for the journey',
-                                style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
-                              ),
-                              const SizedBox(height: 20),
-                              _sectionLabel('Breed', context),
-                              GridView.count(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                crossAxisCount: 4,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
-                                childAspectRatio: 0.9,
-                                children: List.generate(breeds.length, (index) {
-                                  final item = breeds[index];
-                                  final selected = breed == item.$1;
-                                  return GestureDetector(
-                                    onTap: () => onSetBreed(item.$1),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: selected ? context.colors.primary.withOpacity(0.15) : context.colors.card,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: selected ? Border.all(color: context.colors.primary, width: 2) : null,
-                                      ),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          avatarPreview(
-                                            context,
-                                            breed: item.$1,
-                                            color: color,
-                                            accessory: accessory,
-                                            outfit: outfit,
-                                            cosmetic: 'none',
-                                            mood: avatarMoodFromId(expression),
-                                            size: 46,
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(item.$2, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                }),
-                              ),
-                              const SizedBox(height: 16),
-                              _sectionLabel('Fur color', context),
-                              Row(
-                                children: colors.map((item) {
-                                  final selected = color == item.$1;
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 10),
-                                    child: GestureDetector(
-                                      onTap: () => onSetColor(item.$1),
-                                      child: Container(
-                                        width: 44,
-                                        height: 44,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: item.$2,
-                                          gradient: item.$3,
-                                          border: selected ? Border.all(color: context.colors.foreground, width: 2) : null,
-                                          boxShadow: selected ? [BoxShadow(color: context.colors.foreground.withOpacity(0.1), blurRadius: 0, spreadRadius: 4)] : null,
-                                        ),
-                                        child: selected ? const Icon(Icons.check_rounded, size: 18, color: Colors.white) : null,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                              const SizedBox(height: 16),
-                              _sectionLabel('Expression', context),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: expressions.map((item) {
-                                  final selected = expression == item.$1;
-                                  return GestureDetector(
-                                    onTap: () => onSetExpression(item.$1),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                      decoration: BoxDecoration(
-                                        color: selected ? context.colors.primary.withOpacity(0.15) : context.colors.card,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: selected ? Border.all(color: context.colors.primary, width: 2) : Border.all(color: Theme.of(context).dividerColor),
-                                      ),
-                                      child: Text(
-                                        item.$2,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: selected ? context.colors.primary : context.colors.foreground,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                              const SizedBox(height: 16),
-                              _sectionLabel('Accessory', context),
-                              GridView.count(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                crossAxisCount: 3,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
-                                childAspectRatio: 0.95,
-                                children: List.generate(accessories.length, (index) {
-                                  final item = accessories[index];
-                                  final selected = accessory == item.$1;
-                                  return GestureDetector(
-                                    onTap: () => onSetAccessory(item.$1),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: selected ? context.colors.primary.withOpacity(0.15) : context.colors.card,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: selected ? Border.all(color: context.colors.primary, width: 2) : null,
-                                      ),
-                                      padding: const EdgeInsets.all(8),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          avatarPreview(
-                                            context,
-                                            breed: breed,
-                                            color: color,
-                                            accessory: item.$1,
-                                            outfit: outfit,
-                                            cosmetic: 'none',
-                                            mood: avatarMoodFromId(expression),
-                                            size: 44,
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(item.$2, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                }),
-                              ),
-                              const SizedBox(height: 16),
-                              _sectionLabel('Starter outfit', context),
-                              GridView.count(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
-                                childAspectRatio: 2.5,
-                                children: outfits.map((item) {
-                                  final selected = outfit == item;
-                                  return GestureDetector(
-                                    onTap: () => onSetOutfit(item),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: selected ? context.colors.primary.withOpacity(0.15) : context.colors.card,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: selected ? Border.all(color: context.colors.primary, width: 2) : null,
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        item,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: selected ? context.colors.primary : context.colors.foreground,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ),
-                        1 => Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Set goals and preferences', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Choose your priorities, budget setup, and intervention preferences. ThinkTwice will build your first baseline from this.',
-                                style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
-                              ),
-                              const SizedBox(height: 16),
-                              WhiteCard(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: 36,
-                                          height: 36,
-                                          decoration: BoxDecoration(
-                                            color: context.colors.primary.withOpacity(0.12),
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Icon(Icons.account_balance_rounded, color: context.colors.primary),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              const Text('GXBank account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                                              Text(
-                                                gxBankConnected ? 'Connected securely for transaction streaming' : 'Not connected yet',
-                                                style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: gxBankConnected ? context.colors.success.withOpacity(0.14) : context.colors.warning.withOpacity(0.16),
-                                            borderRadius: BorderRadius.circular(999),
-                                          ),
-                                          child: Text(
-                                            gxBankConnected ? 'Connected' : 'Pending',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w700,
-                                              color: gxBankConnected ? context.colors.success : context.colors.accentForeground,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              _sectionLabel('Priority goals', context),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: priorities.map((item) {
-                                  final selected = selectedPriorities.contains(item);
-                                  return GestureDetector(
-                                    onTap: () => onTogglePriority(item),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                      decoration: BoxDecoration(
-                                        color: selected ? context.colors.primary.withOpacity(0.12) : context.colors.card,
-                                        borderRadius: BorderRadius.circular(14),
-                                        border: Border.all(
-                                          color: selected ? context.colors.primary : Theme.of(context).dividerColor,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        item,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: selected ? context.colors.primary : context.colors.foreground,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                              const SizedBox(height: 16),
-                              AmountSliderCard(
-                                icon: Icons.account_balance_wallet_outlined,
-                                label: 'Monthly income / budget',
-                                value: budget,
-                                min: 300,
-                                max: 5000,
-                                step: 100,
-                                color: context.colors.primary,
-                                fg: Colors.white,
-                                onChanged: onSetBudget,
-                              ),
-                              const SizedBox(height: 12),
-                              AmountSliderCard(
-                                icon: Icons.track_changes_rounded,
-                                label: 'Savings goal',
-                                value: goal,
-                                min: 100,
-                                max: 3000,
-                                step: 50,
-                                color: context.colors.success,
-                                fg: Colors.white,
-                                onChanged: onSetGoal,
-                              ),
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  gradient: context.colors.primaryGradient,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Estimated safe daily spending limit',
-                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      'RM ${formatRm(plan.dailyLimit)} / day',
-                                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      '(RM ${formatRm(budget)} - RM ${formatRm(goal)}) ÷ 30 days',
-                                      style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.88)),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              WhiteCard(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('Automation preferences', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            'Auto-save approval',
-                                            style: TextStyle(fontSize: 13, color: context.colors.foreground),
-                                          ),
-                                        ),
-                                        Switch.adaptive(value: autoSaveEnabled, onChanged: onToggleAutoSave),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Micro-saving amount: ${formatRm(autoSavePercent * 100)}%',
-                                      style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
-                                    ),
-                                    SliderTheme(
-                                      data: SliderTheme.of(context).copyWith(
-                                        activeTrackColor: context.colors.success,
-                                        inactiveTrackColor: context.colors.muted,
-                                        thumbColor: context.colors.success,
-                                      ),
-                                      child: Slider(
-                                        value: autoSavePercent.clamp(0.05, 0.3),
-                                        min: 0.05,
-                                        max: 0.3,
-                                        divisions: 5,
-                                        onChanged: onSetAutoSavePercent,
-                                      ),
-                                    ),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            'Spending alerts',
-                                            style: TextStyle(fontSize: 13, color: context.colors.foreground),
-                                          ),
-                                        ),
-                                        Switch.adaptive(value: notificationsEnabled, onChanged: onToggleNotifications),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        _ => Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Baseline and behaviour setup', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
-                              const SizedBox(height: 4),
-                              Text(
-                                'These inputs shape your AI baseline, first resilience score, and the interventions you will see after transactions stream in.',
-                                style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
-                              ),
-                              const SizedBox(height: 12),
-                              WhiteCard(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.psychology_alt_rounded, size: 18),
-                                        const SizedBox(width: 8),
-                                        const Text('Adaptive recommendations', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                                        const Spacer(),
-                                        Text(
-                                          '${plan.adaptabilityScore}/100',
-                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.primary),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 10),
-                                    ...plan.recommendations.map((text) => Padding(
-                                          padding: const EdgeInsets.only(bottom: 8),
-                                          child: Row(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Padding(
-                                                padding: const EdgeInsets.only(top: 4),
-                                                child: Icon(Icons.circle, size: 6, color: context.colors.primary),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                child: Text(
-                                                  text,
-                                                  style: TextStyle(fontSize: 12, color: context.colors.foreground, height: 1.35),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        )),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              WhiteCard(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('Initial dashboard state', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        Expanded(child: progressStat(context, 'Resilience', '50')),
-                                        const SizedBox(width: 8),
-                                        Expanded(child: progressStat(context, 'Streak', '0')),
-                                        const SizedBox(width: 8),
-                                        Expanded(child: progressStat(context, 'Smart decisions', '0')),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      'Once your GXBank transactions stream in, ThinkTwice will analyze spending velocity, risk, time patterns, and intervention outcomes daily.',
-                                      style: TextStyle(fontSize: 12, height: 1.35, color: context.colors.mutedForeground),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              ...List.generate(personality.length, (index) {
-                                final yes = yesAnswers.contains(index);
-                                final no = noAnswers.contains(index);
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(14),
-                                    decoration: BoxDecoration(
-                                      color: context.colors.card,
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.04),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            personality[index],
-                                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        _pillChoice(
-                                          context,
-                                          text: 'Yes',
-                                          active: yes,
-                                          activeColor: context.colors.primary,
-                                          activeText: Colors.white,
-                                          onTap: () => onTogglePersonality(index, true),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        _pillChoice(
-                                          context,
-                                          text: 'No',
-                                          active: no,
-                                          activeColor: context.colors.foreground,
-                                          activeText: context.colors.background,
-                                          onTap: () => onTogglePersonality(index, false),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ],
-                          ),
+                        0 => _avatarStep(context, breeds, expressions, accessories, effects),
+                        1 => _financeStep(context, priorities),
+                        _ => _personalityStep(context, personality),
                       },
                     ),
                   ),
@@ -1087,10 +443,7 @@ class OnboardingPage extends StatelessWidget {
                     Center(
                       child: TextButton(
                         onPressed: onBack,
-                        child: Text(
-                          'Back',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.mutedForeground),
-                        ),
+                        child: Text('Back', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.mutedForeground)),
                       ),
                     ),
                   ],
@@ -1103,17 +456,451 @@ class OnboardingPage extends StatelessWidget {
     );
   }
 
+  Widget _avatarStep(
+    BuildContext context,
+    List<(String, String)> breeds,
+    List<(String, String)> expressions,
+    List<(String, String)> accessories,
+    List<(String, String)> effects,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Build your cat avatar', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text(
+          'Choose a collectible breed, add a head accessory, and set the mood for the head-only companion that shows up everywhere in ThinkTwice.',
+          style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFFF8F3),
+                Color(0xFFEAFBF5),
+                Color(0xFFFFE8EF),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: Colors.white.withOpacity(0.92)),
+            boxShadow: [
+              BoxShadow(
+                color: context.colors.primary.withOpacity(0.12),
+                blurRadius: 24,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              avatarPreview(
+                context,
+                breed: breed,
+                accessory: accessory,
+                effect: effect,
+                mood: avatarMoodFromId(expression),
+                size: 180,
+              ),
+              const SizedBox(height: 12),
+              Text('${catBreedLabel(breed)} · ${formatAccessoryLabel(accessory)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              Text(
+                effect == 'none' ? moodLabel(avatarMoodFromId(expression)) : '${formatEffectLabel(effect)} equipped',
+                style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _sectionLabel('Choose breed', context),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: breeds.map((item) {
+            final selected = breed == item.$1;
+            return GestureDetector(
+              onTap: () => onSetBreed(item.$1),
+              child: Container(
+                width: 116,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: selected ? context.colors.primary.withOpacity(0.15) : context.colors.card,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: selected ? context.colors.primary : Theme.of(context).dividerColor, width: selected ? 2 : 1),
+                ),
+                child: Column(
+                  children: [
+                    avatarPreview(context, breed: item.$1, accessory: accessory, effect: effect, mood: avatarMoodFromId(expression), size: 72),
+                    const SizedBox(height: 8),
+                    Text(item.$2, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 20),
+        _sectionLabel('Choose accessory', context),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: accessories.map((item) {
+            final selected = accessory == item.$1;
+            return GestureDetector(
+              onTap: () => onSetAccessory(item.$1),
+              child: Container(
+                width: 110,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected ? context.colors.primary.withOpacity(0.15) : context.colors.card,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: selected ? context.colors.primary : Theme.of(context).dividerColor),
+                ),
+                child: Text(
+                  item.$2,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: selected ? context.colors.primary : context.colors.foreground),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 20),
+        _sectionLabel('Mood vibe', context),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: expressions.map((item) {
+            final selected = expression == item.$1;
+            return GestureDetector(
+              onTap: () => onSetExpression(item.$1),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected ? context.colors.primary.withOpacity(0.15) : context.colors.card,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: selected ? context.colors.primary : Theme.of(context).dividerColor),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(selected ? Icons.favorite_rounded : Icons.favorite_border_rounded, size: 16, color: selected ? context.colors.primary : context.colors.foreground),
+                    const SizedBox(width: 6),
+                    Text(item.$2, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: selected ? context.colors.primary : context.colors.foreground)),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 20),
+        _sectionLabel('Optional effect', context),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: effects.map((item) {
+            final selected = effect == item.$1;
+            return GestureDetector(
+              onTap: () => onSetEffect(item.$1),
+              child: Container(
+                width: 136,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected ? context.colors.primary.withOpacity(0.15) : context.colors.card,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: selected ? context.colors.primary : Theme.of(context).dividerColor),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(effectIcon(item.$1), size: 16, color: selected ? context.colors.primary : context.colors.foreground),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        item.$2,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: selected ? context.colors.primary : context.colors.foreground),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _financeStep(BuildContext context, List<String> priorities) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Set your saving rhythm', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text(
+          'Dial in your budget, savings target, and automation rules so your cat can react to real spending behaviour.',
+          style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
+        ),
+        const SizedBox(height: 12),
+        WhiteCard(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(color: context.colors.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(16)),
+                child: Icon(Icons.account_balance_rounded, color: context.colors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('GXBank sync', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text(
+                      gxBankConnected ? 'Connected and ready to power live nudges.' : 'Connect GXBank to unlock adaptive recommendations.',
+                      style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: gxBankConnected ? context.colors.success.withOpacity(0.14) : context.colors.warning.withOpacity(0.16),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  gxBankConnected ? 'Live' : 'Pending',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: gxBankConnected ? context.colors.success : context.colors.accentForeground),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        AmountSliderCard(
+          icon: Icons.account_balance_wallet_outlined,
+          label: 'Monthly budget',
+          value: budget,
+          min: 500,
+          max: 6000,
+          step: 50,
+          color: context.colors.primary,
+          fg: Colors.white,
+          onChanged: onSetBudget,
+        ),
+        const SizedBox(height: 12),
+        AmountSliderCard(
+          icon: Icons.track_changes_rounded,
+          label: 'Savings goal',
+          value: goal,
+          min: 100,
+          max: 3000,
+          step: 50,
+          color: context.colors.success,
+          fg: Colors.white,
+          onChanged: onSetGoal,
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(gradient: context.colors.primaryGradient, borderRadius: BorderRadius.circular(20)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Estimated safe daily spending limit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+              const SizedBox(height: 6),
+              Text('RM ${formatRm(plan.dailyLimit)} / day', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white)),
+              const SizedBox(height: 6),
+              Text('(RM ${formatRm(budget)} - RM ${formatRm(goal)}) ÷ 30 days', style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.88))),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        WhiteCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Automation preferences', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(child: Text('Auto-save approval', style: TextStyle(fontSize: 13, color: context.colors.foreground))),
+                  Switch.adaptive(value: autoSaveEnabled, onChanged: onToggleAutoSave),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text('Micro-saving amount: ${formatRm(autoSavePercent * 100)}%', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: context.colors.success,
+                  inactiveTrackColor: context.colors.muted,
+                  thumbColor: context.colors.success,
+                ),
+                child: Slider(
+                  value: autoSavePercent.clamp(0.05, 0.3),
+                  min: 0.05,
+                  max: 0.3,
+                  divisions: 5,
+                  onChanged: onSetAutoSavePercent,
+                ),
+              ),
+              Row(
+                children: [
+                  Expanded(child: Text('Spending alerts', style: TextStyle(fontSize: 13, color: context.colors.foreground))),
+                  Switch.adaptive(value: notificationsEnabled, onChanged: onToggleNotifications),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _sectionLabel('Money priorities', context),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: priorities.map((item) {
+            final selected = selectedPriorities.contains(item);
+            return GestureDetector(
+              onTap: () => onTogglePriority(item),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected ? context.colors.primary.withOpacity(0.12) : context.colors.card,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: selected ? context.colors.primary : Theme.of(context).dividerColor),
+                ),
+                child: Text(
+                  item,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: selected ? context.colors.primary : context.colors.foreground),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 16),
+        ...plan.allocations.map((item) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: AllocationSliderCard(
+                label: item.name,
+                percent: categoryPercents[item.name] ?? item.percent,
+                amount: item.amount,
+                color: item.color,
+                onChanged: (value) => onSetCategoryPercent(item.name, value),
+              ),
+            )),
+      ],
+    );
+  }
+
+  Widget _personalityStep(BuildContext context, List<String> personality) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Train your money coach', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text(
+          'These inputs shape your AI baseline, first resilience score, and the tone of the cat companion you will see after transactions stream in.',
+          style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
+        ),
+        const SizedBox(height: 12),
+        WhiteCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.psychology_alt_rounded, size: 18),
+                  const SizedBox(width: 8),
+                  const Text('Adaptive recommendations', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  Text('${plan.adaptabilityScore}/100', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.primary)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ...plan.recommendations.map((text) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Icon(Icons.circle, size: 6, color: context.colors.primary),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(text, style: TextStyle(fontSize: 12, color: context.colors.foreground, height: 1.35))),
+                      ],
+                    ),
+                  )),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        WhiteCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Initial dashboard state', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(child: progressStat(context, 'Resilience', '50')),
+                  const SizedBox(width: 8),
+                  Expanded(child: progressStat(context, 'Streak', '0')),
+                  const SizedBox(width: 8),
+                  Expanded(child: progressStat(context, 'Smart decisions', '0')),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...List.generate(personality.length, (index) {
+          final yes = yesAnswers.contains(index);
+          final no = noAnswers.contains(index);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: context.colors.card,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
+              ),
+              child: Row(
+                children: [
+                  Expanded(child: Text(personality[index], style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
+                  const SizedBox(width: 12),
+                  _pillChoice(context, text: 'Yes', active: yes, activeColor: context.colors.primary, activeText: Colors.white, onTap: () => onTogglePersonality(index, true)),
+                  const SizedBox(width: 8),
+                  _pillChoice(context, text: 'No', active: no, activeColor: context.colors.foreground, activeText: context.colors.background, onTap: () => onTogglePersonality(index, false)),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
   Widget _sectionLabel(String text, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text.toUpperCase(),
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.0,
-          color: context.colors.mutedForeground,
-        ),
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1, color: context.colors.mutedForeground),
       ),
     );
   }
@@ -1131,23 +918,14 @@ class OnboardingPage extends StatelessWidget {
       child: Container(
         height: 32,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: active ? activeColor : context.colors.muted,
-          borderRadius: BorderRadius.circular(999),
-        ),
+        decoration: BoxDecoration(color: active ? activeColor : context.colors.muted, borderRadius: BorderRadius.circular(999)),
         alignment: Alignment.center,
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: active ? activeText : context.colors.mutedForeground,
-          ),
-        ),
+        child: Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: active ? activeText : context.colors.mutedForeground)),
       ),
     );
   }
 }
+
 class AmountSliderCard extends StatelessWidget {
   const AmountSliderCard({
     super.key,
@@ -1179,13 +957,7 @@ class AmountSliderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.card,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
@@ -1247,25 +1019,14 @@ class AllocationSliderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.card,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-              ),
-              Text(
-                '${formatRm(percent * 100)}% · RM ${formatRm(amount)}',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
-              ),
+              Expanded(child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
+              Text('${formatRm(percent * 100)}% · RM ${formatRm(amount)}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
             ],
           ),
           SliderTheme(
@@ -1288,7 +1049,3 @@ class AllocationSliderCard extends StatelessWidget {
     );
   }
 }
-
-
-
-

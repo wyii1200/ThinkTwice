@@ -144,9 +144,11 @@ router.post("/:id/downvote", async (req, res) => {
     if (!userId) return res.status(400).json({ success: false, error: "userId required" });
 
     const result = await downvoteDeal(req.params.id, userId);
-    res.json({ success: true, ...result });
+    const msg = result.switched ? "Switched from upvote to downvote" : "Downvoted";
+    res.json({ success: true, message: msg, ...result });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    const isVoteConflict = err.message.includes("Already") || err.message.includes("Cannot downvote");
+    res.status(isVoteConflict ? 409 : 500).json({ success: false, error: err.message });
   }
 });
 
@@ -168,6 +170,25 @@ router.post("/use", async (req, res) => {
     });
 
     res.json({ success: true, proofId });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── POST /deals/:id/reset-votes ─────────────────────────────────────────────
+// DEV ONLY: clears voter history on a deal so you can re-test voting fresh
+// Remove this endpoint before production
+router.post("/:id/reset-votes", async (req, res) => {
+  try {
+    await db.collection("deals").doc(req.params.id).update({
+      voters: {},
+      upvotes: 0,
+      downvotes: 0,
+      trustScore: 50,
+      verified: false,
+      hidden: false,
+    });
+    res.json({ success: true, message: "Votes reset for deal " + req.params.id });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

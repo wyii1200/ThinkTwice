@@ -1,7 +1,6 @@
 ﻿import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 class BudgetAllocation {
   const BudgetAllocation({
     required this.name,
@@ -216,38 +215,30 @@ class RewardShopItem {
   }
 }
 
-class GuardianProfile {
-  const GuardianProfile({
+class CatAvatarProfile {
+  const CatAvatarProfile({
     required this.breed,
-    required this.color,
     required this.expression,
     required this.accessory,
-    required this.outfit,
-    required this.cosmetic,
+    required this.effect,
   });
 
   final String breed;
-  final String color;
   final String expression;
   final String accessory;
-  final String outfit;
-  final String cosmetic;
+  final String effect;
 
-  GuardianProfile copyWith({
+  CatAvatarProfile copyWith({
     String? breed,
-    String? color,
     String? expression,
     String? accessory,
-    String? outfit,
-    String? cosmetic,
+    String? effect,
   }) {
-    return GuardianProfile(
+    return CatAvatarProfile(
       breed: breed ?? this.breed,
-      color: color ?? this.color,
       expression: expression ?? this.expression,
       accessory: accessory ?? this.accessory,
-      outfit: outfit ?? this.outfit,
-      cosmetic: cosmetic ?? this.cosmetic,
+      effect: effect ?? this.effect,
     );
   }
 }
@@ -272,15 +263,15 @@ class TransactionRecord {
 
 class AvatarCustomizationResult {
   const AvatarCustomizationResult({
+    required this.breed,
     required this.accessory,
-    required this.outfit,
-    required this.cosmetic,
+    required this.effect,
     required this.purchasedItemIds,
   });
 
+  final String breed;
   final String accessory;
-  final String outfit;
-  final String cosmetic;
+  final String effect;
   final Set<String> purchasedItemIds;
 }
 
