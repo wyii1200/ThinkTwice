@@ -11,8 +11,7 @@ function getInitialTrustScore() {
   return TRUST_INITIAL;
 }
 
-// Upvote a deal — returns updated trust score
-// Prevents duplicate votes from same user
+// Upvote a deal — switches from downvote if user previously downvoted
 async function upvoteDeal(dealId, userId) {
   const ref = db.collection("deals").doc(dealId);
 
@@ -21,32 +20,48 @@ async function upvoteDeal(dealId, userId) {
     if (!doc.exists) throw new Error("Deal not found");
 
     const data = doc.data();
-
-    // Check if user already voted
     const voters = data.voters || {};
-    if (voters[userId]) {
-      throw new Error(voters[userId] === "up" ? "Already upvoted" : "Already downvoted, switch your vote first");
+    const existingVote = voters[userId];
+
+    if (existingVote === "up") throw new Error("Already upvoted");
+
+    let upvotesDelta = 1;
+    let downvotesDelta = 0;
+    let trustDelta = TRUST_UPVOTE;
+
+    // Switching from downvote → upvote: reverse the downvote first
+    if (existingVote === "down") {
+      downvotesDelta = -1;
+      trustDelta = TRUST_UPVOTE + TRUST_DOWNVOTE; // undo downvote + add upvote
     }
 
-    const newUpvotes = (data.upvotes || 0) + 1;
-    const newTrustScore = Math.min(100, (data.trustScore || TRUST_INITIAL) + TRUST_UPVOTE);
+    const newUpvotes = Math.max(0, (data.upvotes || 0) + upvotesDelta);
+    const newDownvotes = Math.max(0, (data.downvotes || 0) + downvotesDelta);
+    const newTrustScore = Math.min(100, (data.trustScore || TRUST_INITIAL) + trustDelta);
     const isNowVerified = newTrustScore >= TRUST_VERIFIED_THRESHOLD;
 
     t.update(ref, {
       upvotes: newUpvotes,
+      downvotes: newDownvotes,
       trustScore: newTrustScore,
       verified: isNowVerified,
+      hidden: false,
       [`voters.${userId}`]: "up",
     });
 
-    return { trustScore: newTrustScore, upvotes: newUpvotes, verified: isNowVerified };
+    return {
+      trustScore: newTrustScore,
+      upvotes: newUpvotes,
+      downvotes: newDownvotes,
+      verified: isNowVerified,
+      switched: existingVote === "down",
+    };
   });
 
   return updated;
 }
 
-// Downvote a deal — returns updated trust score
-// Prevents duplicate votes from same user
+// Downvote a deal — switches from upvote if user previously upvoted
 async function downvoteDeal(dealId, userId) {
   const ref = db.collection("deals").doc(dealId);
 
@@ -55,23 +70,31 @@ async function downvoteDeal(dealId, userId) {
     if (!doc.exists) throw new Error("Deal not found");
 
     const data = doc.data();
-
-    // Check if user already voted
     const voters = data.voters || {};
-    if (voters[userId]) {
-      throw new Error(voters[userId] === "down" ? "Already downvoted" : "Already upvoted, switch your vote first");
-    }
+    const existingVote = voters[userId];
+
+    if (existingVote === "down") throw new Error("Already downvoted");
 
     // Prevent deal submitter from downvoting their own deal
-    if (data.submittedBy === userId) {
-      throw new Error("Cannot downvote your own deal");
+    if (data.submittedBy === userId) throw new Error("Cannot downvote your own deal");
+
+    let upvotesDelta = 0;
+    let downvotesDelta = 1;
+    let trustDelta = -TRUST_DOWNVOTE;
+
+    // Switching from upvote → downvote: reverse the upvote first
+    if (existingVote === "up") {
+      upvotesDelta = -1;
+      trustDelta = -(TRUST_DOWNVOTE + TRUST_UPVOTE); // undo upvote + add downvote
     }
 
-    const newDownvotes = (data.downvotes || 0) + 1;
-    const newTrustScore = Math.max(0, (data.trustScore || TRUST_INITIAL) - TRUST_DOWNVOTE);
+    const newUpvotes = Math.max(0, (data.upvotes || 0) + upvotesDelta);
+    const newDownvotes = Math.max(0, (data.downvotes || 0) + downvotesDelta);
+    const newTrustScore = Math.max(0, (data.trustScore || TRUST_INITIAL) + trustDelta);
     const isHidden = newTrustScore < TRUST_HIDE_THRESHOLD;
 
     t.update(ref, {
+      upvotes: newUpvotes,
       downvotes: newDownvotes,
       trustScore: newTrustScore,
       hidden: isHidden,
@@ -79,7 +102,13 @@ async function downvoteDeal(dealId, userId) {
       [`voters.${userId}`]: "down",
     });
 
-    return { trustScore: newTrustScore, downvotes: newDownvotes, hidden: isHidden };
+    return {
+      trustScore: newTrustScore,
+      upvotes: newUpvotes,
+      downvotes: newDownvotes,
+      hidden: isHidden,
+      switched: existingVote === "up",
+    };
   });
 
   return updated;
