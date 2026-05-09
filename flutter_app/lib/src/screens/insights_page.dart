@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
 import '../core/models.dart';
 import '../core/seed_data.dart';

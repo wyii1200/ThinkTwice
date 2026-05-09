@@ -14,6 +14,11 @@ class UserProfile {
   final int streak;
   final int smartDecisionScore;
 
+  final String breed;
+  final String expression;
+  final String accessory;
+  final String effect;
+
   const UserProfile({
     required this.userId,
     this.displayName = '',
@@ -24,6 +29,10 @@ class UserProfile {
     required this.currentBalance,
     required this.streak,
     required this.smartDecisionScore,
+    this.breed = 'siamese',
+    this.expression = 'proud',
+    this.accessory = 'none',
+    this.effect = 'none',
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -37,6 +46,10 @@ class UserProfile {
       currentBalance: (json['currentBalance'] as num?)?.toDouble() ?? 0,
       streak: (json['streak'] as num?)?.toInt() ?? 0,
       smartDecisionScore: (json['smartDecisionScore'] as num?)?.toInt() ?? 50,
+      breed: json['breed'] as String? ?? 'siamese',
+      expression: json['expression'] as String? ?? 'proud',
+      accessory: json['accessory'] as String? ?? 'none',
+      effect: json['effect'] as String? ?? 'none',
     );
   }
 }
@@ -87,10 +100,14 @@ class BackendApiService {
 
   static Future<void> setupUser({
     required String userId,
-    double dailyBudget = 50,
-    double savingsGoal = 500,
+    required double dailyBudget,
+    required double savingsGoal,
+    required String displayName,
     String? fcmToken,
-    String? displayName,
+    String? breed,
+    String? expression,
+    String? accessory,
+    String? effect,
   }) async {
     final uri = Uri.parse('$_backendUrl/users/setup');
     final res = await _client.post(
@@ -100,14 +117,32 @@ class BackendApiService {
         'userId': userId,
         'dailyBudget': dailyBudget,
         'savingsGoal': savingsGoal,
+        'displayName': displayName,
         if (fcmToken != null) 'fcmToken': fcmToken,
-        if (displayName != null && displayName.isNotEmpty) 'displayName': displayName,
+        if (breed != null) 'breed': breed,
+        if (expression != null) 'expression': expression,
+        if (accessory != null) 'accessory': accessory,
+        if (effect != null) 'effect': effect,
       }),
     ).timeout(const Duration(seconds: 10));
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     if (body['success'] != true) {
       throw Exception(body['error'] ?? 'User setup failed');
+    }
+  }
+
+  static Future<void> updateUserProfile(String userId, Map<String, dynamic> updates) async {
+    final uri = Uri.parse('$_backendUrl/users/$userId');
+    final res = await _client.patch(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(updates),
+    ).timeout(const Duration(seconds: 10));
+
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (body['success'] != true) {
+      throw Exception(body['error'] ?? 'Failed to update profile');
     }
   }
 

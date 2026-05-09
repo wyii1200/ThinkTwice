@@ -200,6 +200,12 @@ class _AppRootState extends State<AppRoot> {
           _transactions = liveTransactions;
         }
         _nudgeHistory = nudgeHistory;
+        _avatarProfile = _avatarProfile.copyWith(
+          breed: profile.breed,
+          expression: profile.expression,
+          accessory: profile.accessory,
+          effect: profile.effect,
+        );
         _isAuthed = true; // User exists, skip login/onboarding
       });
       unawaited(_persistAppState());
@@ -598,6 +604,13 @@ class _AppRootState extends State<AppRoot> {
       );
     });
     unawaited(_persistAppState());
+    
+    // Sync with backend
+    unawaited(BackendApiService.updateUserProfile(_userId, {
+      'breed': result.breed,
+      'accessory': result.accessory,
+      'effect': result.effect,
+    }));
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -613,6 +626,10 @@ class _AppRootState extends State<AppRoot> {
         dailyBudget: _budget / 30,
         savingsGoal: _goal,
         displayName: _userName,
+        breed: _avatarProfile.breed,
+        expression: _avatarProfile.expression,
+        accessory: _avatarProfile.accessory,
+        effect: _avatarProfile.effect,
       );
       final profile = await BackendApiService.getUserProfile(_userId);
       setState(() {

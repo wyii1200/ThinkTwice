@@ -5,7 +5,7 @@ const { updateUserProfile, getUserProfile } = require('../services/firestore');
 // POST /users/setup
 router.post('/setup', async (req, res) => {
   try {
-    const { userId, dailyBudget, savingsGoal, fcmToken, lat, lng, displayName } = req.body;
+    const { userId, dailyBudget, savingsGoal, fcmToken, lat, lng, displayName, breed, expression, accessory, effect } = req.body;
 
     if (!userId) {
       return res.status(400).json({ error: 'Missing userId' });
@@ -24,12 +24,37 @@ router.post('/setup', async (req, res) => {
       currentBalance: 1500.50,
       lat: lat || null,
       lng: lng || null,
+      breed: breed || 'siamese',
+      expression: expression || 'proud',
+      accessory: accessory || 'none',
+      effect: effect || 'none',
       createdAt: new Date().toISOString(),
     });
 
     res.json({ success: true, userId });
   } catch (error) {
     console.error('User setup error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PATCH /users/:userId
+router.patch('/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updates = req.body;
+    
+    // Remove userId from body to prevent overwrite if accidentally sent
+    delete updates.userId;
+
+    await updateUserProfile(userId, {
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('User update error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
