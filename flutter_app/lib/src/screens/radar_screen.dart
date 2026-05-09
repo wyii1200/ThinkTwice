@@ -143,7 +143,9 @@ class _RadarPageState extends State<RadarPage> {
         permission = await Geolocator.requestPermission();
       }
       if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) return;
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
 
       final position = await Geolocator.getCurrentPosition();
       final current = LatLng(position.latitude, position.longitude);
@@ -1808,7 +1810,7 @@ class _PostDealSheetState extends State<PostDealSheet> {
               _field(controller: _storeController, label: 'Store name'),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: InputDecoration(
                   labelText: 'Category',
                   filled: true,

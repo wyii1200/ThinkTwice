@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+
 import '../core/app_theme.dart';
 import '../core/models.dart';
 import '../core/seed_data.dart';
@@ -13,11 +14,9 @@ class ProfilePage extends StatelessWidget {
     required this.totalPoints,
     required this.transactions,
     required this.breed,
-    required this.color,
     required this.expression,
     required this.accessory,
-    required this.outfit,
-    required this.cosmetic,
+    required this.effect,
     required this.notificationsEnabled,
     required this.autoSaveEnabled,
     required this.onNotificationsChanged,
@@ -31,11 +30,9 @@ class ProfilePage extends StatelessWidget {
   final int totalPoints;
   final List<TransactionRecord> transactions;
   final String breed;
-  final String color;
   final String expression;
   final String accessory;
-  final String outfit;
-  final String cosmetic;
+  final String effect;
   final bool notificationsEnabled;
   final bool autoSaveEnabled;
   final ValueChanged<bool> onNotificationsChanged;
@@ -45,10 +42,7 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final level = 1 + (totalPoints ~/ 300);
-    final rarity = _profileRarityLabel(accessory: accessory, outfit: outfit, cosmetic: cosmetic);
-    final accessoryLabel = formatAccessoryLabel(accessory);
-    final cosmeticLabel = formatCosmeticLabel(cosmetic);
-
+    final rarity = _profileRarityLabel(accessory: accessory, effect: effect);
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
       child: Column(
@@ -56,145 +50,84 @@ class ProfilePage extends StatelessWidget {
         children: [
           GradientCard(
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-            child: Stack(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Positioned(
-                  right: -36,
-                  top: -28,
-                  child: Container(
-                    width: 164,
-                    height: 164,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          Colors.white.withOpacity(0.28),
-                          Colors.white.withOpacity(0.08),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: -26,
-                  bottom: -34,
-                  child: Container(
-                    width: 132,
-                    height: 132,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          const Color(0xFFFFE7AE).withOpacity(0.28),
-                          const Color(0xFFFFE7AE).withOpacity(0.06),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: Colors.white.withOpacity(0.22)),
-                          ),
-                          child: const Text(
-                            'Collectible Companion',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white),
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.16),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            rarity,
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Wallet Guardian', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
-                    const SizedBox(height: 6),
-                    Text(
-                      'A premium AI money familiar with game-quality cosmetics, emotional states, and wearable fintech gear.',
-                      style: TextStyle(fontSize: 13, height: 1.45, color: Colors.white.withOpacity(0.9)),
-                    ),
-                    const SizedBox(height: 18),
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(34),
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.white.withOpacity(0.18),
-                              Colors.white.withOpacity(0.06),
-                            ],
-                          ),
-                          border: Border.all(color: Colors.white.withOpacity(0.18)),
-                        ),
-                        child: avatarPreview(
-                          context,
-                          breed: breed,
-                          color: color,
-                          accessory: accessory,
-                          outfit: outfit,
-                          cosmetic: cosmetic,
-                          mood: avatarMoodFromId(expression),
-                          size: 172,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-                        PointsChip(totalPoints: totalPoints),
-                        _premiumChip(Icons.shield_moon_rounded, 'Level $level', Colors.white),
-                        _premiumChip(Icons.checkroom_rounded, outfit, Colors.white),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
                     Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.14),
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: Colors.white.withOpacity(0.1)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Showcase loadout',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '$accessoryLabel layering with $outfit styling and $cosmeticLabel creates a collectible companion look built for soft motion, rare drop effects, and premium profile presentation.',
-                            style: TextStyle(fontSize: 12, height: 1.45, color: Colors.white.withOpacity(0.94)),
-                          ),
-                        ],
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(999)),
+                      child: const Text('Collectible Cat', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white)),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.16), borderRadius: BorderRadius.circular(999)),
+                      child: Text(rarity, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white)),
                     ),
                   ],
+                ),
+                const SizedBox(height: 16),
+                const Text('ThinkTwice Avatar', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
+                const SizedBox(height: 6),
+                Text(
+                  'A head-only collectible cat companion with breed unlocks, mood-driven facial changes, and soft reward effects.',
+                  style: TextStyle(fontSize: 13, height: 1.45, color: Colors.white.withOpacity(0.9)),
+                ),
+                const SizedBox(height: 18),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(34),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.white.withOpacity(0.18), Colors.white.withOpacity(0.06)],
+                      ),
+                      border: Border.all(color: Colors.white.withOpacity(0.18)),
+                    ),
+                    child: avatarPreview(
+                      context,
+                      breed: breed,
+                      accessory: accessory,
+                      effect: effect,
+                      mood: avatarMoodFromId(expression),
+                      size: 172,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    PointsChip(totalPoints: totalPoints),
+                    _premiumChip(Icons.shield_moon_rounded, 'Level $level', Colors.white),
+                    _premiumChip(Icons.pets_rounded, catBreedLabel(breed), Colors.white),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Avatar loadout', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white)),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${catBreedLabel(breed)} with ${formatAccessoryLabel(accessory)} and ${formatEffectLabel(effect)} creates your collectible fintech companion.',
+                        style: TextStyle(fontSize: 12, height: 1.45, color: Colors.white.withOpacity(0.94)),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -232,11 +165,7 @@ class ProfilePage extends StatelessWidget {
                         ),
                         Text(
                           '${positive ? '+' : '-'}RM${formatRm(item.amount.abs())}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: positive ? context.colors.success : context.colors.foreground,
-                          ),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: positive ? context.colors.success : context.colors.foreground),
                         ),
                       ],
                     ),
@@ -286,69 +215,20 @@ class ProfilePage extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
-          ),
+          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
         ],
       ),
     );
   }
 
-  String _profileRarityLabel({
-    required String accessory,
-    required String outfit,
-    required String cosmetic,
-  }) {
-    if (cosmetic == 'sparkle' || accessory == 'headphones' || outfit == 'Cape') {
-      return 'Legendary build';
-    }
-    if (accessory == 'crown' || outfit == 'Jacket') {
-      return 'Epic build';
-    }
-    if (accessory == 'scarf' || accessory == 'bag' || accessory == 'backpack' || cosmetic == 'coins') {
-      return 'Rare build';
-    }
+  String _profileRarityLabel({required String accessory, required String effect}) {
+    if (effect == 'floating_hearts' || accessory == 'coin_clip' || accessory == 'headphones') return 'Legendary build';
+    if (effect == 'sparkle_aura' || accessory == 'crown' || accessory == 'halo') return 'Epic build';
+    if (effect == 'glow_outline' || accessory == 'flower' || accessory == 'wizard_hat') return 'Rare build';
     return 'Core build';
   }
 
   Widget _settingsRow(BuildContext context, IconData icon, String label, String value, bool divider) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: () {},
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(color: context.colors.muted, borderRadius: BorderRadius.circular(12)),
-                  alignment: Alignment.center,
-                  child: Icon(icon, size: 18, color: context.colors.foreground),
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
-                Text(value, style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
-                const SizedBox(width: 8),
-                Icon(Icons.chevron_right_rounded, size: 18, color: context.colors.mutedForeground),
-              ],
-            ),
-          ),
-        ),
-        if (divider) Divider(height: 1, color: Theme.of(context).dividerColor),
-      ],
-    );
-  }
-
-  Widget _toggleSettingsRow(
-    BuildContext context,
-    IconData icon,
-    String label,
-    bool value,
-    ValueChanged<bool> onChanged,
-  ) {
     return Column(
       children: [
         Padding(
@@ -364,11 +244,32 @@ class ProfilePage extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
-              Switch.adaptive(value: value, onChanged: onChanged),
+              Text(value, style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
             ],
           ),
         ),
+        if (divider) Divider(height: 1, color: Theme.of(context).dividerColor),
       ],
+    );
+  }
+
+  Widget _toggleSettingsRow(BuildContext context, IconData icon, String label, bool value, ValueChanged<bool> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(color: context.colors.muted, borderRadius: BorderRadius.circular(12)),
+            alignment: Alignment.center,
+            child: Icon(icon, size: 18, color: context.colors.foreground),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
+          Switch.adaptive(value: value, onChanged: onChanged),
+        ],
+      ),
     );
   }
 }
@@ -379,28 +280,24 @@ class AvatarCustomizationSheet extends StatefulWidget {
     required this.totalPoints,
     required this.rewardShopItems,
     required this.breed,
-    required this.color,
     required this.accessory,
-    required this.outfit,
-    required this.cosmetic,
+    required this.effect,
   });
 
   final int totalPoints;
   final List<RewardShopItem> rewardShopItems;
   final String breed;
-  final String color;
   final String accessory;
-  final String outfit;
-  final String cosmetic;
+  final String effect;
 
   @override
   State<AvatarCustomizationSheet> createState() => _AvatarCustomizationSheetState();
 }
 
 class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
+  late String _selectedBreed;
   late String _selectedAccessory;
-  late String _selectedOutfit;
-  late String _selectedCosmetic;
+  late String _selectedEffect;
   late int _pointsLeft;
   late Set<String> _ownedItemIds;
   final Set<String> _purchasedItemIds = <String>{};
@@ -408,18 +305,17 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
   @override
   void initState() {
     super.initState();
+    _selectedBreed = widget.breed;
     _selectedAccessory = widget.accessory;
-    _selectedOutfit = widget.outfit;
-    _selectedCosmetic = widget.cosmetic;
+    _selectedEffect = widget.effect;
     _pointsLeft = widget.totalPoints;
     _ownedItemIds = widget.rewardShopItems.where((item) => item.owned).map((item) => item.id).toSet();
   }
 
   @override
   Widget build(BuildContext context) {
-    final avatarItems = widget.rewardShopItems.where((item) => item.category != 'badge').toList();
+    final avatarItems = widget.rewardShopItems.toList();
     final ownedItems = widget.rewardShopItems.where((item) => _ownedItemIds.contains(item.id)).toList();
-
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(16, 24, 16, MediaQuery.of(context).viewInsets.bottom + 16),
@@ -437,7 +333,7 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
               children: [
                 Row(
                   children: [
-                    const Expanded(child: Text('Customize Avatar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700))),
+                    const Expanded(child: Text('Avatar Creator', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700))),
                     PointsChip(totalPoints: _pointsLeft),
                   ],
                 ),
@@ -445,11 +341,9 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                 Center(
                   child: avatarPreview(
                     context,
-                    breed: widget.breed,
-                    color: widget.color,
+                    breed: _selectedBreed,
                     accessory: _selectedAccessory,
-                    outfit: _selectedOutfit,
-                    cosmetic: _selectedCosmetic,
+                    effect: _selectedEffect,
                     mood: AvatarMood.excited,
                     size: 132,
                   ),
@@ -457,36 +351,37 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                 const SizedBox(height: 10),
                 Center(
                   child: Text(
-                    '${formatAccessoryLabel(_selectedAccessory)} · $_selectedOutfit',
+                    '${catBreedLabel(_selectedBreed)} · ${formatAccessoryLabel(_selectedAccessory)} · ${formatEffectLabel(_selectedEffect)}',
+                    textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.mutedForeground),
                   ),
                 ),
                 const SizedBox(height: 18),
-                const Text('Owned items', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                const Text('Owned collectibles', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: ownedItems
-                      .map(
-                        (item) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: rarityPalette(context, item.rarity).$1.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(item.icon, size: 16, color: rarityPalette(context, item.rarity).$2),
-                              const SizedBox(width: 6),
-                              Text(item.name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: rarityPalette(context, item.rarity).$2)),
-                            ],
-                          ),
-                        ),
-                      )
-                      .toList(),
+                  children: ownedItems.map((item) {
+                    final palette = rarityPalette(context, item.rarity);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(color: palette.$1.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(item.icon, size: 16, color: palette.$2),
+                          const SizedBox(width: 6),
+                          Text(item.name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: palette.$2)),
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 ),
+                const SizedBox(height: 18),
+                const Text('Breeds', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                _shopGrid(context, avatarItems.where((item) => item.category == 'breeds').toList()),
                 const SizedBox(height: 18),
                 const Text('Accessories', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
@@ -498,24 +393,12 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                   mainAxisSpacing: 12,
                   childAspectRatio: 0.64,
                   children: [
-                    _noneStateCard(context, label: 'No accessory', selected: _selectedAccessory == 'none', onTap: () => setState(() => _selectedAccessory = 'none')),
-                    ...avatarItems.where((item) => item.category == 'accessory').map((item) => _buildAvatarItemAction(context, item)),
+                    _noneStateCard(context, label: 'No accessory', selected: _selectedAccessory == 'none', onTap: () => setState(() { _selectedAccessory = 'none'; })),
+                    ...avatarItems.where((item) => item.category == 'accessories').map((item) => _buildAvatarItemAction(context, item)),
                   ],
                 ),
                 const SizedBox(height: 18),
-                const Text('Outfits', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 8),
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.64,
-                  children: avatarItems.where((item) => item.category == 'outfit').map((item) => _buildAvatarItemAction(context, item)).toList(),
-                ),
-                const SizedBox(height: 18),
-                const Text('Cosmetics', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                const Text('Effects', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 GridView.count(
                   shrinkWrap: true,
@@ -525,8 +408,8 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                   mainAxisSpacing: 12,
                   childAspectRatio: 0.64,
                   children: [
-                    _noneStateCard(context, label: 'No cosmetic', selected: _selectedCosmetic == 'none', onTap: () => setState(() => _selectedCosmetic = 'none')),
-                    ...avatarItems.where((item) => item.category == 'cosmetic').map((item) => _buildAvatarItemAction(context, item)),
+                    _noneStateCard(context, label: 'No effect', selected: _selectedEffect == 'none', onTap: () => setState(() { _selectedEffect = 'none'; })),
+                    ...avatarItems.where((item) => item.category == 'effects').map((item) => _buildAvatarItemAction(context, item)),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -535,24 +418,21 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(48),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
+                        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                         child: const Text('Cancel'),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: GradientButton(
-                        text: 'Save look',
+                        text: 'Save avatar',
                         icon: Icons.check_rounded,
                         onPressed: () {
                           Navigator.of(context).pop(
                             AvatarCustomizationResult(
+                              breed: _selectedBreed,
                               accessory: _selectedAccessory,
-                              outfit: _selectedOutfit,
-                              cosmetic: _selectedCosmetic,
+                              effect: _selectedEffect,
                               purchasedItemIds: _purchasedItemIds,
                             ),
                           );
@@ -569,140 +449,108 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
     );
   }
 
+  Widget _shopGrid(BuildContext context, List<RewardShopItem> items) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 0.64,
+      children: items.map((item) => _buildAvatarItemAction(context, item)).toList(),
+    );
+  }
+
   Widget _buildAvatarItemAction(BuildContext context, RewardShopItem item) {
     final owned = _ownedItemIds.contains(item.id);
     final canAfford = _pointsLeft >= item.price;
     final palette = rarityPalette(context, item.rarity);
     final selected = switch (item.category) {
-      'accessory' => _selectedAccessory == item.value,
-      'outfit' => _selectedOutfit == item.value,
-      'cosmetic' => _selectedCosmetic == item.value,
+      'breeds' => _selectedBreed == item.value,
+      'accessories' => _selectedAccessory == item.value,
+      'effects' => _selectedEffect == item.value,
       _ => false,
     };
 
-    return SizedBox(
-      child: WhiteCard(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
+    return WhiteCard(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: palette.$1.withOpacity(0.12), borderRadius: BorderRadius.circular(999)),
+                child: Text(formatRarityLabel(item.rarity), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: palette.$2)),
+              ),
+              if (selected)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: palette.$1.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    formatRarityLabel(item.rarity),
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: palette.$2),
-                  ),
+                  decoration: BoxDecoration(color: context.colors.success.withOpacity(0.14), borderRadius: BorderRadius.circular(999)),
+                  child: Text('Equipped', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: context.colors.success)),
                 ),
-                if (selected)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: context.colors.success.withOpacity(0.14),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      'Equipped',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: context.colors.success),
-                    ),
-                  ),
-              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: RewardItemPreview(
+              item: item,
+              breed: _selectedBreed,
+              equipped: selected,
+              locked: !owned,
+              size: 94,
             ),
-            const SizedBox(height: 8),
-            Center(
-              child: RewardItemPreview(
-                item: item,
-                breed: widget.breed,
-                color: widget.color,
-                equipped: selected,
-                locked: !owned,
-                size: 94,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              item.name,
-              textAlign: TextAlign.left,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, height: 1.2),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              owned ? (selected ? 'Living on your Guardian' : 'Owned collectible') : '${item.price} pts',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, height: 1.25, color: owned ? context.colors.success : context.colors.primary),
-            ),
-            const SizedBox(height: 8),
-            if (owned)
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.tonal(
-                  onPressed: () => setState(() {
-                    switch (item.category) {
-                      case 'accessory':
-                        _selectedAccessory = item.value!;
-                        break;
-                      case 'outfit':
-                        _selectedOutfit = item.value!;
-                        break;
-                      case 'cosmetic':
-                        _selectedCosmetic = item.value!;
-                        break;
-                    }
-                  }),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: selected ? context.colors.primary.withOpacity(0.15) : context.colors.muted,
-                    foregroundColor: selected ? context.colors.primary : context.colors.foreground,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text(selected ? 'Equipped' : 'Equip', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                ),
-              )
-            else
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.tonal(
-                  onPressed: canAfford
+          ),
+          const SizedBox(height: 10),
+          Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, height: 1.2)),
+          const SizedBox(height: 4),
+          Text(owned ? (selected ? 'Currently active' : 'Owned collectible') : '${item.price} pts', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: owned ? context.colors.success : context.colors.primary)),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonal(
+              onPressed: owned
+                  ? () => setState(() {
+                        _equip(item);
+                      })
+                  : canAfford
                       ? () => setState(() {
                             _pointsLeft -= item.price;
                             _ownedItemIds.add(item.id);
                             _purchasedItemIds.add(item.id);
-                            switch (item.category) {
-                              case 'accessory':
-                                _selectedAccessory = item.value!;
-                                break;
-                              case 'outfit':
-                                _selectedOutfit = item.value!;
-                                break;
-                              case 'cosmetic':
-                                _selectedCosmetic = item.value!;
-                                break;
-                            }
+                            _equip(item);
                           })
                       : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: canAfford ? palette.$1.withOpacity(0.18) : context.colors.muted,
-                    foregroundColor: canAfford ? palette.$2 : context.colors.mutedForeground,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text(canAfford ? 'Unlock' : 'Locked', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                ),
+              style: FilledButton.styleFrom(
+                backgroundColor: owned ? (selected ? context.colors.primary.withOpacity(0.15) : context.colors.muted) : palette.$1.withOpacity(0.18),
+                foregroundColor: owned ? (selected ? context.colors.primary : context.colors.foreground) : palette.$2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-          ],
-        ),
+              child: Text(owned ? (selected ? 'Equipped' : 'Equip') : (canAfford ? 'Unlock' : 'Locked'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  void _equip(RewardShopItem item) {
+    switch (item.category) {
+      case 'breeds':
+        _selectedBreed = item.value ?? _selectedBreed;
+        break;
+      case 'accessories':
+        _selectedAccessory = item.value ?? _selectedAccessory;
+        break;
+      case 'effects':
+        _selectedEffect = item.value ?? _selectedEffect;
+        break;
+    }
   }
 
   Widget _noneStateCard(BuildContext context, {required String label, required bool selected, required VoidCallback onTap}) {
@@ -722,24 +570,12 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                 child: Icon(Icons.block_rounded, size: 34, color: selected ? context.colors.primary : context.colors.mutedForeground),
               ),
             ),
-            Text(
-              label,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: selected ? context.colors.primary : context.colors.foreground),
-            ),
+            Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: selected ? context.colors.primary : context.colors.foreground)),
             const SizedBox(height: 4),
-            Text(
-              selected ? 'Equipped' : 'Use empty slot',
-              style: TextStyle(fontSize: 11, color: context.colors.mutedForeground),
-            ),
+            Text(selected ? 'Equipped' : 'Use empty slot', style: TextStyle(fontSize: 11, color: context.colors.mutedForeground)),
           ],
         ),
       ),
     );
   }
 }
-
-
-
-
-
-
