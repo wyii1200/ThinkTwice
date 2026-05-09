@@ -25,7 +25,7 @@ async function upvoteDeal(dealId, userId) {
     // Check if user already voted
     const voters = data.voters || {};
     if (voters[userId]) {
-      throw new Error(voters[userId] === "up" ? "Already upvoted" : "Switch your downvote first");
+      throw new Error(voters[userId] === "up" ? "Already upvoted" : "Already downvoted, switch your vote first");
     }
 
     const newUpvotes = (data.upvotes || 0) + 1;
@@ -59,7 +59,7 @@ async function downvoteDeal(dealId, userId) {
     // Check if user already voted
     const voters = data.voters || {};
     if (voters[userId]) {
-      throw new Error(voters[userId] === "down" ? "Already downvoted" : "Switch your upvote first");
+      throw new Error(voters[userId] === "down" ? "Already downvoted" : "Already upvoted, switch your vote first");
     }
 
     // Prevent deal submitter from downvoting their own deal
