@@ -3,15 +3,14 @@ const axios = require('axios');
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 
 async function analyzeTransaction(payload) {
-  const { userId, amount, category, merchant, userHistory, userProfile } = payload;
+  const { userId, amount, category, merchant, userHistory, userProfile, userAction } = payload;
 
-  // Build the request body matching cheeling's UserProfile schema
   const aiRequest = {
     user_id: userId,
     daily_budget: userProfile?.dailyBudget || 50,
     current_daily_spending: calculateDailySpending(userHistory, amount),
     savings_goal: userProfile?.savingsGoal || 500,
-    user_action: userProfile?.lastUserAction || null,
+    user_action: userAction || null,
     transactions: buildTransactionHistory(userHistory, {
       amount,
       category,
@@ -30,7 +29,6 @@ async function analyzeTransaction(payload) {
     const integration = data.integrationPayload;
     const intervention = data.intervention;
 
-    // Map cheeling's response to your backend's format
     return {
       riskLevel: data.riskAnalysis?.riskLevel || 'low',
       reason: data.riskAnalysis?.reasons?.join(', ') || '',
@@ -39,8 +37,6 @@ async function analyzeTransaction(payload) {
       saveAmount: intervention?.suggestedSavingsAmount || 0,
       resilienceImpact: data.scoreAnalysis?.resilienceScore || 50,
       streakRisk: data.riskAnalysis?.riskLevel === 'high',
-
-      // Extra fields from cheeling's AI — pass to frontend
       triggerSmartRadar: integration?.smartRadar?.triggerSmartRadar || false,
       radarCategory: integration?.smartRadar?.radarCategory || null,
       radarMessage: integration?.smartRadar?.radarMessage || null,
@@ -69,7 +65,6 @@ async function analyzeTransaction(payload) {
   }
 }
 
-// Add up today's spending from history + current transaction
 function calculateDailySpending(userHistory, currentAmount) {
   if (!userHistory || userHistory.length === 0) return currentAmount;
 
@@ -87,7 +82,6 @@ function calculateDailySpending(userHistory, currentAmount) {
   return todayTotal + currentAmount;
 }
 
-// Build transaction list in cheeling's format
 function buildTransactionHistory(userHistory, currentTransaction) {
   const current = {
     transaction_id: `txn_${Date.now()}`,

@@ -12,7 +12,7 @@ import 'package:http/http.dart' as http;
 //const String _baseUrl = 'http://192.168.x.x:4000';  // ← your PC's IP
 
 // For web (flutter run -d chrome)
- const String _baseUrl = 'http://localhost:4000';
+ const String _baseUrl = 'https://thinktwice-zu5d.onrender.com';
 
 // For Android emulator only
 // const String _baseUrl = 'http://10.0.2.2:4000';
