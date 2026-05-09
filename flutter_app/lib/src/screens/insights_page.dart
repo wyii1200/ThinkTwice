@@ -4,10 +4,22 @@ import '../core/models.dart';
 import '../core/seed_data.dart';
 import '../widgets/shared.dart';
 class InsightsPage extends StatelessWidget {
-  const InsightsPage({super.key, required this.plan, required this.goal});
+  const InsightsPage({
+    super.key,
+    required this.plan,
+    required this.goal,
+    required this.aiInsights,
+    required this.nudgeHistory,
+    required this.savingsPocket,
+    required this.transactions,
+  });
 
   final BudgetPlan plan;
   final double goal;
+  final List<String> aiInsights;
+  final List<Map<String, dynamic>> nudgeHistory;
+  final double savingsPocket;
+  final List<TransactionRecord> transactions;
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +146,7 @@ class InsightsPage extends StatelessWidget {
               children: [
                 const Text('Savings momentum', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
-                Text('+RM 47', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: context.colors.success)),
+                Text('+RM ${savingsPocket.toStringAsFixed(0)}', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: context.colors.success)),
                 Text('vs last week', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
                 const SizedBox(height: 12),
                 SizedBox(
@@ -174,11 +186,27 @@ class InsightsPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                ...[
-                  ('Today', 'High food spending risk', context.colors.warning),
-                  ('Yesterday', 'Late-night impulse buy avoided', context.colors.success),
-                  ('2 days ago', 'Budget threshold crossed', context.colors.warning),
-                ].map((item) {
+                ...(nudgeHistory.isNotEmpty
+                    ? nudgeHistory.take(3).map((n) {
+                        final status = n['status'] as String? ?? 'sent';
+                        final nudgeText = n['nudgeText'] as String? ?? 'AI intervention triggered';
+                        final riskLevel = n['riskLevel'] as String? ?? 'low';
+                        return (
+                          'Recently',
+                          nudgeText,
+                          riskLevel == 'high'
+                              ? context.colors.warning
+                              : status == 'accepted'
+                                  ? context.colors.success
+                                  : context.colors.warning,
+                        );
+      }).toList()
+    : [
+        ('Today', 'High food spending risk', context.colors.warning),
+        ('Yesterday', 'Late-night impulse buy avoided', context.colors.success),
+        ('2 days ago', 'Budget threshold crossed', context.colors.warning),
+      ]
+).map((item) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Row(
@@ -216,7 +244,7 @@ class InsightsPage extends StatelessWidget {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  plan.recommendations.first,
+                  aiInsights.isNotEmpty ? aiInsights.first : plan.recommendations.first,
                   style: const TextStyle(fontSize: 14, color: Colors.white, height: 1.45),
                 ),
                 const SizedBox(height: 12),

@@ -78,6 +78,18 @@ async function getNudgeLogs(userId, limit = 5) {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
+async function deductBalance(userId, amount) {
+  const ref = db.collection('users').doc(userId);
+  const doc = await ref.get();
+  const current = doc.exists ? (doc.data().currentBalance || 0) : 0;
+  const next = Math.max(0, current - amount);
+  await ref.set({
+    currentBalance: next,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+  return next;
+}
+
 module.exports = {
   saveTransaction,
   getTransactionsByUser,
@@ -85,6 +97,7 @@ module.exports = {
   updateUserProfile,
   updateResilienceScore,
   updateSavingsPocket,
+  deductBalance,
   logNudge,
   getNudgeLogs,
 };

@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const admin = require('firebase-admin');
+const { getUserProfile } = require('../services/firestore');
 
 // ─── GET /gamification/:userId ────────────────────────────────────────────────
 router.get('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const db = admin.firestore();
+    const profile = await getUserProfile(userId);
 
     const [userDoc, leaderboardSnap] = await Promise.all([
       db.collection('users').doc(userId).get(),
@@ -79,6 +79,7 @@ router.get('/:userId', async (req, res) => {
         recentPointsEvents,
       },
     });
+
   } catch (error) {
     console.error('Gamification error:', error);
     res.status(500).json({ error: 'Internal server error' });

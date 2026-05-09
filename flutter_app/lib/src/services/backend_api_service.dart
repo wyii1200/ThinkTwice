@@ -5,38 +5,38 @@ const String _backendUrl = 'http://localhost:3000';
 
 class UserProfile {
   final String userId;
+  final String displayName;
   final double dailyBudget;
   final double savingsGoal;
   final int resilienceScore;
   final double savingsPocket;
+  final double currentBalance;
   final int streak;
   final int smartDecisionScore;
-  final int totalPoints;
-  final String displayName;
 
   const UserProfile({
     required this.userId,
+    this.displayName = '',
     required this.dailyBudget,
     required this.savingsGoal,
     required this.resilienceScore,
     required this.savingsPocket,
+    required this.currentBalance,
     required this.streak,
     required this.smartDecisionScore,
-    required this.totalPoints,
-    required this.displayName,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
-      userId:             json['userId']             as String? ?? '',
-      dailyBudget:        (json['dailyBudget']        as num?)?.toDouble() ?? 50,
-      savingsGoal:        (json['savingsGoal']        as num?)?.toDouble() ?? 500,
-      resilienceScore:    (json['resilienceScore']    as num?)?.toInt()    ?? 50,
-      savingsPocket:      (json['savingsPocket']      as num?)?.toDouble() ?? 0,
-      streak:             (json['streak']             as num?)?.toInt()    ?? 0,
-      smartDecisionScore: (json['smartDecisionScore'] as num?)?.toInt()    ?? 0,
-      totalPoints:        (json['totalPoints']        as num?)?.toInt()    ?? 0,
-      displayName:        json['displayName']         as String? ?? 'Friend',
+      userId: json['userId'] as String? ?? '',
+      displayName: json['displayName'] as String? ?? '',
+      dailyBudget: (json['dailyBudget'] as num?)?.toDouble() ?? 50,
+      savingsGoal: (json['savingsGoal'] as num?)?.toDouble() ?? 500,
+      resilienceScore: (json['resilienceScore'] as num?)?.toInt() ?? 50,
+      savingsPocket: (json['savingsPocket'] as num?)?.toDouble() ?? 0,
+      currentBalance: (json['currentBalance'] as num?)?.toDouble() ?? 0,
+      streak: (json['streak'] as num?)?.toInt() ?? 0,
+      smartDecisionScore: (json['smartDecisionScore'] as num?)?.toInt() ?? 50,
     );
   }
 }
@@ -51,6 +51,7 @@ class AiNudge {
   final String? radarMessage;
   final List<String> aiExplanation;
   final String severityLevel;
+  final int resilienceImpact;
 
   const AiNudge({
     required this.riskLevel,
@@ -62,19 +63,21 @@ class AiNudge {
     this.radarMessage,
     required this.aiExplanation,
     required this.severityLevel,
+    required this.resilienceImpact,
   });
 
   factory AiNudge.fromJson(Map<String, dynamic> json) {
     return AiNudge(
-      riskLevel:        json['riskLevel']        as String? ?? 'low',
-      nudgeText:        json['nudgeText']        as String?,
-      suggestedAction:  json['suggestedAction']  as String?,
-      saveAmount:       (json['saveAmount']      as num?)?.toDouble() ?? 0,
+      riskLevel: json['riskLevel'] as String? ?? 'low',
+      nudgeText: json['nudgeText'] as String?,
+      suggestedAction: json['suggestedAction'] as String?,
+      saveAmount: (json['saveAmount'] as num?)?.toDouble() ?? 0,
       triggerSmartRadar: json['triggerSmartRadar'] as bool? ?? false,
-      radarCategory:    json['radarCategory']    as String?,
-      radarMessage:     json['radarMessage']     as String?,
-      aiExplanation:    List<String>.from(json['aiExplanation'] as List? ?? []),
-      severityLevel:    json['severityLevel']    as String? ?? 'low',
+      radarCategory: json['radarCategory'] as String?,
+      radarMessage: json['radarMessage'] as String?,
+      aiExplanation: List<String>.from(json['aiExplanation'] as List? ?? []),
+      severityLevel: json['severityLevel'] as String? ?? 'low',
+      resilienceImpact: (json['resilienceImpact'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -87,21 +90,25 @@ class BackendApiService {
     double dailyBudget = 50,
     double savingsGoal = 500,
     String? fcmToken,
+    String? displayName,
   }) async {
     final uri = Uri.parse('$_backendUrl/users/setup');
     final res = await _client.post(
       uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'userId':      userId,
+        'userId': userId,
         'dailyBudget': dailyBudget,
         'savingsGoal': savingsGoal,
         if (fcmToken != null) 'fcmToken': fcmToken,
+        if (displayName != null && displayName.isNotEmpty) 'displayName': displayName,
       }),
     ).timeout(const Duration(seconds: 10));
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    if (body['success'] != true) throw Exception(body['error'] ?? 'User setup failed');
+    if (body['success'] != true) {
+      throw Exception(body['error'] ?? 'User setup failed');
+    }
   }
 
   static Future<void> updateFcmToken({
@@ -119,34 +126,14 @@ class BackendApiService {
   static Future<UserProfile> getUserProfile(String userId) async {
     final uri = Uri.parse('$_backendUrl/users/$userId');
     final res = await _client.get(uri).timeout(const Duration(seconds: 10));
-
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    if (body['success'] != true) throw Exception(body['error'] ?? 'Failed to fetch profile');
-
+    if (body['success'] != true) {
+      throw Exception(body['error'] ?? 'Failed to fetch profile');
+    }
     return UserProfile.fromJson(body['profile'] as Map<String, dynamic>);
   }
 
-  static Future<Map<String, dynamic>> getDashboard(String userId) async {
-    final uri = Uri.parse('$_backendUrl/dashboard/$userId');
-    final res = await _client.get(uri).timeout(const Duration(seconds: 10));
-
-    final body = jsonDecode(res.body) as Map<String, dynamic>;
-    if (body['success'] != true) throw Exception(body['error'] ?? 'Failed to fetch dashboard');
-
-    return body['dashboard'] as Map<String, dynamic>;
-  }
-
-  static Future<Map<String, dynamic>> getGamification(String userId) async {
-    final uri = Uri.parse('$_backendUrl/gamification/$userId');
-    final res = await _client.get(uri).timeout(const Duration(seconds: 10));
-
-    final body = jsonDecode(res.body) as Map<String, dynamic>;
-    if (body['success'] != true) throw Exception(body['error'] ?? 'Failed to fetch gamification');
-
-    return body['gamification'] as Map<String, dynamic>;
-  }
-
-  static Future<AiNudge> postTransaction({
+  static Future<({AiNudge nudge, double? newBalance})> postTransaction({
     required String userId,
     required double amount,
     required String category,
@@ -158,8 +145,8 @@ class BackendApiService {
       uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'userId':   userId,
-        'amount':   amount,
+        'userId': userId,
+        'amount': amount,
         'category': category,
         'merchant': merchant,
         if (description != null) 'description': description,
@@ -167,9 +154,13 @@ class BackendApiService {
     ).timeout(const Duration(seconds: 15));
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    if (body['success'] != true) throw Exception(body['error'] ?? 'Transaction failed');
-
-    return AiNudge.fromJson(body['aiResult'] as Map<String, dynamic>);
+    if (body['success'] != true) {
+      throw Exception(body['error'] ?? 'Transaction failed');
+    }
+    return (
+      nudge: AiNudge.fromJson(body['aiResult'] as Map<String, dynamic>),
+      newBalance: (body['newBalance'] as num?)?.toDouble(),
+    );
   }
 
   static Future<List<Map<String, dynamic>>> getTransactions(
@@ -178,11 +169,19 @@ class BackendApiService {
   }) async {
     final uri = Uri.parse('$_backendUrl/transactions/$userId?limit=$limit');
     final res = await _client.get(uri).timeout(const Duration(seconds: 10));
-
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    if (body['success'] != true) throw Exception(body['error'] ?? 'Failed to fetch transactions');
-
+    if (body['success'] != true) {
+      throw Exception(body['error'] ?? 'Failed to fetch transactions');
+    }
     return List<Map<String, dynamic>>.from(body['transactions'] as List? ?? []);
+  }
+
+  static Future<List<Map<String, dynamic>>> getNudgeHistory(String userId) async {
+    final uri = Uri.parse('$_backendUrl/nudge/history/$userId');
+    final res = await _client.get(uri).timeout(const Duration(seconds: 10));
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (body['success'] != true) return [];
+    return List<Map<String, dynamic>>.from(body['nudges'] as List? ?? []);
   }
 
   static Future<Map<String, dynamic>> approveAutoSave({
@@ -202,8 +201,9 @@ class BackendApiService {
     ).timeout(const Duration(seconds: 10));
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    if (body['success'] != true) throw Exception(body['error'] ?? 'Auto save failed');
-
+    if (body['success'] != true) {
+      throw Exception(body['error'] ?? 'Auto save failed');
+    }
     return body;
   }
 
@@ -232,27 +232,10 @@ class BackendApiService {
       uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'userId':  userId,
+        'userId': userId,
         'nudgeId': nudgeId,
-        'action':  action,
+        'action': action,
       }),
     ).timeout(const Duration(seconds: 10));
-  }
-
-  static Future<int> claimQuest({
-    required String userId,
-    required String questId,
-  }) async {
-    final uri = Uri.parse('$_backendUrl/gamification/claim-quest');
-    final res = await _client.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'userId': userId, 'questId': questId}),
-    ).timeout(const Duration(seconds: 10));
-
-    final body = jsonDecode(res.body) as Map<String, dynamic>;
-    if (body['success'] != true) throw Exception(body['error'] ?? 'Failed to claim quest');
-
-    return (body['pointsAwarded'] as num?)?.toInt() ?? 0;
   }
 }

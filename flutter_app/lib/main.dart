@@ -50,13 +50,13 @@ class _AppRootState extends State<AppRoot> {
   static const _smartDecisionScoreKey = 'smart_decision_score';
   static const _currentStreakKey = 'current_streak';
 
-  // User ID — used for all backend API calls
   String _userId = 'user_demo';
+  String _userName = 'User';
 
   bool _showSplash = true;
   bool _isAuthed = false;
   int _tabIndex = 0;
-  bool _showHomeAlert = true;
+  bool _showHomeAlert = false;
   bool _isLoginMode = true;
   bool _showPassword = false;
   bool _gxBankConnected = true;
@@ -68,6 +68,22 @@ class _AppRootState extends State<AppRoot> {
   int _smartDecisionScore = 0;
   int _currentStreak = 0;
   int _totalPoints = 1180;
+  double _savingsPocket = 0;
+  double _balance = 1284.50;
+
+  // Live AI data
+  List<String> _aiInsights = [];
+  String _lastNudgeText = '';
+  String _lastRiskLevel = 'low';
+  bool _triggerSmartRadar = false;
+  String? _radarCategory;
+
+  // Live nudge history for insights page
+  List<Map<String, dynamic>> _nudgeHistory = [];
+
+  GuardianProfile _guardianProfile = const GuardianProfile(
+    breed: 'tabby',
+    color: 'mint',
   CatAvatarProfile _avatarProfile = const CatAvatarProfile(
     breed: 'siamese',
     expression: 'proud',
@@ -102,9 +118,7 @@ class _AppRootState extends State<AppRoot> {
     super.initState();
     unawaited(_loadPersistedState());
     Timer(const Duration(milliseconds: 2200), () {
-      if (mounted) {
-        setState(() => _showSplash = false);
-      }
+      if (mounted) setState(() => _showSplash = false);
     });
   }
 
@@ -141,6 +155,75 @@ class _AppRootState extends State<AppRoot> {
     });
   }
 
+  // Fetch live data from backend after login
+  Future<void> _refreshFromBackend() async {
+    try {
+      final profile = await BackendApiService.getUserProfile(_userId);
+      final rawTransactions = await BackendApiService.getTransactions(_userId);
+      final nudgeHistory = await BackendApiService.getNudgeHistory(_userId);
+
+      final liveTransactions = rawTransactions.map((t) {
+        final category = t['category'] as String? ?? 'General';
+        final amount = (t['amount'] as num?)?.toDouble() ?? 0;
+        final merchant = t['merchant'] as String? ?? 'Unknown';
+        return TransactionRecord(
+          id: t['id'] as String? ?? UniqueKey().toString(),
+          merchant: merchant,
+          amount: -amount.abs(),
+          icon: _iconForCategory(category),
+          timestampLabel: _formatTimestamp(t['timestamp']),
+          category: category,
+        );
+      }).toList();
+
+      if (!mounted) return;
+      setState(() {
+        _resilienceScore = profile.resilienceScore;
+        _smartDecisionScore = profile.smartDecisionScore;
+        _savingsPocket = profile.savingsPocket;
+        if (profile.currentBalance > 0) _balance = profile.currentBalance;
+        if (profile.displayName.isNotEmpty) _userName = profile.displayName;
+        if (liveTransactions.isNotEmpty) {
+          _transactions = liveTransactions;
+        }
+        _nudgeHistory = nudgeHistory;
+      });
+      unawaited(_persistAppState());
+    } catch (e) {
+      // Keep local state if backend unavailable
+      debugPrint('Backend refresh failed: $e');
+    }
+  }
+
+  IconData _iconForCategory(String category) {
+    switch (category.toLowerCase()) {
+      case 'food': return Icons.restaurant_rounded;
+      case 'transport': return Icons.directions_car_rounded;
+      case 'shopping': return Icons.shopping_bag_rounded;
+      case 'entertainment': return Icons.movie_rounded;
+      case 'savings': return Icons.savings_rounded;
+      default: return Icons.receipt_rounded;
+    }
+  }
+
+  String _formatTimestamp(dynamic timestamp) {
+    if (timestamp == null) return 'Recently';
+    try {
+      DateTime dt;
+      if (timestamp is String) {
+        dt = DateTime.parse(timestamp);
+      } else {
+        return 'Recently';
+      }
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      return '${diff.inDays}d ago';
+    } catch (_) {
+      return 'Recently';
+    }
+  }
+
   Future<void> _persistAppState() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
@@ -174,15 +257,25 @@ class _AppRootState extends State<AppRoot> {
       _showPassword = false;
       _onboardingStep = 0;
       _tabIndex = 0;
-      _showHomeAlert = true;
+      _showHomeAlert = false;
       _gxBankConnected = true;
       _totalPoints = 1180;
       _resilienceScore = 50;
       _smartDecisionScore = 0;
       _currentStreak = 0;
+      _savingsPocket = 0;
+      _balance = 1284.50;
       _userId = 'user_demo';
-      _avatarProfile = const CatAvatarProfile(
-        breed: 'siamese',
+      _userName = 'User';
+      _aiInsights = [];
+      _nudgeHistory = [];
+      _lastNudgeText = '';
+      _lastRiskLevel = 'low';
+      _triggerSmartRadar = false;
+      _radarCategory = null;
+      _guardianProfile = const GuardianProfile(
+        breed: 'tabby',
+        color: 'mint',
         expression: 'proud',
         accessory: 'ribbon',
         effect: 'none',
@@ -230,9 +323,7 @@ class _AppRootState extends State<AppRoot> {
     setState(() {
       _totalPoints += points;
       _recentPoints.insert(0, PointsEvent(label: label, points: points, icon: icon));
-      if (_recentPoints.length > 5) {
-        _recentPoints.removeLast();
-      }
+      if (_recentPoints.length > 5) _recentPoints.removeLast();
     });
     unawaited(_persistAppState());
   }
@@ -348,74 +439,73 @@ class _AppRootState extends State<AppRoot> {
     );
   }
 
-  // UPDATED — calls backend autosave API
+  // UPDATED — calls backend, shows AI nudge modal if risk detected
   void _saveFromIntervention(BuildContext context) async {
-  setState(() => _showHomeAlert = false);
+    setState(() => _showHomeAlert = false);
 
-  try {
-    final result = await BackendApiService.approveAutoSave(
-      userId: _userId,
-      amount: 8,
-    );
+    try {
+      final result = await BackendApiService.approveAutoSave(
+        userId: _userId,
+        amount: 8,
+      );
 
-    setState(() {
-      _resilienceScore    = (_resilienceScore + (result['resilienceDelta'] as int? ?? 5)).clamp(0, 100);
-      _smartDecisionScore = (_smartDecisionScore + 10).clamp(0, 100);
-      _currentStreak     += 1;
-      _avatarProfile    = _avatarProfile.copyWith(expression: 'happy');
-      _transactions = [
-        const TransactionRecord(
-          id: 'tx-auto-save',
-          merchant: 'Pocket Save',
-          amount: 8,
-          icon: Icons.savings_rounded,
-          timestampLabel: 'Just now',
-          category: 'Savings',
-        ),
-        ..._transactions.where((tx) => tx.id != 'tx-auto-save'),
-      ];
-    });
-    unawaited(_persistAppState());
-    _awardPoints('Protected your streak with a quick save', 40, Icons.savings_rounded);
-    unawaited(_refreshFromBackend());
-
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('RM8 moved to savings. Your dashboard has been updated.')),
-    );
-    showCelebrationDialog(
-      context,
-      title: 'Nice Save',
-      body: 'RM8 is tucked away and your streak just got stronger.',
-      icon: Icons.savings_rounded,
-      color: context.colors.success,
-    );
-  } catch (e) {
-    setState(() {
-      _resilienceScore    = (_resilienceScore + 6).clamp(0, 100);
-      _smartDecisionScore = (_smartDecisionScore + 10).clamp(0, 100);
-      _currentStreak     += 1;
-      _avatarProfile    = _avatarProfile.copyWith(expression: 'happy');
-      _transactions = [
-        const TransactionRecord(
-          id: 'tx-auto-save',
-          merchant: 'Pocket Save',
-          amount: 8,
-          icon: Icons.savings_rounded,
-          timestampLabel: 'Just now',
-          category: 'Savings',
-        ),
-        ..._transactions.where((tx) => tx.id != 'tx-auto-save'),
-      ];
-    });
-    unawaited(_persistAppState());
-    _awardPoints('Protected your streak with a quick save', 40, Icons.savings_rounded);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('RM8 moved to savings. Your dashboard has been updated.')),
-    );
+      setState(() {
+        _resilienceScore = (_resilienceScore + (result['resilienceDelta'] as int? ?? 5)).clamp(0, 100);
+        _smartDecisionScore = (_smartDecisionScore + 10).clamp(0, 100);
+        _savingsPocket += 8;
+        _currentStreak += 1;
+        _avatarProfile = _avatarProfile.copyWith(expression: 'happy');
+        _transactions = [
+          const TransactionRecord(
+            id: 'tx-auto-save',
+            merchant: 'Pocket Save',
+            amount: 8,
+            icon: Icons.savings_rounded,
+            timestampLabel: 'Just now',
+            category: 'Savings',
+          ),
+          ..._transactions.where((tx) => tx.id != 'tx-auto-save'),
+        ];
+      });
+      unawaited(_persistAppState());
+      _awardPoints('Protected your streak with a quick save', 40, Icons.savings_rounded);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('RM8 moved to savings. Your dashboard has been updated.')),
+      );
+      showCelebrationDialog(
+        context,
+        title: 'Nice Save',
+        body: 'RM8 is tucked away and your streak just got stronger.',
+        icon: Icons.savings_rounded,
+        color: context.colors.success,
+      );
+    } catch (e) {
+      setState(() {
+        _resilienceScore = (_resilienceScore + 6).clamp(0, 100);
+        _smartDecisionScore = (_smartDecisionScore + 10).clamp(0, 100);
+        _currentStreak += 1;
+        _avatarProfile = _avatarProfile.copyWith(expression: 'happy');
+        _transactions = [
+          const TransactionRecord(
+            id: 'tx-auto-save',
+            merchant: 'Pocket Save',
+            amount: 8,
+            icon: Icons.savings_rounded,
+            timestampLabel: 'Just now',
+            category: 'Savings',
+          ),
+          ..._transactions.where((tx) => tx.id != 'tx-auto-save'),
+        ];
+      });
+      unawaited(_persistAppState());
+      _awardPoints('Protected your streak with a quick save', 40, Icons.savings_rounded);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('RM8 moved to savings. Your dashboard has been updated.')),
+      );
+    }
   }
-}
 
   void _openRadarFromIntervention() {
     setState(() {
@@ -424,22 +514,18 @@ class _AppRootState extends State<AppRoot> {
     });
   }
 
-  // UPDATED — calls backend reject API
+  // UPDATED — calls backend reject
   void _ignoreIntervention() async {
-  setState(() {
-    _showHomeAlert   = false;
-    _resilienceScore = (_resilienceScore - 2).clamp(0, 100).toInt();
-    _avatarProfile = _avatarProfile.copyWith(expression: 'sad');
-  });
-  unawaited(_persistAppState());
-  unawaited(_refreshFromBackend());
-
-  try {
-    await BackendApiService.rejectAutoSave(userId: _userId);
-  } catch (e) {
-    debugPrint('Reject autosave error: $e');
+    setState(() {
+      _showHomeAlert = false;
+      _resilienceScore = (_resilienceScore - 2).clamp(0, 100).toInt();
+      _avatarProfile = _avatarProfile.copyWith(expression: 'sad');
+    });
+    unawaited(_persistAppState());
+    try {
+      await BackendApiService.rejectAutoSave(userId: _userId);
+    } catch (_) {}
   }
-}
 
   Future<void> _openAvatarCustomization(BuildContext context) async {
     final result = await showModalBottomSheet<AvatarCustomizationResult>(
@@ -486,48 +572,59 @@ class _AppRootState extends State<AppRoot> {
     );
   }
 
-  // UPDATED — fetches live scores from backend after onboarding
+  // UPDATED — setup user in backend + fetch live scores
   Future<void> _completeOnboarding() async {
-  try {
-    await BackendApiService.setupUser(
-      userId:      _userId,
-      dailyBudget: _budget / 30,
-      savingsGoal: _goal,
-    );
-    final profile = await BackendApiService.getUserProfile(_userId);
-    setState(() {
-      _resilienceScore    = profile.resilienceScore;
-      _smartDecisionScore = profile.smartDecisionScore;
-      _currentStreak      = profile.streak;
-      _totalPoints        = profile.totalPoints;
-      _isAuthed           = true;
-      _tabIndex           = 0;
-    });
-  } catch (e) {
-    debugPrint('Onboarding backend error: $e');
-    setState(() {
-      _isAuthed = true;
-      _tabIndex = 0;
-    });
-  }
-}
-
-  Future<void> _refreshFromBackend() async {
-  try {
-    final profile = await BackendApiService.getUserProfile(_userId);
-    if (mounted) {
+    try {
+      await BackendApiService.setupUser(
+        userId: _userId,
+        dailyBudget: _budget / 30,
+        savingsGoal: _goal,
+        displayName: _userName,
+      );
+      final profile = await BackendApiService.getUserProfile(_userId);
       setState(() {
-        _resilienceScore    = profile.resilienceScore;
+        _resilienceScore = profile.resilienceScore;
         _smartDecisionScore = profile.smartDecisionScore;
-        _currentStreak      = profile.streak;
-        _totalPoints        = profile.totalPoints;
+        _savingsPocket = profile.savingsPocket;
+        if (profile.currentBalance > 0) _balance = profile.currentBalance;
+        if (profile.displayName.isNotEmpty) _userName = profile.displayName;
+        _isAuthed = true;
+        _tabIndex = 0;
       });
-      unawaited(_persistAppState());
+      // Fetch live data after login
+      unawaited(_refreshFromBackend());
+    } catch (e) {
+      setState(() {
+        _isAuthed = true;
+        _tabIndex = 0;
+      });
+      unawaited(_refreshFromBackend());
     }
-  } catch (e) {
-    debugPrint('Backend refresh failed: $e');
   }
-}
+
+  // Called when a new transaction triggers an AI nudge
+  void _handleAiNudge(AiNudge nudge, double? newBalance) {
+    setState(() {
+      _lastNudgeText = nudge.nudgeText ?? '';
+      _lastRiskLevel = nudge.riskLevel;
+      _aiInsights = nudge.aiExplanation;
+      _triggerSmartRadar = nudge.triggerSmartRadar;
+      _radarCategory = nudge.radarCategory;
+
+      // Update balance immediately from backend response
+      if (newBalance != null && newBalance >= 0) _balance = newBalance;
+
+      if (nudge.riskLevel == 'high' || nudge.riskLevel == 'medium') {
+        _showHomeAlert = true;
+      }
+
+      // Update scores from AI
+      if (nudge.resilienceImpact > 0) {
+        _resilienceScore = nudge.resilienceImpact.clamp(0, 100);
+      }
+    });
+    unawaited(_persistAppState());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -608,7 +705,6 @@ class _AppRootState extends State<AppRoot> {
             _onboardingStep = 0;
           }
         }),
-        // UPDATED — calls backend on final step
         onNext: () {
           if (_onboardingStep < 3) {
             setState(() => _onboardingStep += 1);
@@ -621,7 +717,10 @@ class _AppRootState extends State<AppRoot> {
 
     return MainShell(
       tabIndex: _tabIndex,
-      onTabChanged: (index) => setState(() => _tabIndex = index),
+      onTabChanged: (index) {
+      setState(() => _tabIndex = index);
+      if (index == 0) unawaited(_refreshFromBackend());
+    },
       child: IndexedStack(
         index: _tabIndex,
         children: [
@@ -642,6 +741,14 @@ class _AppRootState extends State<AppRoot> {
             onOpenAlternatives: _openRadarFromIntervention,
             onDismissAlert: _ignoreIntervention,
             onNavigate: (index) => setState(() => _tabIndex = index),
+            userName: _userName,
+            balance: _balance,
+            savingsPocket: _savingsPocket,
+            aiInsights: _aiInsights,
+            lastNudgeText: _lastNudgeText,
+            lastRiskLevel: _lastRiskLevel,
+            userId: _userId,
+            onAiNudge: _handleAiNudge,
           ),
           RadarPage(
             deals: _communityDeals,
@@ -663,7 +770,14 @@ class _AppRootState extends State<AppRoot> {
             onRedeemItem: (itemId) => _redeemRewardShopItem(context, itemId),
             onCustomizeAvatar: () => _openAvatarCustomization(context),
           ),
-          InsightsPage(plan: plan, goal: _goal),
+          InsightsPage(
+            plan: plan,
+            goal: _goal,
+            aiInsights: _aiInsights,
+            nudgeHistory: _nudgeHistory,
+            savingsPocket: _savingsPocket,
+            transactions: _transactions,
+          ),
           ProfilePage(
             budget: _budget,
             goal: _goal,

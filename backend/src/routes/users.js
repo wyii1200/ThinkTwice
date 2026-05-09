@@ -5,7 +5,7 @@ const { updateUserProfile, getUserProfile } = require('../services/firestore');
 // POST /users/setup
 router.post('/setup', async (req, res) => {
   try {
-    const { userId, dailyBudget, savingsGoal, fcmToken } = req.body;
+    const { userId, dailyBudget, savingsGoal, fcmToken, lat, lng, displayName } = req.body;
 
     if (!userId) {
       return res.status(400).json({ error: 'Missing userId' });
@@ -13,6 +13,7 @@ router.post('/setup', async (req, res) => {
 
     await updateUserProfile(userId, {
       userId,
+      displayName: displayName || 'Friend',
       dailyBudget: dailyBudget || 50,
       savingsGoal: savingsGoal || 500,
       fcmToken: fcmToken || null,
@@ -20,6 +21,9 @@ router.post('/setup', async (req, res) => {
       savingsPocket: 0,
       streak: 0,
       smartDecisionScore: 0,
+      currentBalance: 1500.50,
+      lat: lat || null,
+      lng: lng || null,
       createdAt: new Date().toISOString(),
     });
 
@@ -44,6 +48,24 @@ router.put('/:userId/fcm-token', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('FCM token update error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT /users/:userId/location
+router.put('/:userId/location', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { lat, lng } = req.body;
+
+    if (!lat || !lng) {
+      return res.status(400).json({ error: 'Missing lat or lng' });
+    }
+
+    await updateUserProfile(userId, { lat, lng });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Location update error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

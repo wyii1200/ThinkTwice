@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
 import '../core/models.dart';
 import '../core/seed_data.dart';
 import '../widgets/shared.dart';
+import '../services/backend_api_service.dart';
 class HomePage extends StatelessWidget {
   const HomePage({
     super.key,
@@ -22,6 +23,14 @@ class HomePage extends StatelessWidget {
     required this.onOpenAlternatives,
     required this.onDismissAlert,
     required this.onNavigate,
+    required this.userName,
+    required this.balance,
+    required this.savingsPocket,
+    required this.aiInsights,
+    required this.lastNudgeText,
+    required this.lastRiskLevel,
+    required this.userId,
+    required this.onAiNudge,
   });
 
   final BudgetPlan plan;
@@ -40,6 +49,14 @@ class HomePage extends StatelessWidget {
   final VoidCallback onOpenAlternatives;
   final VoidCallback onDismissAlert;
   final ValueChanged<int> onNavigate;
+  final String userName;
+  final double balance;
+  final double savingsPocket;
+  final List<String> aiInsights;
+  final String lastNudgeText;
+  final String lastRiskLevel;
+  final String userId;
+  final void Function(AiNudge nudge, double? newBalance) onAiNudge;
 
   @override
   Widget build(BuildContext context) {
@@ -59,26 +76,37 @@ class HomePage extends StatelessWidget {
     final nextLevelPoints = 300;
     final levelProgress = (pointsIntoLevel / nextLevelPoints).clamp(0.0, 1.0);
     final streakLabel = '$currentStreak day${currentStreak == 1 ? '' : 's'}';
-    final insights = [
-      (
-        Icons.restaurant_rounded,
-        'warning',
-        'Food spending is 35% above average today',
-        'AI flagged late food purchases as your main overspending risk right now.',
-      ),
-      (
-        Icons.savings_outlined,
-        'success',
-        'You avoided RM47 overspending this week',
-        'Your recent nudges and safer swaps kept this week under your flexible budget.',
-      ),
-      (
-        Icons.wallet_outlined,
-        'primary',
-        'You can still save RM20 today',
-        'Staying under your safe daily limit keeps your weekly goal within reach.',
-      ),
-    ];
+    final insights = aiInsights.isNotEmpty
+    ? aiInsights.take(3).map((text) => (
+          Icons.psychology_alt_rounded,
+          lastRiskLevel == 'high'
+              ? 'warning'
+              : lastRiskLevel == 'medium'
+                  ? 'primary'
+                  : 'success',
+          text.length > 60 ? '${text.substring(0, 60)}...' : text,
+          text,
+        )).toList()
+    : [
+        (
+          Icons.restaurant_rounded,
+          'warning',
+          'Food spending is 35% above average today',
+          'AI flagged late food purchases as your main overspending risk right now.',
+        ),
+        (
+          Icons.savings_outlined,
+          'success',
+          'You avoided RM47 overspending this week',
+          'Your recent nudges and safer swaps kept this week under your flexible budget.',
+        ),
+        (
+          Icons.wallet_outlined,
+          'primary',
+          'You can still save RM20 today',
+          'Staying under your safe daily limit keeps your weekly goal within reach.',
+        ),
+      ];
     final categories = plan.allocations.where((item) => item.name != 'Savings').take(4).toList();
     final trend = [30, 45, 28, 60, 35, 52, 41];
     final goalProgress = (plan.savingsAmount * 0.6 / goal).clamp(0.0, 1.0);
@@ -96,10 +124,24 @@ class HomePage extends StatelessWidget {
                     children: [
                       Text('Good evening,', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.mutedForeground)),
                       const SizedBox(height: 2),
-                      const Text('Aiman', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+                      Text(userName, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
                     ],
                   ),
                   const Spacer(),
+                  IconButton(
+                    onPressed: () async {
+                      final result = await BackendApiService.postTransaction(
+                        userId: userId,
+                        amount: 45,
+                        category: 'food',
+                        merchant: 'McDonald KLCC',
+                        description: 'Late night supper',
+                      );
+                      onAiNudge(result.nudge, result.newBalance);
+                    },
+                    icon: Icon(Icons.refresh_rounded, color: context.colors.mutedForeground),
+                    tooltip: 'Simulate transaction',
+                  ),
                   TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0.96, end: 1.02),
                     duration: const Duration(milliseconds: 1800),
@@ -155,8 +197,8 @@ class HomePage extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        const AnimatedNumberText(
-                          value: 1284.50,
+                        AnimatedNumberText(
+                          value: balance,
                           prefix: 'RM ',
                           decimals: 2,
                           style: TextStyle(
