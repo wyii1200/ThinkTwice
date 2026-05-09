@@ -4,6 +4,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 import '../core/app_theme.dart';
 import '../core/models.dart';
@@ -59,7 +61,13 @@ class _RadarPageState extends State<RadarPage> {
   // e.g. 'http://192.168.1.105:4000'
   // Emulator: 'http://10.0.2.2:4000'  |  Web/desktop: 'http://localhost:4000'
   
-  static const String _userId = 'test_user_001';
+static String get _userId {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) {
+    throw Exception('No user is currently signed in.');
+  }
+  return user.uid;
+}
 
   @override
   void initState() {
