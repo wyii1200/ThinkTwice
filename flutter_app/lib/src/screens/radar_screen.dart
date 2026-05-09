@@ -12,6 +12,7 @@ import '../widgets/shared.dart';
 
 
 String _fmt(double amount) => amount.toStringAsFixed(2);
+
 final Map<String, String> _dealImageUrls = {};
 class RadarPage extends StatefulWidget {
   const RadarPage({
@@ -57,6 +58,7 @@ class _RadarPageState extends State<RadarPage> {
   // Run `ipconfig` in PowerShell → IPv4 Address under WiFi adapter
   // e.g. 'http://192.168.1.105:4000'
   // Emulator: 'http://10.0.2.2:4000'  |  Web/desktop: 'http://localhost:4000'
+  
   static const String _userId = 'test_user_001';
 
   @override
