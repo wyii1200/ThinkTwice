@@ -21,6 +21,7 @@ async function getTransactionsByUser(userId, limit = 20) {
   const snapshot = await db
     .collection('transactions')
     .where('userId', '==', userId)
+    .orderBy('timestamp', 'desc')
     .limit(limit)
     .get();
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -28,7 +29,7 @@ async function getTransactionsByUser(userId, limit = 20) {
 
 async function getUserProfile(userId) {
   const doc = await db.collection('users').doc(userId).get();
-  return doc.exists ? doc.data() : null;
+  return doc.exists ? { userId: doc.id, ...doc.data() } : null;
 }
 
 async function updateUserProfile(userId, updates) {
@@ -39,10 +40,12 @@ async function updateResilienceScore(userId, delta) {
   const ref = db.collection('users').doc(userId);
   const doc = await ref.get();
   const current = doc.exists ? (doc.data().resilienceScore || 50) : 50;
+  const next = Math.max(0, Math.min(100, current + delta));
   await ref.set({
-    resilienceScore: current + delta,
+    resilienceScore: next,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   }, { merge: true });
+  return next;
 }
 
 async function updateSavingsPocket(userId, amount) {
@@ -56,11 +59,23 @@ async function updateSavingsPocket(userId, amount) {
 }
 
 async function logNudge(userId, nudgeData) {
-  await db.collection('nudgeLogs').add({
+  const ref = await db.collection('nudgeLogs').add({
     userId,
     ...nudgeData,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
     timestamp: admin.firestore.FieldValue.serverTimestamp(),
   });
+  return ref.id;
+}
+
+async function getNudgeLogs(userId, limit = 5) {
+  const snapshot = await db
+    .collection('nudgeLogs')
+    .where('userId', '==', userId)
+    .orderBy('createdAt', 'desc')
+    .limit(limit)
+    .get();
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 module.exports = {
@@ -71,4 +86,5 @@ module.exports = {
   updateResilienceScore,
   updateSavingsPocket,
   logNudge,
+  getNudgeLogs,
 };

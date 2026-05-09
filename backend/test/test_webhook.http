@@ -27,3 +27,39 @@ Content-Type: application/json
 ### Get transactions
 GET http://localhost:3000/transactions/user123
 
+### Create user (enxi calls this on signup)
+POST http://localhost:3000/users/setup
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "dailyBudget": 50,
+  "savingsGoal": 500
+}
+
+###
+
+### Get user profile (enxi calls this on home page load)
+GET http://localhost:3000/users/user123
+
+###
+
+### Update FCM token (enxi calls this after Firebase init)
+PUT http://localhost:3000/users/user123/fcm-token
+Content-Type: application/json
+
+{
+  "fcmToken": "test-fcm-token-abc123"
+}
+
+### Full flow test — should return AI nudge
+POST http://localhost:3000/webhook/transaction
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "amount": 45,
+  "category": "food",
+  "merchant": "McDonald KLCC",
+  "description": "Late night supper"
+}

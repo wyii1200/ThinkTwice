@@ -14,6 +14,7 @@ import 'src/screens/home_page.dart';
 import 'src/screens/insights_page.dart';
 import 'src/screens/profile_screen.dart';
 import 'src/screens/radar_screen.dart';
+import 'src/services/backend_api_service.dart';
 import 'src/widgets/shared.dart';
 
 void main() {
@@ -34,7 +35,6 @@ class ThinkTwiceApp extends StatelessWidget {
   }
 }
 
-
 class AppRoot extends StatefulWidget {
   const AppRoot({super.key});
 
@@ -49,6 +49,9 @@ class _AppRootState extends State<AppRoot> {
   static const _resilienceScoreKey = 'resilience_score';
   static const _smartDecisionScoreKey = 'smart_decision_score';
   static const _currentStreakKey = 'current_streak';
+
+  // User ID — used for all backend API calls
+  String _userId = 'user_demo';
 
   bool _showSplash = true;
   bool _isAuthed = false;
@@ -181,6 +184,7 @@ class _AppRootState extends State<AppRoot> {
       _resilienceScore = 50;
       _smartDecisionScore = 0;
       _currentStreak = 0;
+      _userId = 'user_demo';
       _guardianProfile = const GuardianProfile(
         breed: 'tabby',
         color: 'mint',
@@ -350,13 +354,21 @@ class _AppRootState extends State<AppRoot> {
     );
   }
 
-  void _saveFromIntervention(BuildContext context) {
+  // UPDATED — calls backend autosave API
+  void _saveFromIntervention(BuildContext context) async {
+  setState(() => _showHomeAlert = false);
+
+  try {
+    final result = await BackendApiService.approveAutoSave(
+      userId: _userId,
+      amount: 8,
+    );
+
     setState(() {
-      _showHomeAlert = false;
-      _resilienceScore = (_resilienceScore + 6).clamp(0, 100).toInt();
-      _smartDecisionScore = (_smartDecisionScore + 10).clamp(0, 100).toInt();
-      _currentStreak += 1;
-      _guardianProfile = _guardianProfile.copyWith(expression: 'happy');
+      _resilienceScore    = (_resilienceScore + (result['resilienceDelta'] as int? ?? 5)).clamp(0, 100);
+      _smartDecisionScore = (_smartDecisionScore + 10).clamp(0, 100);
+      _currentStreak     += 1;
+      _guardianProfile    = _guardianProfile.copyWith(expression: 'happy');
       _transactions = [
         const TransactionRecord(
           id: 'tx-auto-save',
@@ -371,6 +383,9 @@ class _AppRootState extends State<AppRoot> {
     });
     unawaited(_persistAppState());
     _awardPoints('Protected your streak with a quick save', 40, Icons.savings_rounded);
+    unawaited(_refreshFromBackend());
+
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('RM8 moved to savings. Your dashboard has been updated.')),
     );
@@ -381,7 +396,32 @@ class _AppRootState extends State<AppRoot> {
       icon: Icons.savings_rounded,
       color: context.colors.success,
     );
+  } catch (e) {
+    setState(() {
+      _resilienceScore    = (_resilienceScore + 6).clamp(0, 100);
+      _smartDecisionScore = (_smartDecisionScore + 10).clamp(0, 100);
+      _currentStreak     += 1;
+      _guardianProfile    = _guardianProfile.copyWith(expression: 'happy');
+      _transactions = [
+        const TransactionRecord(
+          id: 'tx-auto-save',
+          merchant: 'Pocket Save',
+          amount: 8,
+          icon: Icons.savings_rounded,
+          timestampLabel: 'Just now',
+          category: 'Savings',
+        ),
+        ..._transactions.where((tx) => tx.id != 'tx-auto-save'),
+      ];
+    });
+    unawaited(_persistAppState());
+    _awardPoints('Protected your streak with a quick save', 40, Icons.savings_rounded);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('RM8 moved to savings. Your dashboard has been updated.')),
+    );
   }
+}
 
   void _openRadarFromIntervention() {
     setState(() {
@@ -390,14 +430,22 @@ class _AppRootState extends State<AppRoot> {
     });
   }
 
-  void _ignoreIntervention() {
-    setState(() {
-      _showHomeAlert = false;
-      _resilienceScore = (_resilienceScore - 2).clamp(0, 100).toInt();
-      _guardianProfile = _guardianProfile.copyWith(expression: 'sad');
-    });
-    unawaited(_persistAppState());
+  // UPDATED — calls backend reject API
+  void _ignoreIntervention() async {
+  setState(() {
+    _showHomeAlert   = false;
+    _resilienceScore = (_resilienceScore - 2).clamp(0, 100).toInt();
+    _guardianProfile = _guardianProfile.copyWith(expression: 'sad');
+  });
+  unawaited(_persistAppState());
+  unawaited(_refreshFromBackend());
+
+  try {
+    await BackendApiService.rejectAutoSave(userId: _userId);
+  } catch (e) {
+    debugPrint('Reject autosave error: $e');
   }
+}
 
   Future<void> _openAvatarCustomization(BuildContext context) async {
     final result = await showModalBottomSheet<AvatarCustomizationResult>(
@@ -445,6 +493,49 @@ class _AppRootState extends State<AppRoot> {
       const SnackBar(content: Text('Avatar updated!')),
     );
   }
+
+  // UPDATED — fetches live scores from backend after onboarding
+  Future<void> _completeOnboarding() async {
+  try {
+    await BackendApiService.setupUser(
+      userId:      _userId,
+      dailyBudget: _budget / 30,
+      savingsGoal: _goal,
+    );
+    final profile = await BackendApiService.getUserProfile(_userId);
+    setState(() {
+      _resilienceScore    = profile.resilienceScore;
+      _smartDecisionScore = profile.smartDecisionScore;
+      _currentStreak      = profile.streak;
+      _totalPoints        = profile.totalPoints;
+      _isAuthed           = true;
+      _tabIndex           = 0;
+    });
+  } catch (e) {
+    debugPrint('Onboarding backend error: $e');
+    setState(() {
+      _isAuthed = true;
+      _tabIndex = 0;
+    });
+  }
+}
+
+  Future<void> _refreshFromBackend() async {
+  try {
+    final profile = await BackendApiService.getUserProfile(_userId);
+    if (mounted) {
+      setState(() {
+        _resilienceScore    = profile.resilienceScore;
+        _smartDecisionScore = profile.smartDecisionScore;
+        _currentStreak      = profile.streak;
+        _totalPoints        = profile.totalPoints;
+      });
+      unawaited(_persistAppState());
+    }
+  } catch (e) {
+    debugPrint('Backend refresh failed: $e');
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -527,14 +618,14 @@ class _AppRootState extends State<AppRoot> {
             _onboardingStep = 0;
           }
         }),
-        onNext: () => setState(() {
+        // UPDATED — calls backend on final step
+        onNext: () {
           if (_onboardingStep < 3) {
-            _onboardingStep += 1;
+            setState(() => _onboardingStep += 1);
           } else {
-            _isAuthed = true;
-            _tabIndex = 0;
+            unawaited(_completeOnboarding());
           }
-        }),
+        },
       );
     }
 
@@ -740,7 +831,3 @@ class _ShellTab {
   final String label;
   final IconData icon;
 }
-
-
-
-
