@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'firebase_options.dart';
 import 'src/core/app_theme.dart';
 import 'src/core/models.dart';
 import 'src/core/seed_data.dart';
@@ -14,10 +17,13 @@ import 'src/screens/home_page.dart';
 import 'src/screens/insights_page.dart';
 import 'src/screens/profile_screen.dart';
 import 'src/screens/radar_screen.dart';
+import 'src/services/auth_service.dart';
 import 'src/services/backend_api_service.dart';
 import 'src/widgets/shared.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const ThinkTwiceApp());
 }
 
@@ -50,15 +56,13 @@ class _AppRootState extends State<AppRoot> {
   static const _smartDecisionScoreKey = 'smart_decision_score';
   static const _currentStreakKey = 'current_streak';
 
-  String _userId = 'user_demo';
-  String _userName = 'User';
+  String _userId = '';
+  String _userName = 'Friend';
 
   bool _showSplash = true;
   bool _isAuthed = false;
   int _tabIndex = 0;
   bool _showHomeAlert = false;
-  bool _isLoginMode = true;
-  bool _showPassword = false;
   bool _gxBankConnected = true;
   bool _notificationsEnabled = true;
   bool _autoSaveEnabled = true;
@@ -81,9 +85,6 @@ class _AppRootState extends State<AppRoot> {
   // Live nudge history for insights page
   List<Map<String, dynamic>> _nudgeHistory = [];
 
-  GuardianProfile _guardianProfile = const GuardianProfile(
-    breed: 'tabby',
-    color: 'mint',
   CatAvatarProfile _avatarProfile = const CatAvatarProfile(
     breed: 'siamese',
     expression: 'proud',
@@ -120,6 +121,17 @@ class _AppRootState extends State<AppRoot> {
     Timer(const Duration(milliseconds: 2200), () {
       if (mounted) setState(() => _showSplash = false);
     });
+    // If user is already signed in (e.g. page refresh), skip login
+    final existing = AuthService.currentUser;
+    if (existing != null) {
+      setState(() {
+        _userId = existing.uid;
+        _userName = existing.displayName?.isNotEmpty == true
+            ? existing.displayName!
+            : existing.email?.split('@')[0] ?? 'Friend';
+      });
+      unawaited(_refreshFromBackend());
+    }
   }
 
   Future<void> _loadPersistedState() async {
@@ -156,7 +168,8 @@ class _AppRootState extends State<AppRoot> {
   }
 
   // Fetch live data from backend after login
-  Future<void> _refreshFromBackend() async {
+  Future<bool> _refreshFromBackend() async {
+    if (_userId.isEmpty) return false;
     try {
       final profile = await BackendApiService.getUserProfile(_userId);
       final rawTransactions = await BackendApiService.getTransactions(_userId);
@@ -176,7 +189,7 @@ class _AppRootState extends State<AppRoot> {
         );
       }).toList();
 
-      if (!mounted) return;
+      if (!mounted) return true;
       setState(() {
         _resilienceScore = profile.resilienceScore;
         _smartDecisionScore = profile.smartDecisionScore;
@@ -187,11 +200,13 @@ class _AppRootState extends State<AppRoot> {
           _transactions = liveTransactions;
         }
         _nudgeHistory = nudgeHistory;
+        _isAuthed = true; // User exists, skip login/onboarding
       });
       unawaited(_persistAppState());
+      return true;
     } catch (e) {
-      // Keep local state if backend unavailable
       debugPrint('Backend refresh failed: $e');
+      return false;
     }
   }
 
@@ -250,11 +265,30 @@ class _AppRootState extends State<AppRoot> {
     unawaited(_persistAppState());
   }
 
+  /// Called by LoginPage after Firebase Auth succeeds.
+  Future<void> _onAuthSuccess(String uid, String displayName) async {
+    setState(() {
+      _userId = uid;
+      _userName = displayName;
+    });
+
+    // Check if user exists in backend
+    final exists = await _refreshFromBackend();
+
+    if (!mounted) return;
+    if (!exists) {
+      // New user -> show onboarding
+      setState(() {
+        _isAuthed = false;
+        _onboardingStep = 1;
+      });
+    }
+  }
+
   void _resetSessionState() {
+    unawaited(AuthService.signOut());
     setState(() {
       _isAuthed = false;
-      _isLoginMode = true;
-      _showPassword = false;
       _onboardingStep = 0;
       _tabIndex = 0;
       _showHomeAlert = false;
@@ -265,17 +299,16 @@ class _AppRootState extends State<AppRoot> {
       _currentStreak = 0;
       _savingsPocket = 0;
       _balance = 1284.50;
-      _userId = 'user_demo';
-      _userName = 'User';
+      _userId = '';
+      _userName = 'Friend';
       _aiInsights = [];
       _nudgeHistory = [];
       _lastNudgeText = '';
       _lastRiskLevel = 'low';
       _triggerSmartRadar = false;
       _radarCategory = null;
-      _guardianProfile = const GuardianProfile(
+      _avatarProfile = const CatAvatarProfile(
         breed: 'tabby',
-        color: 'mint',
         expression: 'proud',
         accessory: 'ribbon',
         effect: 'none',
@@ -640,14 +673,7 @@ class _AppRootState extends State<AppRoot> {
     if (!_isAuthed) {
       if (_onboardingStep == 0) {
         return LoginPage(
-          isLoginMode: _isLoginMode,
-          showPassword: _showPassword,
-          onToggleMode: () => setState(() => _isLoginMode = !_isLoginMode),
-          onTogglePassword: () => setState(() => _showPassword = !_showPassword),
-          onContinue: () => setState(() {
-            _isAuthed = false;
-            _onboardingStep = 1;
-          }),
+          onAuthSuccess: _onAuthSuccess,
         );
       }
 

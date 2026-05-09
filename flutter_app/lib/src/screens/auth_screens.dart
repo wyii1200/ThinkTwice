@@ -1,11 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../core/app_theme.dart';
 import '../core/models.dart';
 import '../core/seed_data.dart';
 import '../widgets/shared.dart';
+import '../services/auth_service.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -100,21 +102,66 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   }
 }
 
-class LoginPage extends StatelessWidget {
-  const LoginPage({
-    super.key,
-    required this.isLoginMode,
-    required this.showPassword,
-    required this.onToggleMode,
-    required this.onTogglePassword,
-    required this.onContinue,
-  });
 
-  final bool isLoginMode;
-  final bool showPassword;
-  final VoidCallback onToggleMode;
-  final VoidCallback onTogglePassword;
-  final VoidCallback onContinue;
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key, required this.onAuthSuccess});
+
+  /// Called with (uid, displayName) after a successful sign-in or sign-up.
+  final void Function(String uid, String displayName) onAuthSuccess;
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  bool _isLoginMode = true;
+  bool _showPassword = false;
+  bool _loading = false;
+  String? _errorMessage;
+
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _nameCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() { _loading = true; _errorMessage = null; });
+
+    try {
+      User user;
+      if (_isLoginMode) {
+        user = await AuthService.signIn(
+          email: _emailCtrl.text,
+          password: _passwordCtrl.text,
+        );
+      } else {
+        user = await AuthService.signUp(
+          email: _emailCtrl.text,
+          password: _passwordCtrl.text,
+          displayName: _nameCtrl.text,
+        );
+      }
+      final name = user.displayName?.isNotEmpty == true
+          ? user.displayName!
+          : user.email?.split('@')[0] ?? 'Friend';
+      if (mounted) widget.onAuthSuccess(user.uid, name);
+    } on FirebaseAuthException catch (e) {
+      setState(() => _errorMessage = AuthService.friendlyError(e));
+    } catch (e) {
+      setState(() => _errorMessage = 'Something went wrong. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,133 +170,176 @@ class LoginPage extends StatelessWidget {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 430),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Positioned(right: -6, top: -6, child: _floatingDot(context.colors.accent, 32)),
-                        Positioned(left: -8, bottom: -6, child: _floatingDot(context.colors.warning, 24)),
-                        Image.asset('assets/images/thinktwice-logo.png', width: 160, height: 160),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    isLoginMode ? 'Welcome back' : 'Get started',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    isLoginMode ? 'Sign in to continue your savings streak' : 'Build financial resilience, one tap at a time',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: context.colors.mutedForeground),
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: onContinue,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: context.colors.foreground,
-                      foregroundColor: context.colors.background,
-                      minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(color: context.colors.accent, shape: BoxShape.circle),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'GX',
-                            style: TextStyle(color: context.colors.accentForeground, fontSize: 9, fontWeight: FontWeight.w900),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text('Continue with GXBank', style: TextStyle(fontWeight: FontWeight.w700)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(child: Divider(color: Theme.of(context).dividerColor)),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text('OR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: context.colors.mutedForeground)),
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 10, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Positioned(right: -6, top: -6, child: _floatingDot(context.colors.accent, 32)),
+                          Positioned(left: -8, bottom: -6, child: _floatingDot(context.colors.warning, 24)),
+                          Image.asset('assets/images/thinktwice-logo.png', width: 160, height: 160),
+                        ],
                       ),
-                      Expanded(child: Divider(color: Theme.of(context).dividerColor)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _inputShell(
-                    context,
-                    icon: Icons.mail_outline_rounded,
-                    child: const TextField(
-                      decoration: InputDecoration(border: InputBorder.none, hintText: 'aiman@think.co', isDense: true),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  _inputShell(
-                    context,
-                    icon: Icons.lock_outline_rounded,
-                    suffix: IconButton(
-                      onPressed: onTogglePassword,
-                      icon: Icon(showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: context.colors.mutedForeground),
+                    const SizedBox(height: 24),
+                    Text(
+                      _isLoginMode ? 'Welcome back' : 'Get started',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
                     ),
-                    child: TextField(
-                      obscureText: !showPassword,
-                      decoration: const InputDecoration(border: InputBorder.none, hintText: '........', isDense: true),
+                    const SizedBox(height: 4),
+                    Text(
+                      _isLoginMode
+                          ? 'Sign in to continue your savings streak'
+                          : 'Build financial resilience, one tap at a time',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14, color: context.colors.mutedForeground),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  GradientButton(text: isLoginMode ? 'Sign in' : 'Get started', icon: Icons.arrow_forward_rounded, onPressed: onContinue),
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed: onContinue,
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                      side: BorderSide(color: context.colors.primary.withOpacity(0.4), width: 2),
-                      backgroundColor: context.colors.primary.withOpacity(0.05),
-                      foregroundColor: context.colors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.fingerprint_rounded, size: 20),
-                        SizedBox(width: 8),
-                        Text('Use biometric login', style: TextStyle(fontWeight: FontWeight.w700)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: Wrap(
-                      spacing: 4,
-                      children: [
-                        Text(
-                          isLoginMode ? 'New to ThinkTwice?' : 'Already have an account?',
-                          style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
+                    const SizedBox(height: 24),
+
+                    // Error banner
+                    if (_errorMessage != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: context.colors.warning.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: context.colors.warning.withOpacity(0.4)),
                         ),
-                        GestureDetector(
-                          onTap: onToggleMode,
-                          child: Text(
-                            isLoginMode ? 'Create account' : 'Sign in',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.primary),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline_rounded, size: 16, color: context.colors.warning),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _errorMessage!,
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: context.colors.foreground),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Name field (sign-up only)
+                    if (!_isLoginMode) ...[
+                      _inputShell(
+                        context,
+                        icon: Icons.person_outline_rounded,
+                        child: TextFormField(
+                          controller: _nameCtrl,
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Your name (e.g. Aiman)',
+                            isDense: true,
                           ),
                         ),
-                      ],
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
+                    // Email field
+                    _inputShell(
+                      context,
+                      icon: Icons.mail_outline_rounded,
+                      child: TextFormField(
+                        controller: _emailCtrl,
+                        keyboardType: TextInputType.emailAddress,
+                        autocorrect: false,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Email is required';
+                          if (!v.contains('@')) return 'Enter a valid email';
+                          return null;
+                        },
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          hintText: 'you@example.com',
+                          isDense: true,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+
+                    // Password field
+                    _inputShell(
+                      context,
+                      icon: Icons.lock_outline_rounded,
+                      suffix: IconButton(
+                        onPressed: () => setState(() => _showPassword = !_showPassword),
+                        icon: Icon(
+                          _showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          size: 18,
+                          color: context.colors.mutedForeground,
+                        ),
+                      ),
+                      child: TextFormField(
+                        controller: _passwordCtrl,
+                        obscureText: !_showPassword,
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Password is required';
+                          if (!_isLoginMode && v.length < 6) return 'Minimum 6 characters';
+                          return null;
+                        },
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          hintText: '••••••••',
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Submit button
+                    _loading
+                        ? Center(
+                            child: SizedBox(
+                              height: 48,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: context.colors.primary,
+                                  strokeWidth: 2.5,
+                                ),
+                              ),
+                            ),
+                          )
+                        : GradientButton(
+                            text: _isLoginMode ? 'Sign in' : 'Create account',
+                            icon: Icons.arrow_forward_rounded,
+                            onPressed: _submit,
+                          ),
+                    const SizedBox(height: 16),
+
+                    // Toggle mode
+                    Center(
+                      child: Wrap(
+                        spacing: 4,
+                        children: [
+                          Text(
+                            _isLoginMode ? 'New to ThinkTwice?' : 'Already have an account?',
+                            style: TextStyle(fontSize: 13, color: context.colors.mutedForeground),
+                          ),
+                          GestureDetector(
+                            onTap: () => setState(() {
+                              _isLoginMode = !_isLoginMode;
+                              _errorMessage = null;
+                            }),
+                            child: Text(
+                              _isLoginMode ? 'Create account' : 'Sign in',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.colors.primary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -270,7 +360,7 @@ class LoginPage extends StatelessWidget {
 
   Widget _inputShell(BuildContext context, {required IconData icon, required Widget child, Widget? suffix}) {
     return Container(
-      height: 48,
+      height: 52,
       decoration: BoxDecoration(
         color: context.colors.card,
         borderRadius: BorderRadius.circular(16),
@@ -289,6 +379,7 @@ class LoginPage extends StatelessWidget {
     );
   }
 }
+
 
 class OnboardingPage extends StatelessWidget {
   const OnboardingPage({
