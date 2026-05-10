@@ -9,8 +9,21 @@ def orchestrate_intervention(
     savings_amount
 ):
     risk_level = risk_result["riskLevel"]
-    primary_category = behaviour_result.get("primaryCategory", "spending")
-    late_night_spending = behaviour_result.get("lateNightSpending", False)
+
+    primary_category = behaviour_result.get(
+        "primaryCategory",
+        "spending"
+    )
+
+    late_night_spending = behaviour_result.get(
+        "lateNightSpending",
+        False
+    )
+
+    smart_decision_score = score_result.get(
+        "smartDecisionScore",
+        50
+    )
 
     final_action = FINAL_ACTIONS["CONTINUE_TRACKING"]
 
@@ -18,7 +31,8 @@ def orchestrate_intervention(
         "triggerSmartRadar": False,
         "radarCategory": None,
         "radarMessage": None,
-        "openMode": "none"
+        "openMode": "none",
+        "recommendedRoute": None
     }
 
     notification = {
@@ -28,7 +42,10 @@ def orchestrate_intervention(
         "notificationType": "none"
     }
 
-    # High risk intervention
+    intervention_reason = (
+        "User behaviour is currently manageable, so the system continues monitoring."
+    )
+
     if risk_level == RISK_LEVELS["HIGH"]:
 
         notification["sendPushNotification"] = True
@@ -43,7 +60,8 @@ def orchestrate_intervention(
                     f"You usually overspend on {primary_category} during risky hours. "
                     "Find cheaper nearby alternatives?"
                 ),
-                "openMode": "category_filter"
+                "openMode": "category_filter",
+                "recommendedRoute": "/smart-radar"
             }
 
             notification.update({
@@ -54,6 +72,10 @@ def orchestrate_intervention(
                 ),
                 "notificationType": "smart_radar"
             })
+
+            intervention_reason = (
+                "High risk and late-night spending detected, so Smart Radar and auto-save suggestion are triggered."
+            )
 
         else:
             final_action = FINAL_ACTIONS["AUTO_SAVE"]
@@ -66,8 +88,12 @@ def orchestrate_intervention(
                 "notificationType": "auto_save"
             })
 
-    # Medium risk intervention
+            intervention_reason = (
+                "High risk detected, so the system recommends a user-approved micro-saving action."
+            )
+
     elif risk_level == RISK_LEVELS["MEDIUM"]:
+
         final_action = FINAL_ACTIONS["SEND_WARNING_NUDGE"]
 
         notification.update({
@@ -79,20 +105,43 @@ def orchestrate_intervention(
             "notificationType": "budget_warning"
         })
 
-    # Reward logic
+        intervention_reason = (
+            "Medium risk detected, so the system sends a warning nudge before overspending happens."
+        )
+
+    else:
+
+        final_action = FINAL_ACTIONS["CONTINUE_TRACKING"]
+
+        notification.update({
+            "sendPushNotification": False,
+            "notificationTitle": "Healthy Spending",
+            "notificationBody": (
+                "Your spending behaviour looks manageable. Keep maintaining your savings habits."
+            ),
+            "notificationType": "positive_reinforcement"
+        })
+
+        intervention_reason = (
+            "Low risk detected, so the system continues tracking and reinforces healthy behaviour."
+        )
+
     reward_action = (
         "streak_bonus"
-        if score_result["smartDecisionScore"] >= 70
+        if smart_decision_score >= 70
         else "no_reward"
     )
 
     final_decision = {
         "finalAction": final_action,
+        "interventionReason": intervention_reason,
         "smartRadar": smart_radar,
         "notification": notification,
         "rewardAction": reward_action
     }
 
-    final_decision = check_safety_and_consent(final_decision)
+    final_decision = check_safety_and_consent(
+        final_decision
+    )
 
     return final_decision

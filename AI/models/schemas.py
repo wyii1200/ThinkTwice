@@ -17,7 +17,7 @@ class UserAction(BaseModel):
 
 
 class UserProfile(BaseModel):
-    user_id: Optional[str] = None
+    user_id: Optional[str] = "demo_user"
     daily_budget: float
     current_daily_spending: float
     savings_goal: float
