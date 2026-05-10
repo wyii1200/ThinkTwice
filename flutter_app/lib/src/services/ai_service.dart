@@ -49,27 +49,44 @@ class AiService {
   static Map<String, dynamic> highRiskDemoPayload() {
     return {
       "user_id": "user_high_001",
-      "daily_budget": 100,
-      "current_daily_spending": 20,
-      "savings_goal": 300,
+      "daily_budget": 50,
+      "current_daily_spending": 80,
+      "savings_goal": 500,
       "transactions": [
         {
-          "amount": 15,
+          "transaction_id": "txn_high_001",
+          "amount": 12,
           "category": "food",
-          "time": "21:50",
+          "time": "10:45 PM",
           "location": "Mid Valley"
         },
         {
-          "amount": 10,
-          "category": "transport",
-          "time": "20:30",
-          "location": "KL"
+          "transaction_id": "txn_high_002",
+          "amount": 18,
+          "category": "food",
+          "time": "8:30 PM",
+          "location": "Cafe"
         },
         {
+          "transaction_id": "txn_high_003",
+          "amount": 20,
+          "category": "food",
+          "time": "7:15 PM",
+          "location": "Restaurant"
+        },
+        {
+          "transaction_id": "txn_high_004",
+          "amount": 10,
+          "category": "transport",
+          "time": "3:00 PM",
+          "location": "LRT"
+        },
+        {
+          "transaction_id": "txn_high_005",
           "amount": 20,
           "category": "shopping",
-          "time": "19:00",
-          "location": "KL"
+          "time": "10:30 PM",
+          "location": "Mall"
         }
       ],
       "user_action": {

@@ -78,32 +78,51 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final result = await AiService.analyzeRisk();
+      final result = await BackendApiService.postTransaction(
+        userId: widget.userId,
+        amount: 80,
+        category: 'food',
+        merchant: 'Mid Valley',
+        description: 'Real end-to-end AI transaction demo',
+      );
+
+      final fullAiResult = result.aiResult;
 
       setState(() {
-        aiResult = result;
-        AiState.latestAiResult = result;
-        demoResilienceScore = result['scoreAnalysis']['resilienceScore'];
-        demoSmartDecisionScore = result['scoreAnalysis']['smartDecisionScore'];
+        aiResult = fullAiResult;
+        AiState.latestAiResult = fullAiResult;
+
+        demoResilienceScore = fullAiResult['scoreAnalysis']
+                ?['resilienceScore'] ??
+            widget.resilienceScore;
+
+        demoSmartDecisionScore = fullAiResult['scoreAnalysis']
+                ?['smartDecisionScore'] ??
+            widget.smartDecisionScore;
+
         isLoadingAi = false;
       });
 
-      final smartRadar =
-          result['integrationPayload']['smartRadar']['triggerSmartRadar'];
-      final radarCategory =
-          result['integrationPayload']['smartRadar']['radarCategory'];
+      final smartRadar = fullAiResult['integrationPayload']?['smartRadar']
+              ?['triggerSmartRadar'] ==
+          true;
 
-      if (smartRadar == true && mounted) {
+      final radarCategory = fullAiResult['integrationPayload']?['smartRadar']
+                  ?['radarCategory']
+              ?.toString() ??
+          '';
+
+      if (smartRadar && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            duration: const Duration(seconds: 6),
+            duration: const Duration(seconds: 5),
             content: Text(
-              'Smart Radar triggered for $radarCategory savings. Opening shortly...',
+              'Smart Radar triggered for $radarCategory savings.',
             ),
           ),
         );
 
-        Future.delayed(const Duration(seconds: 8), () {
+        Future.delayed(const Duration(seconds: 2), () {
           if (mounted) {
             widget.onNavigate(1);
           }
@@ -117,7 +136,7 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('AI error: $e')),
+        SnackBar(content: Text('End-to-end AI error: $e')),
       );
     }
   }
