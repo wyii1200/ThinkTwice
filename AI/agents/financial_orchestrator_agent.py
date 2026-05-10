@@ -50,34 +50,42 @@ def orchestrate_intervention(
 
         notification["sendPushNotification"] = True
 
-        if late_night_spending:
+        should_trigger_radar = (
+            late_night_spending
+            or primary_category in ["food", "shopping"]
+            or risk_result.get("riskScore", 0) >= 150
+        )
+
+        if should_trigger_radar:
+
             final_action = FINAL_ACTIONS["SMART_RADAR_AND_AUTO_SAVE"]
 
             smart_radar = {
                 "triggerSmartRadar": True,
                 "radarCategory": primary_category,
                 "radarMessage": (
-                    f"You usually overspend on {primary_category} during risky hours. "
-                    "Find cheaper nearby alternatives?"
+                    f"AI detected risky {primary_category} spending behaviour. "
+                    "Find cheaper nearby alternatives and reduce overspending?"
                 ),
                 "openMode": "category_filter",
                 "recommendedRoute": "/smart-radar"
             }
 
             notification.update({
-                "notificationTitle": "Smart Savings Alert",
+                "notificationTitle": "Smart Savings Radar Activated",
                 "notificationBody": (
-                    f"AI detected risky {primary_category} spending. "
-                    f"Save RM{savings_amount} or find cheaper options nearby."
+                    f"ThinkTwice detected risky {primary_category} spending. "
+                    f"Save RM{savings_amount} and explore cheaper nearby options."
                 ),
                 "notificationType": "smart_radar"
             })
 
             intervention_reason = (
-                "High risk and late-night spending detected, so Smart Radar and auto-save suggestion are triggered."
+                "High risk detected, so Smart Radar and auto-save suggestion are triggered."
             )
 
         else:
+
             final_action = FINAL_ACTIONS["AUTO_SAVE"]
 
             notification.update({
