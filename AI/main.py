@@ -322,7 +322,7 @@ def analyze_risk(user: UserProfile):
     ]
 
     response["firestorePayload"] = {
-        "collectionPath": f"users/{user.user_id}/latest_ai_analysis",
+        "collectionPath": f"users/{user.user_id}/ai/latest_ai_analysis",
         "data": {
             "userId": user.user_id,
             "riskLevel": risk_level,

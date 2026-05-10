@@ -1,6 +1,7 @@
 const axios = require('axios');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+const { saveLatestAIAnalysis } = require('./firestore');
 
 async function analyzeTransaction(payload) {
   const { userId, amount, category, merchant, userHistory, userProfile, userAction } = payload;
@@ -28,6 +29,17 @@ async function analyzeTransaction(payload) {
     const data = response.data;
     const integration = data.integrationPayload;
     const intervention = data.intervention;
+
+    if (
+      data.firestorePayload &&
+      data.firestorePayload.collectionPath &&
+      data.firestorePayload.data
+  ) {
+    await saveLatestAIAnalysis(
+      data.firestorePayload.collectionPath,
+      data.firestorePayload.data
+  );
+}
 
     return {
       riskLevel: data.riskAnalysis?.riskLevel || 'low',
