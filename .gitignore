@@ -90,6 +90,8 @@ AI/*.pyc
 AI/.env
 AI/venv/
 AI/.venv/
+serviceAccountKey.json
+*.pem
 
 # Frontend build
 frontend/dist/
