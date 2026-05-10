@@ -51,6 +51,7 @@ class AppRoot extends StatefulWidget {
 class _AppRootState extends State<AppRoot> {
   static const _avatarProfileKey = 'avatar_profile';
   static const _ownedRewardIdsKey = 'owned_reward_ids';
+  static const _claimedQuestIdsKey = 'claimed_quest_ids';
   static const _totalPointsKey = 'total_points';
   static const _resilienceScoreKey = 'resilience_score';
   static const _smartDecisionScoreKey = 'smart_decision_score';
@@ -138,6 +139,7 @@ class _AppRootState extends State<AppRoot> {
     final prefs = await SharedPreferences.getInstance();
     final rawAvatar = prefs.getString(_avatarProfileKey);
     final ownedIds = prefs.getStringList(_ownedRewardIdsKey) ?? const <String>[];
+    final claimedQuestIds = prefs.getStringList(_claimedQuestIdsKey) ?? const <String>[];
 
     CatAvatarProfile avatarProfile = _avatarProfile;
     if (rawAvatar != null) {
@@ -163,6 +165,9 @@ class _AppRootState extends State<AppRoot> {
       _currentStreak = prefs.getInt(_currentStreakKey) ?? _currentStreak;
       _rewardShopItems = _rewardShopItems
           .map((item) => ownedIds.contains(item.id) ? item.copyWith(owned: true) : item)
+          .toList();
+      _quests = _quests
+          .map((quest) => claimedQuestIds.contains(quest.id) ? quest.copyWith(isClaimed: true) : quest)
           .toList();
     });
   }
@@ -260,6 +265,10 @@ class _AppRootState extends State<AppRoot> {
       _ownedRewardIdsKey,
       _rewardShopItems.where((item) => item.owned).map((item) => item.id).toList(),
     );
+    await prefs.setStringList(
+      _claimedQuestIdsKey,
+      _quests.where((quest) => quest.isClaimed).map((quest) => quest.id).toList(),
+    );
     await prefs.setInt(_totalPointsKey, _totalPoints);
     await prefs.setInt(_resilienceScoreKey, _resilienceScore);
     await prefs.setInt(_smartDecisionScoreKey, _smartDecisionScore);
@@ -351,6 +360,7 @@ class _AppRootState extends State<AppRoot> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_avatarProfileKey);
       await prefs.remove(_ownedRewardIdsKey);
+      await prefs.remove(_claimedQuestIdsKey);
       await prefs.remove(_totalPointsKey);
       await prefs.remove(_resilienceScoreKey);
       await prefs.remove(_smartDecisionScoreKey);
@@ -402,7 +412,14 @@ class _AppRootState extends State<AppRoot> {
     final questIndex = _quests.indexWhere((quest) => quest.id == questId);
     if (questIndex == -1) return;
     final quest = _quests[questIndex];
-    if (!quest.isCompleted || quest.isClaimed) return;
+    if (quest.isClaimed) return;
+
+    if (!quest.isCompleted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Complete the challenge first to claim this reward')),
+      );
+      return;
+    }
 
     setState(() {
       _quests[questIndex] = quest.copyWith(isClaimed: true);
@@ -410,12 +427,12 @@ class _AppRootState extends State<AppRoot> {
     unawaited(_persistAppState());
     _awardPoints('${quest.title} reward claimed', quest.rewardPoints, Icons.emoji_events_rounded);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Reward claimed! You earned +${quest.rewardPoints} pts.')),
+      SnackBar(content: Text('Reward claimed! +${quest.rewardPoints} pts added 🎁')),
     );
     showCelebrationDialog(
       context,
       title: 'Reward Claimed',
-      body: 'Your cat companion just banked +${quest.rewardPoints} pts. Keep the streak glowing.',
+      body: '+${quest.rewardPoints} pts added to your total. Your streak reward is safely collected.',
       icon: Icons.emoji_events_rounded,
       color: context.colors.accentForeground,
     );

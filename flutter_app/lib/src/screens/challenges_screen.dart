@@ -37,6 +37,19 @@ class ChallengesPage extends StatefulWidget {
 class _ChallengesPageState extends State<ChallengesPage> {
   int _sectionIndex = 0;
 
+  void _handleRewardTap(QuestProgress quest) {
+    if (quest.isClaimed) return;
+
+    if (!quest.isCompleted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Complete the challenge first to claim this reward')),
+      );
+      return;
+    }
+
+    widget.onClaimReward(quest.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     final squad = [
@@ -166,59 +179,71 @@ class _ChallengesPageState extends State<ChallengesPage> {
           const SizedBox(height: 16),
           if (_sectionIndex == 0) ...[
             ...widget.quests.map((quest) => Padding(
+                  key: ValueKey(quest.id),
                   padding: const EdgeInsets.only(bottom: 10),
                   child: WhiteCard(
                     padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                    child: Builder(
+                      builder: (context) {
+                        final canClaim = quest.isCompleted && !quest.isClaimed;
+                        return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      if (quest.isCompleted) Icon(Icons.check_circle_rounded, size: 16, color: context.colors.success),
-                                      if (quest.isCompleted) const SizedBox(width: 6),
-                                      Expanded(child: Text(quest.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
+                                      Row(
+                                        children: [
+                                          if (quest.isCompleted) Icon(Icons.check_circle_rounded, size: 16, color: context.colors.success),
+                                          if (quest.isCompleted) const SizedBox(width: 6),
+                                          Expanded(child: Text(quest.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(quest.progressLabel, style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
                                     ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(quest.progressLabel, style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
-                                ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: quest.isClaimed ? context.colors.success.withOpacity(0.18) : context.colors.accent.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    quest.isClaimed ? 'Claimed' : quest.rewardLabel,
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: quest.isClaimed ? context.colors.success : context.colors.accentForeground),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(999),
+                              child: LinearProgressIndicator(
+                                value: quest.progress,
+                                minHeight: 7,
+                                backgroundColor: context.colors.muted,
+                                valueColor: AlwaysStoppedAnimation<Color>(context.colors.primary),
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: quest.isClaimed ? context.colors.success.withOpacity(0.18) : context.colors.accent.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                quest.isClaimed ? 'Claimed' : quest.rewardLabel,
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: quest.isClaimed ? context.colors.success : context.colors.accentForeground),
-                              ),
+                            const SizedBox(height: 14),
+                            QuestRewardButton(
+                              label: quest.isClaimed
+                                  ? 'Reward Claimed'
+                                  : (canClaim ? 'Claim Your Reward' : 'Unlock Reward'),
+                              icon: quest.isClaimed ? Icons.check_circle_rounded : Icons.card_giftcard_rounded,
+                              isClaimable: canClaim,
+                              isClaimed: quest.isClaimed,
+                              onPressed: quest.isClaimed ? null : () => _handleRewardTap(quest),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 10),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(999),
-                          child: LinearProgressIndicator(
-                            value: quest.progress,
-                            minHeight: 8,
-                            backgroundColor: context.colors.muted,
-                            valueColor: AlwaysStoppedAnimation<Color>(context.colors.primary),
-                          ),
-                        ),
-                        if (quest.isCompleted && !quest.isClaimed) ...[
-                          const SizedBox(height: 12),
-                          GradientButton(text: 'Claim reward', compact: true, onPressed: () => widget.onClaimReward(quest.id)),
-                        ],
-                      ],
+                        );
+                      },
                     ),
                   ),
                 )),

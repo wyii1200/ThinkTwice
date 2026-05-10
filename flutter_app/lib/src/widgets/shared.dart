@@ -386,25 +386,30 @@ class AIInterventionModal extends StatelessWidget {
                     onPressed: onSaveNow,
                   ),
                   const SizedBox(height: 8),
-                  FilledButton.tonal(
+                  OutlinedButton(
                     onPressed: onFindAlternative,
-                    style: FilledButton.styleFrom(
+                    style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      side: BorderSide(color: context.colors.primary, width: 2),
+                      foregroundColor: context.colors.primary,
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Find cheaper alternatives', style: TextStyle(fontWeight: FontWeight.w600)),
+                        Text('Find cheaper alternatives', style: TextStyle(fontWeight: FontWeight.w700)),
                         SizedBox(width: 6),
                         Icon(Icons.arrow_forward_rounded, size: 16),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   TextButton(
                     onPressed: onIgnore,
-                    child: Text('Ignore', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
+                    style: TextButton.styleFrom(
+                      foregroundColor: context.colors.mutedForeground,
+                    ),
+                    child: Text('Ignore', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.mutedForeground)),
                   ),
                 ],
               ),
@@ -595,6 +600,112 @@ class GradientButton extends StatelessWidget {
       ),
     );
     return compact ? button : PulseGlow(color: context.colors.primary, child: button);
+  }
+}
+
+class QuestRewardButton extends StatelessWidget {
+  const QuestRewardButton({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    required this.isClaimable,
+    required this.isClaimed,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final bool isClaimable;
+  final bool isClaimed;
+
+  @override
+  Widget build(BuildContext context) {
+    final gradient = isClaimed
+        ? [
+            const Color(0xFFDCEFE7),
+            const Color(0xFFBEDFD1),
+          ]
+        : isClaimable
+            ? [
+                const Color(0xFFFFD86E),
+                const Color(0xFFFFAF6D),
+              ]
+            : [
+                const Color(0xFFE5EFEA),
+                const Color(0xFFD4E7DF),
+              ];
+    final foreground = isClaimed ? context.colors.success : (isClaimable ? Colors.white : context.colors.mutedForeground);
+    final button = PressScale(
+      onTap: onPressed,
+      scale: isClaimable ? 0.95 : 0.98,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 180),
+        opacity: isClaimed ? 0.86 : (isClaimable ? 1 : 0.72),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          height: 58,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: gradient,
+            ),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: isClaimable ? Colors.white.withOpacity(0.28) : Colors.white.withOpacity(0.7),
+              width: isClaimable ? 1.2 : 1,
+            ),
+            boxShadow: isClaimable
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFFFFB564).withOpacity(0.34),
+                      blurRadius: 26,
+                      spreadRadius: -4,
+                      offset: const Offset(0, 14),
+                    ),
+                    BoxShadow(
+                      color: const Color(0xFFFFE2A8).withOpacity(0.46),
+                      blurRadius: 18,
+                      spreadRadius: -10,
+                      offset: const Offset(0, -2),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: context.colors.primary.withOpacity(0.08),
+                      blurRadius: 16,
+                      spreadRadius: -6,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(icon, size: 19, color: foreground),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (isClaimable && !isClaimed) {
+      return PulseGlow(color: const Color(0xFFFFC26F), child: button);
+    }
+
+    return button;
   }
 }
 

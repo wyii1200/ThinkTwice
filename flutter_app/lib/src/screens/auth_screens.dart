@@ -235,9 +235,13 @@ class _LoginPageState extends State<LoginPage> {
                         icon: Icons.person_outline_rounded,
                         child: TextFormField(
                           controller: _nameCtrl,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return 'Name is required';
+                            return null;
+                          },
                           decoration: const InputDecoration(
                             border: InputBorder.none,
-                            hintText: 'Your name (e.g. Aiman)',
+                            hintText: 'Your name',
                             isDense: true,
                           ),
                         ),
@@ -260,7 +264,7 @@ class _LoginPageState extends State<LoginPage> {
                         },
                         decoration: const InputDecoration(
                           border: InputBorder.none,
-                          hintText: 'you@example.com',
+                          hintText: 'Email address',
                           isDense: true,
                         ),
                       ),
@@ -289,7 +293,7 @@ class _LoginPageState extends State<LoginPage> {
                         },
                         decoration: const InputDecoration(
                           border: InputBorder.none,
-                          hintText: '••••••••',
+                          hintText: 'Password',
                           isDense: true,
                         ),
                       ),
