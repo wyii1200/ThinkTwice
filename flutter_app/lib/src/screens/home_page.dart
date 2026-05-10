@@ -80,44 +80,47 @@ class _HomePageState extends State<HomePage> {
     try {
       final result = await BackendApiService.postTransaction(
         userId: widget.userId,
-        amount: 80,
+        amount: 120,
         category: 'food',
         merchant: 'Mid Valley',
-        description: 'Real end-to-end AI transaction demo',
+        description: 'Real end-to-end Smart Radar AI demo',
       );
 
       final fullAiResult = result.aiResult;
 
+      final newResilienceScore = fullAiResult['scoreAnalysis']
+              ?['resilienceScore'] ??
+          widget.resilienceScore;
+
+      final newSmartDecisionScore = fullAiResult['scoreAnalysis']
+              ?['smartDecisionScore'] ??
+          widget.smartDecisionScore;
+
       setState(() {
         aiResult = fullAiResult;
         AiState.latestAiResult = fullAiResult;
-
-        demoResilienceScore = fullAiResult['scoreAnalysis']
-                ?['resilienceScore'] ??
-            widget.resilienceScore;
-
-        demoSmartDecisionScore = fullAiResult['scoreAnalysis']
-                ?['smartDecisionScore'] ??
-            widget.smartDecisionScore;
-
+        demoResilienceScore = newResilienceScore;
+        demoSmartDecisionScore = newSmartDecisionScore;
         isLoadingAi = false;
       });
 
-      final smartRadar = fullAiResult['integrationPayload']?['smartRadar']
-              ?['triggerSmartRadar'] ==
+      widget.onAiNudge(result.nudge, result.newBalance);
+
+      final triggerSmartRadar = fullAiResult['integrationPayload']
+              ?['smartRadar']?['triggerSmartRadar'] ==
           true;
 
       final radarCategory = fullAiResult['integrationPayload']?['smartRadar']
                   ?['radarCategory']
               ?.toString() ??
-          '';
+          'spending';
 
-      if (smartRadar && mounted) {
+      if (triggerSmartRadar && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            duration: const Duration(seconds: 5),
+            duration: const Duration(seconds: 3),
             content: Text(
-              'Smart Radar triggered for $radarCategory savings.',
+              'Smart Radar activated for $radarCategory spending. Opening Radar...',
             ),
           ),
         );
@@ -136,7 +139,9 @@ class _HomePageState extends State<HomePage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('End-to-end AI error: $e')),
+        SnackBar(
+          content: Text('End-to-end AI error: $e'),
+        ),
       );
     }
   }

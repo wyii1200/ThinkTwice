@@ -2,6 +2,26 @@ import os
 import json
 import google.generativeai as genai
 
+def generate_llm_coaching_message(response):
+    enable_gemini = os.getenv("ENABLE_GEMINI", "false").lower() == "true"
+
+    intervention = response.get("intervention", {})
+    nudge = intervention.get(
+        "nudge",
+        "Keep tracking your spending habits."
+    )
+
+    if not enable_gemini:
+        return {
+            "llmEnabled": False,
+            "coachingMessage": nudge,
+            "dashboardInsight": "Rule-based AI coaching is active for demo stability.",
+            "recommendedButtonText": intervention.get(
+                "ctaButtonText",
+                "View Insight"
+            ),
+            "llmStatus": "Gemini disabled. Stable rule-based AI fallback active."
+        }
 
 def generate_llm_coaching_message(ai_result: dict) -> dict:
     """
