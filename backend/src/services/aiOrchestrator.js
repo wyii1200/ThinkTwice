@@ -1,6 +1,7 @@
 const axios = require('axios');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+const { saveLatestAIAnalysis } = require('./firestore');
 
 async function analyzeTransaction(payload) {
   const { userId, amount, category, merchant, userHistory, userProfile, userAction } = payload;
@@ -29,21 +30,38 @@ async function analyzeTransaction(payload) {
     const integration = data.integrationPayload;
     const intervention = data.intervention;
 
+    if (
+      data.firestorePayload &&
+      data.firestorePayload.collectionPath &&
+      data.firestorePayload.data
+  ) {
+    await saveLatestAIAnalysis(
+      data.firestorePayload.collectionPath,
+      data.firestorePayload.data
+  );
+}
+
     return {
-      riskLevel: data.riskAnalysis?.riskLevel || 'low',
-      reason: data.riskAnalysis?.reasons?.join(', ') || '',
-      nudgeText: intervention?.nudge || null,
-      suggestedAction: integration?.finalAction || null,
-      saveAmount: intervention?.suggestedSavingsAmount || 0,
-      resilienceImpact: data.scoreAnalysis?.resilienceScore || 50,
-      streakRisk: data.riskAnalysis?.riskLevel === 'high',
-      triggerSmartRadar: integration?.smartRadar?.triggerSmartRadar || false,
-      radarCategory: integration?.smartRadar?.radarCategory || null,
-      radarMessage: integration?.smartRadar?.radarMessage || null,
-      fcmPayload: integration?.fcmPayload || null,
-      aiExplanation: data.aiExplanation || [],
-      severityLevel: intervention?.severityLevel || 'low',
-    };
+  riskLevel: data.riskAnalysis?.riskLevel || 'low',
+  reason: data.riskAnalysis?.reasons?.join(', ') || '',
+  nudgeText: intervention?.nudge || null,
+  suggestedAction: integration?.finalAction || null,
+  saveAmount: intervention?.suggestedSavingsAmount || 0,
+  resilienceImpact: data.scoreAnalysis?.resilienceScore || 50,
+  streakRisk: data.riskAnalysis?.riskLevel === 'high',
+  triggerSmartRadar: integration?.smartRadar?.triggerSmartRadar || false,
+  radarCategory: integration?.smartRadar?.radarCategory || null,
+  radarMessage: integration?.smartRadar?.radarMessage || null,
+  fcmPayload: integration?.fcmPayload || null,
+  aiExplanation: data.aiExplanation || [],
+  severityLevel: intervention?.severityLevel || 'low',
+
+  fullAiResult: data,
+  aiVisibility: data.aiVisibility,
+  explainability: data.explainability,
+  aiTimeline: data.aiTimeline,
+  firestorePayload: data.firestorePayload,
+};
 
   } catch (error) {
     console.error('AI service error:', error.message);

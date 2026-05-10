@@ -11,7 +11,6 @@ def calculate_risk(user):
     risk_score = spending_ratio * 100
     reasons = []
 
-    # Budget overspending
     if spending_ratio >= 1:
         reasons.append("Daily budget exceeded.")
         risk_score += 20
@@ -20,7 +19,6 @@ def calculate_risk(user):
         reasons.append("Close to daily budget limit.")
         risk_score += 10
 
-    # Category overspending
     category_totals = {}
 
     for transaction in user.transactions:
@@ -28,17 +26,31 @@ def calculate_risk(user):
         category_totals[category] = category_totals.get(category, 0) + transaction.amount
 
     food_spending = category_totals.get("food", 0)
+    shopping_spending = category_totals.get("shopping", 0)
+    entertainment_spending = category_totals.get("entertainment", 0)
 
     if food_spending >= 30:
         reasons.append("High food spending detected.")
         risk_score += 15
 
-    # Spending frequency
-    if len(user.transactions) >= 5:
+    if shopping_spending >= 40:
+        reasons.append("High shopping spending detected.")
+        risk_score += 12
+
+    if entertainment_spending >= 40:
+        reasons.append("High entertainment spending detected.")
+        risk_score += 12
+
+    transaction_count = len(user.transactions)
+
+    if transaction_count >= 5:
         reasons.append("High transaction frequency detected.")
         risk_score += 10
 
-    # Late-night spending
+    elif transaction_count >= 3:
+        reasons.append("Moderate transaction frequency detected.")
+        risk_score += 5
+
     late_night = any(
         is_late_night_time(transaction.time)
         for transaction in user.transactions
@@ -48,7 +60,9 @@ def calculate_risk(user):
         reasons.append("Late-night spending behaviour detected.")
         risk_score += 10
 
-    # Final risk level
+    if not reasons:
+        reasons.append("Current spending behaviour remains manageable.")
+
     if risk_score >= 120:
         risk_level = RISK_LEVELS["HIGH"]
 

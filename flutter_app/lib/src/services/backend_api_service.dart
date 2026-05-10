@@ -14,6 +14,11 @@ class UserProfile {
   final int streak;
   final int smartDecisionScore;
 
+  final String breed;
+  final String expression;
+  final String accessory;
+  final String effect;
+
   const UserProfile({
     required this.userId,
     this.displayName = '',
@@ -24,6 +29,10 @@ class UserProfile {
     required this.currentBalance,
     required this.streak,
     required this.smartDecisionScore,
+    this.breed = 'siamese',
+    this.expression = 'proud',
+    this.accessory = 'none',
+    this.effect = 'none',
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -37,6 +46,10 @@ class UserProfile {
       currentBalance: (json['currentBalance'] as num?)?.toDouble() ?? 0,
       streak: (json['streak'] as num?)?.toInt() ?? 0,
       smartDecisionScore: (json['smartDecisionScore'] as num?)?.toInt() ?? 50,
+      breed: json['breed'] as String? ?? 'siamese',
+      expression: json['expression'] as String? ?? 'proud',
+      accessory: json['accessory'] as String? ?? 'none',
+      effect: json['effect'] as String? ?? 'none',
     );
   }
 }
@@ -87,27 +100,54 @@ class BackendApiService {
 
   static Future<void> setupUser({
     required String userId,
-    double dailyBudget = 50,
-    double savingsGoal = 500,
+    required double dailyBudget,
+    required double savingsGoal,
+    required String displayName,
     String? fcmToken,
-    String? displayName,
+    String? breed,
+    String? expression,
+    String? accessory,
+    String? effect,
   }) async {
     final uri = Uri.parse('$_backendUrl/users/setup');
-    final res = await _client.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'userId': userId,
-        'dailyBudget': dailyBudget,
-        'savingsGoal': savingsGoal,
-        if (fcmToken != null) 'fcmToken': fcmToken,
-        if (displayName != null && displayName.isNotEmpty) 'displayName': displayName,
-      }),
-    ).timeout(const Duration(seconds: 10));
+    final res = await _client
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'userId': userId,
+            'dailyBudget': dailyBudget,
+            'savingsGoal': savingsGoal,
+            'displayName': displayName,
+            if (fcmToken != null) 'fcmToken': fcmToken,
+            if (breed != null) 'breed': breed,
+            if (expression != null) 'expression': expression,
+            if (accessory != null) 'accessory': accessory,
+            if (effect != null) 'effect': effect,
+          }),
+        )
+        .timeout(const Duration(seconds: 10));
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     if (body['success'] != true) {
       throw Exception(body['error'] ?? 'User setup failed');
+    }
+  }
+
+  static Future<void> updateUserProfile(
+      String userId, Map<String, dynamic> updates) async {
+    final uri = Uri.parse('$_backendUrl/users/$userId');
+    final res = await _client
+        .patch(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(updates),
+        )
+        .timeout(const Duration(seconds: 10));
+
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (body['success'] != true) {
+      throw Exception(body['error'] ?? 'Failed to update profile');
     }
   }
 
@@ -116,11 +156,13 @@ class BackendApiService {
     required String fcmToken,
   }) async {
     final uri = Uri.parse('$_backendUrl/users/$userId/fcm-token');
-    await _client.put(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'fcmToken': fcmToken}),
-    ).timeout(const Duration(seconds: 10));
+    await _client
+        .put(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'fcmToken': fcmToken}),
+        )
+        .timeout(const Duration(seconds: 10));
   }
 
   static Future<UserProfile> getUserProfile(String userId) async {
@@ -133,7 +175,9 @@ class BackendApiService {
     return UserProfile.fromJson(body['profile'] as Map<String, dynamic>);
   }
 
-  static Future<({AiNudge nudge, double? newBalance})> postTransaction({
+  static Future<
+          ({AiNudge nudge, double? newBalance, Map<String, dynamic> aiResult})>
+      postTransaction({
     required String userId,
     required double amount,
     required String category,
@@ -141,25 +185,34 @@ class BackendApiService {
     String? description,
   }) async {
     final uri = Uri.parse('$_backendUrl/webhook/transaction');
-    final res = await _client.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'userId': userId,
-        'amount': amount,
-        'category': category,
-        'merchant': merchant,
-        if (description != null) 'description': description,
-      }),
-    ).timeout(const Duration(seconds: 15));
+    final res = await _client
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'userId': userId,
+            'amount': amount,
+            'category': category,
+            'merchant': merchant,
+            if (description != null) 'description': description,
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     if (body['success'] != true) {
       throw Exception(body['error'] ?? 'Transaction failed');
     }
+    final aiResult = body['aiResult'] as Map<String, dynamic>;
+
+    final fullAiResult = aiResult['fullAiResult'] is Map<String, dynamic>
+        ? aiResult['fullAiResult'] as Map<String, dynamic>
+        : aiResult;
+
     return (
-      nudge: AiNudge.fromJson(body['aiResult'] as Map<String, dynamic>),
+      nudge: AiNudge.fromJson(aiResult),
       newBalance: (body['newBalance'] as num?)?.toDouble(),
+      aiResult: fullAiResult,
     );
   }
 
@@ -176,7 +229,8 @@ class BackendApiService {
     return List<Map<String, dynamic>>.from(body['transactions'] as List? ?? []);
   }
 
-  static Future<List<Map<String, dynamic>>> getNudgeHistory(String userId) async {
+  static Future<List<Map<String, dynamic>>> getNudgeHistory(
+      String userId) async {
     final uri = Uri.parse('$_backendUrl/nudge/history/$userId');
     final res = await _client.get(uri).timeout(const Duration(seconds: 10));
     final body = jsonDecode(res.body) as Map<String, dynamic>;
@@ -190,15 +244,17 @@ class BackendApiService {
     String? nudgeId,
   }) async {
     final uri = Uri.parse('$_backendUrl/autosave/approve');
-    final res = await _client.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'userId': userId,
-        'amount': amount,
-        if (nudgeId != null) 'nudgeId': nudgeId,
-      }),
-    ).timeout(const Duration(seconds: 10));
+    final res = await _client
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'userId': userId,
+            'amount': amount,
+            if (nudgeId != null) 'nudgeId': nudgeId,
+          }),
+        )
+        .timeout(const Duration(seconds: 10));
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     if (body['success'] != true) {
@@ -212,14 +268,16 @@ class BackendApiService {
     String? nudgeId,
   }) async {
     final uri = Uri.parse('$_backendUrl/autosave/reject');
-    await _client.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'userId': userId,
-        if (nudgeId != null) 'nudgeId': nudgeId,
-      }),
-    ).timeout(const Duration(seconds: 10));
+    await _client
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'userId': userId,
+            if (nudgeId != null) 'nudgeId': nudgeId,
+          }),
+        )
+        .timeout(const Duration(seconds: 10));
   }
 
   static Future<void> sendNudgeResponse({
@@ -228,14 +286,16 @@ class BackendApiService {
     required String action,
   }) async {
     final uri = Uri.parse('$_backendUrl/nudge/response');
-    await _client.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'userId': userId,
-        'nudgeId': nudgeId,
-        'action': action,
-      }),
-    ).timeout(const Duration(seconds: 10));
+    await _client
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'userId': userId,
+            'nudgeId': nudgeId,
+            'action': action,
+          }),
+        )
+        .timeout(const Duration(seconds: 10));
   }
 }

@@ -90,6 +90,26 @@ async function deductBalance(userId, amount) {
   return next;
 }
 
+async function saveLatestAIAnalysis(collectionPath, data) {
+  let docPath = collectionPath;
+
+  const parts = collectionPath.split('/');
+
+  if (parts.length % 2 !== 0) {
+    docPath = `users/${data.userId}/ai/latest_ai_analysis`;
+  }
+
+  await db.doc(docPath).set(
+    {
+      ...data,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  return docPath;
+}
+
 module.exports = {
   saveTransaction,
   getTransactionsByUser,
@@ -100,4 +120,5 @@ module.exports = {
   deductBalance,
   logNudge,
   getNudgeLogs,
+  saveLatestAIAnalysis,
 };
