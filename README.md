@@ -1,6 +1,6 @@
 # ThinkTwice
 
-## AI-Powered Behavioural Financial Wellness Platform
+## AI-Powered Financial Resilience System
 
 **Transaction → AI Analysis → Smart Intervention → Financial Growth. Intelligent. Real-time. Adaptive.**
 
