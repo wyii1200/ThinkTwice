@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      // 1. Allow anyone to view the images (Needed for the Flutter app to display them)
+      allow read: if true; 
+      
+      // 2. Allow anyone to upload images (Needed when users post a new deal)
+      // NOTE: This is for testing only. We will secure this later!
+      allow write: if true; 
+    }
+  }
+}
