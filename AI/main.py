@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from models.schemas import UserProfile
 
@@ -13,6 +14,13 @@ from agents.explainability_agent import generate_explanation
 from agents.spending_velocity_agent import analyse_spending_velocity
 from agents.intervention_intelligence_agent import evaluate_intervention_intelligence
 from agents.decision_layer_agent import build_decision_layer
+from dotenv import load_dotenv
+from pathlib import Path
+from agents.llm_coaching_agent import generate_llm_coaching_message
+
+
+env_path = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 app = FastAPI(
     title="ThinkTwice AI Service",
@@ -20,6 +28,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def home():
@@ -126,4 +141,20 @@ def analyze_risk(user: UserProfile):
         }
     }
 
+        # Gemini / LLM coaching enhancement
+    llm_result = generate_llm_coaching_message(response)
+
+    response["llmCoaching"] = llm_result
+
+    response["intervention"]["llmEnhancedNudge"] = llm_result["coachingMessage"]
+    response["intervention"]["dashboardInsight"] = llm_result["dashboardInsight"]
+    response["intervention"]["recommendedButtonText"] = llm_result["recommendedButtonText"]
+
+    response["integrationPayload"]["llmCoaching"] = llm_result
+
+    response["integrationPayload"]["notification"]["notificationBody"] = llm_result["coachingMessage"]
+
+    response["integrationPayload"]["fcmPayload"]["body"] = llm_result["coachingMessage"]
+
     return response
+

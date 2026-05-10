@@ -6,16 +6,17 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-
 import '../core/app_theme.dart';
 import '../core/models.dart';
 import '../services/radar_api_service.dart';
 import '../widgets/shared.dart';
-
+import '../services/ai_service.dart';
+import '../services/ai_state.dart';
 
 String _fmt(double amount) => amount.toStringAsFixed(2);
 
 final Map<String, String> _dealImageUrls = {};
+
 class RadarPage extends StatefulWidget {
   const RadarPage({
     super.key,
@@ -60,14 +61,14 @@ class _RadarPageState extends State<RadarPage> {
   // Run `ipconfig` in PowerShell → IPv4 Address under WiFi adapter
   // e.g. 'http://192.168.1.105:4000'
   // Emulator: 'http://10.0.2.2:4000'  |  Web/desktop: 'http://localhost:4000'
-  
-static String get _userId {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) {
-    throw Exception('No user is currently signed in.');
+
+  static String get _userId {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('No user is currently signed in.');
+    }
+    return user.uid;
   }
-  return user.uid;
-}
 
   @override
   void initState() {
@@ -267,7 +268,8 @@ static String get _userId {
 
   Future<void> _handleUpvote(String dealId) async {
     try {
-      final result = await RadarApiService.upvoteDeal(dealId: dealId, userId: _userId);
+      final result =
+          await RadarApiService.upvoteDeal(dealId: dealId, userId: _userId);
       widget.onUpvoteDeal(dealId);
       await _loadDeals(); // sync Firestore → UI
       if (!mounted) return;
@@ -301,7 +303,8 @@ static String get _userId {
 
   Future<void> _handleDownvote(String dealId) async {
     try {
-      final result = await RadarApiService.downvoteDeal(dealId: dealId, userId: _userId);
+      final result =
+          await RadarApiService.downvoteDeal(dealId: dealId, userId: _userId);
       await _loadDeals(); // sync Firestore data back to UI
       if (!mounted) return;
       final switched = result['switched'] == true;
@@ -372,7 +375,8 @@ static String get _userId {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Deal posted! You earned points for helping others save.'),
+        content:
+            Text('Deal posted! You earned points for helping others save.'),
         behavior: SnackBarBehavior.floating,
         backgroundColor: Color(0xFF41B89B),
       ));
@@ -422,7 +426,6 @@ static String get _userId {
     );
   }
 
-
   // ── UI components ───────────────────────────────────────────────────────────
   Widget _buildDealImage(CommunityDeal deal) {
     if (deal.imageBytes != null) {
@@ -441,10 +444,8 @@ static String get _userId {
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2))),
-        errorBuilder: (ctx, _, __) => Icon(
-            Icons.storefront_rounded,
-            size: 24,
-            color: Theme.of(ctx).colorScheme.secondary),
+        errorBuilder: (ctx, _, __) => Icon(Icons.storefront_rounded,
+            size: 24, color: Theme.of(ctx).colorScheme.secondary),
       );
     }
 
@@ -521,7 +522,9 @@ static String get _userId {
           snippet: '${deal.storeName} • RM ${_fmt(deal.price)}',
         ),
         icon: BitmapDescriptor.defaultMarkerWithHue(
-          deal.verified ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueOrange,
+          deal.verified
+              ? BitmapDescriptor.hueGreen
+              : BitmapDescriptor.hueOrange,
         ),
         onTap: () =>
             setState(() => _selectedDeal = _apiDealToCommunityDeal(deal)),
@@ -554,8 +557,7 @@ static String get _userId {
               .take(3)
               .join(', '),
         ),
-        icon:
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
       ));
     }
 
@@ -603,17 +605,31 @@ static String get _userId {
 
   @override
   Widget build(BuildContext context) {
-    final sortedDeals = _apiDeals
-        .map(_apiDealToCommunityDeal)
-        .toList()
-      ..sort((a, b) =>
-          (a.distanceKm ?? 999).compareTo(b.distanceKm ?? 999));
+    final sortedDeals = _apiDeals.map(_apiDealToCommunityDeal).toList()
+      ..sort((a, b) => (a.distanceKm ?? 999).compareTo(b.distanceKm ?? 999));
 
-    final selected = _selectedDeal ??
-        (sortedDeals.isNotEmpty ? sortedDeals.first : null);
+    final selected =
+        _selectedDeal ?? (sortedDeals.isNotEmpty ? sortedDeals.first : null);
 
     final totalSaved = _monthlySummary?.totalSavedRM ??
         _apiDeals.fold<double>(0, (s, d) => s + d.price * 0.2);
+
+    final aiResult = AiState.latestAiResult;
+
+    final aiTriggeredRadar =
+        aiResult != null && AiService.shouldTriggerSmartRadar(aiResult);
+
+    final radarCategory = aiResult != null
+        ? AiService.extractRadarCategory(aiResult)
+        : _activeCategory ?? 'food';
+
+    final aiCoaching = aiResult != null
+        ? AiService.extractCoachingMessage(aiResult)
+        : 'Run Live AI Analysis to get personalised Smart Radar guidance.';
+
+    final aiPrediction = aiResult != null
+        ? AiService.extractPrediction(aiResult)
+        : 'ThinkTwice will recommend nearby savings opportunities when risk is detected.';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
@@ -628,6 +644,70 @@ static String get _userId {
                   fontSize: 14, color: context.colors.mutedForeground)),
 
           const SizedBox(height: 20),
+          WhiteCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.psychology_alt_rounded,
+                      color: context.colors.primary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'AI Smart Radar Trigger',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  aiTriggeredRadar
+                      ? 'AI triggered Radar for ${radarCategory.toUpperCase()} savings.'
+                      : 'Smart Radar is ready for AI-triggered savings.',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  aiPrediction,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: context.colors.mutedForeground,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: context.colors.primary.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    aiCoaching,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
+                      color: context.colors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
 
           // ── Savings card — tap to see breakdown ───────────────────────────
           GestureDetector(
@@ -696,8 +776,8 @@ static String get _userId {
               children: [
                 Row(children: [
                   const Text('Nearby deals',
-                      style: TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700)),
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                   const Spacer(),
                   if (_loadingDeals)
                     const SizedBox(
@@ -712,8 +792,7 @@ static String get _userId {
                 if (_dealsError != null && _apiDeals.isEmpty)
                   Text('Showing offline data',
                       style: TextStyle(
-                          fontSize: 11,
-                          color: context.colors.mutedForeground))
+                          fontSize: 11, color: context.colors.mutedForeground))
                 else
                   ...sortedDeals.take(2).map((deal) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
@@ -852,7 +931,8 @@ static String get _userId {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       alignment: Alignment.center,
-                      child: Icon(Icons.route_rounded, color: context.colors.primary),
+                      child: Icon(Icons.route_rounded,
+                          color: context.colors.primary),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -861,8 +941,7 @@ static String get _userId {
                           children: [
                             Text(selected.title,
                                 style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700)),
+                                    fontSize: 15, fontWeight: FontWeight.w700)),
                             Text(selected.storeName,
                                 style: TextStyle(
                                     fontSize: 12,
@@ -977,8 +1056,8 @@ static String get _userId {
                             SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2)),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2)),
                             SizedBox(width: 10),
                             Text('Optimising your route...'),
                           ],
@@ -990,8 +1069,8 @@ static String get _userId {
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text('Route error: $_routeError',
-                          style: const TextStyle(
-                              color: Colors.red, fontSize: 12)),
+                          style:
+                              const TextStyle(color: Colors.red, fontSize: 12)),
                     ),
 
                   // Route ready banner
@@ -1096,8 +1175,7 @@ static String get _userId {
                         children: [
                           const Text('Savings breakdown',
                               style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700)),
+                                  fontSize: 12, fontWeight: FontWeight.w700)),
                           const SizedBox(height: 8),
                           _savingsRow('Gross savings',
                               _routeResult!.savings.grossSavingRM,
@@ -1106,8 +1184,8 @@ static String get _userId {
                               _routeResult!.savings.travelCostRM,
                               isPositive: false),
                           const Divider(height: 16),
-                          _savingsRow('Net savings',
-                              _routeResult!.savings.netSavingRM,
+                          _savingsRow(
+                              'Net savings', _routeResult!.savings.netSavingRM,
                               isPositive: true, isBold: true),
                           if (!_routeResult!.savings.worthIt)
                             Padding(
@@ -1208,26 +1286,23 @@ static String get _userId {
                               width: 52,
                               height: 52,
                               decoration: BoxDecoration(
-                                color:
-                                    context.colors.warning.withOpacity(0.16),
+                                color: context.colors.warning.withOpacity(0.16),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               clipBehavior: Clip.antiAlias,
-                              child:_buildDealImage(deal),
+                              child: _buildDealImage(deal),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(deal.title,
                                         style: const TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w700)),
                                     const SizedBox(height: 2),
-                                    Text(
-                                        '${deal.storeName} • ${deal.category}',
+                                    Text('${deal.storeName} • ${deal.category}',
                                         style: TextStyle(
                                             fontSize: 12,
                                             color: context
@@ -1266,15 +1341,15 @@ static String get _userId {
                               onTap: () {
                                 setState(() => _selectedDeal = deal);
                                 _mapController?.animateCamera(
-                                    CameraUpdate.newLatLng(LatLng(
-                                        deal.latitude, deal.longitude)));
+                                    CameraUpdate.newLatLng(
+                                        LatLng(deal.latitude, deal.longitude)));
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: context.colors.success
-                                      .withOpacity(0.14),
+                                  color:
+                                      context.colors.success.withOpacity(0.14),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: Text(
@@ -1297,7 +1372,8 @@ static String get _userId {
                                   borderRadius: BorderRadius.circular(14)),
                               foregroundColor: const Color(0xFF41B89B),
                             ),
-                            icon: const Icon(Icons.thumb_up_alt_outlined, size: 16),
+                            icon: const Icon(Icons.thumb_up_alt_outlined,
+                                size: 16),
                             label: Text('${deal.upvotes}'),
                           ),
                         ),
@@ -1311,8 +1387,10 @@ static String get _userId {
                               foregroundColor: Colors.red.shade400,
                               side: BorderSide(color: Colors.red.shade200),
                             ),
-                            icon: const Icon(Icons.thumb_down_alt_outlined, size: 16),
-                            label: Text('${_apiDeals.firstWhere((d) => d.dealId == deal.id, orElse: () => _communityDealToApiDeal(deal)).downvotes}'),
+                            icon: const Icon(Icons.thumb_down_alt_outlined,
+                                size: 16),
+                            label: Text(
+                                '${_apiDeals.firstWhere((d) => d.dealId == deal.id, orElse: () => _communityDealToApiDeal(deal)).downvotes}'),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -1408,8 +1486,7 @@ static String get _userId {
             // Breakdown by type
             if (summary != null && summary.byType.isNotEmpty) ...[
               const Text('Breakdown',
-                  style:
-                      TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
               const SizedBox(height: 10),
               ...summary.byType.entries.map((entry) {
                 final icon = switch (entry.key) {
@@ -1435,8 +1512,8 @@ static String get _userId {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       alignment: Alignment.center,
-                      child: Icon(icon,
-                          color: const Color(0xFF41B89B), size: 18),
+                      child:
+                          Icon(icon, color: const Color(0xFF41B89B), size: 18),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1463,8 +1540,8 @@ static String get _userId {
                         ? 'Loading records...'
                         : 'No savings recorded yet.Start using deals and routes!',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 13, color: Theme.of(ctx).hintColor),
+                    style:
+                        TextStyle(fontSize: 13, color: Theme.of(ctx).hintColor),
                   ),
                 ),
               ),
@@ -1511,11 +1588,10 @@ static String get _userId {
       ),
       const SizedBox(width: 12),
       Expanded(
-        child:
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(store,
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w700)),
+              style:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
           if (items.isNotEmpty)
             Text(items.join(', '),
                 style: TextStyle(
@@ -1541,16 +1617,14 @@ static String get _userId {
         Text(label,
             style: TextStyle(
                 fontSize: 12,
-                fontWeight:
-                    isBold ? FontWeight.w700 : FontWeight.normal)),
+                fontWeight: isBold ? FontWeight.w700 : FontWeight.normal)),
         const Spacer(),
         Text(
           '${isPositive ? '+' : '-'} RM ${_fmt(amount.abs())}',
           style: TextStyle(
             fontSize: 12,
             fontWeight: isBold ? FontWeight.w700 : FontWeight.normal,
-            color:
-                isPositive ? const Color(0xFF41B89B) : Colors.red.shade400,
+            color: isPositive ? const Color(0xFF41B89B) : Colors.red.shade400,
           ),
         ),
       ]),
@@ -1633,8 +1707,7 @@ class _GroceryInputSheetState extends State<_GroceryInputSheet> {
             runSpacing: 4,
             children: ['Rice', 'Eggs', 'Bread', 'Milk', 'Vegetables']
                 .map((item) => ActionChip(
-                      label:
-                          Text(item, style: const TextStyle(fontSize: 12)),
+                      label: Text(item, style: const TextStyle(fontSize: 12)),
                       onPressed: () =>
                           setState(() => _items.add(item.toLowerCase())),
                     ))
@@ -1659,8 +1732,8 @@ class _GroceryInputSheetState extends State<_GroceryInputSheet> {
                     borderRadius: BorderRadius.circular(16),
                     borderSide: const BorderSide(color: Color(0xFFE3ECE6)),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 ),
                 onSubmitted: (_) => _addItem(),
               ),
@@ -1689,8 +1762,7 @@ class _GroceryInputSheetState extends State<_GroceryInputSheet> {
               runSpacing: 6,
               children: _items
                   .map((item) => Chip(
-                        label:
-                            Text(item, style: const TextStyle(fontSize: 12)),
+                        label: Text(item, style: const TextStyle(fontSize: 12)),
                         deleteIcon: const Icon(Icons.close, size: 14),
                         onDeleted: () => setState(() => _items.remove(item)),
                       ))
@@ -1702,8 +1774,9 @@ class _GroceryInputSheetState extends State<_GroceryInputSheet> {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed:
-                  _items.isEmpty ? null : () => Navigator.of(context).pop(_items),
+              onPressed: _items.isEmpty
+                  ? null
+                  : () => Navigator.of(context).pop(_items),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF41B89B),
                 minimumSize: const Size.fromHeight(48),
@@ -1760,8 +1833,7 @@ class _PostDealSheetState extends State<PostDealSheet> {
   final _titleController = TextEditingController();
   final _storeController = TextEditingController();
   final _priceController = TextEditingController();
-  final _addressController =
-      TextEditingController(text: 'Current location');
+  final _addressController = TextEditingController(text: 'Current location');
   final _descriptionController = TextEditingController();
   String _selectedCategory = 'food';
   DateTime _expiryDate = DateTime.now().add(const Duration(days: 7));
@@ -1780,8 +1852,8 @@ class _PostDealSheetState extends State<PostDealSheet> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final image = await picker.pickImage(
-        source: ImageSource.gallery, imageQuality: 70);
+    final image =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (image == null) return;
     final bytes = await image.readAsBytes();
     if (!mounted) return;
@@ -1823,8 +1895,7 @@ class _PostDealSheetState extends State<PostDealSheet> {
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: ListView(
             controller: controller,
@@ -1840,11 +1911,9 @@ class _PostDealSheetState extends State<PostDealSheet> {
               ),
               const SizedBox(height: 14),
               const Text('Post Community Deal',
-                  style:
-                      TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
-              Text(
-                  'Help others save nearby and earn points for the community.',
+              Text('Help others save nearby and earn points for the community.',
                   style: TextStyle(
                       fontSize: 12, color: Theme.of(context).hintColor)),
               const SizedBox(height: 16),
@@ -1860,18 +1929,14 @@ class _PostDealSheetState extends State<PostDealSheet> {
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide:
-                          const BorderSide(color: Color(0xFFE3ECE6))),
+                      borderSide: const BorderSide(color: Color(0xFFE3ECE6))),
                   enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide:
-                          const BorderSide(color: Color(0xFFE3ECE6))),
+                      borderSide: const BorderSide(color: Color(0xFFE3ECE6))),
                 ),
                 items: const [
-                  DropdownMenuItem(
-                      value: 'food', child: Text('Food & drinks')),
-                  DropdownMenuItem(
-                      value: 'grocery', child: Text('Grocery')),
+                  DropdownMenuItem(value: 'food', child: Text('Food & drinks')),
+                  DropdownMenuItem(value: 'grocery', child: Text('Grocery')),
                   DropdownMenuItem(
                       value: 'transport', child: Text('Transport')),
                 ],
@@ -1897,8 +1962,7 @@ class _PostDealSheetState extends State<PostDealSheet> {
                   final picked = await showDatePicker(
                     context: context,
                     firstDate: DateTime.now(),
-                    lastDate:
-                        DateTime.now().add(const Duration(days: 60)),
+                    lastDate: DateTime.now().add(const Duration(days: 60)),
                     initialDate: _expiryDate,
                   );
                   if (picked != null) setState(() => _expiryDate = picked);
@@ -1927,9 +1991,8 @@ class _PostDealSheetState extends State<PostDealSheet> {
                       borderRadius: BorderRadius.circular(16)),
                 ),
                 icon: const Icon(Icons.image_outlined),
-                label: Text(_imageBytes == null
-                    ? 'Upload image'
-                    : 'Image selected ✓'),
+                label: Text(
+                    _imageBytes == null ? 'Upload image' : 'Image selected ✓'),
               ),
               if (_imageBytes != null) ...[
                 const SizedBox(height: 10),

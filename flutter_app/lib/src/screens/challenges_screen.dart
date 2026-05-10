@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../core/app_theme.dart';
 import '../core/models.dart';
 import '../widgets/shared.dart';
+import '../services/ai_service.dart';
+import '../services/ai_state.dart';
 
 class ChallengesPage extends StatefulWidget {
   const ChallengesPage({
@@ -42,7 +44,8 @@ class _ChallengesPageState extends State<ChallengesPage> {
 
     if (!quest.isCompleted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Complete the challenge first to claim this reward')),
+        const SnackBar(
+            content: Text('Complete the challenge first to claim this reward')),
       );
       return;
     }
@@ -52,9 +55,34 @@ class _ChallengesPageState extends State<ChallengesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final aiResult = AiState.latestAiResult;
+
+    final resilienceScore =
+        aiResult != null ? AiService.extractResilienceScore(aiResult) : 50;
+
+    final smartDecisionScore =
+        aiResult != null ? AiService.extractSmartDecisionScore(aiResult) : 50;
+
+    final riskLevel =
+        aiResult != null ? AiService.extractRiskLevel(aiResult) : 'low';
+
+    final coachingMessage = aiResult != null
+        ? AiService.extractCoachingMessage(aiResult)
+        : 'Complete challenges to improve your resilience.';
+
+    final aiExplanations =
+        aiResult != null ? AiService.extractInsightTexts(aiResult) : <String>[];
+
     final squad = [
       (1, 'Mira', 1240, 'british_shorthair', 'glasses', 'glow_outline'),
-      (2, 'You', widget.totalPoints, widget.breed, widget.accessory, widget.effect),
+      (
+        2,
+        'You',
+        widget.totalPoints + smartDecisionScore,
+        widget.breed,
+        widget.accessory,
+        widget.effect
+      ),
       (3, 'Hafiz', 980, 'orange_tabby', 'headphones', 'sparkle_aura'),
       (4, 'Lina', 760, 'calico', 'flower', 'floating_hearts'),
     ];
@@ -70,9 +98,11 @@ class _ChallengesPageState extends State<ChallengesPage> {
         isCompleted: false,
       ),
     );
-    final currentSaveStreak = '${streakQuest.progressLabel.split('/').first} days';
-    final level = 1 + (widget.totalPoints ~/ 300);
-    final pointsIntoLevel = widget.totalPoints % 300;
+    final currentSaveStreak =
+        '${streakQuest.progressLabel.split('/').first} days';
+    final totalLivePoints = widget.totalPoints + smartDecisionScore;
+    final level = 1 + (totalLivePoints ~/ 300);
+    final pointsIntoLevel = totalLivePoints % 300;
     final pointsToNextLevel = 300 - pointsIntoLevel;
     final levelProgress = (pointsIntoLevel / 300).clamp(0.0, 1.0);
 
@@ -81,9 +111,12 @@ class _ChallengesPageState extends State<ChallengesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Challenges', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
+          const Text('Challenges',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text('Streaks, collectibles, squad ranks, and breed unlocks', style: TextStyle(fontSize: 14, color: context.colors.mutedForeground)),
+          Text('Streaks, collectibles, squad ranks, and breed unlocks',
+              style: TextStyle(
+                  fontSize: 14, color: context.colors.mutedForeground)),
           const SizedBox(height: 16),
           Center(
             child: avatarPreview(
@@ -91,7 +124,9 @@ class _ChallengesPageState extends State<ChallengesPage> {
               breed: widget.breed,
               accessory: widget.accessory,
               effect: widget.effect,
-              mood: currentSaveStreak == '7 days' ? AvatarMood.excited : avatarMoodFromId(widget.expression),
+              mood: currentSaveStreak == '7 days'
+                  ? AvatarMood.excited
+                  : avatarMoodFromId(widget.expression),
               size: 120,
             ),
           ),
@@ -105,10 +140,20 @@ class _ChallengesPageState extends State<ChallengesPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.local_fire_department_rounded, color: Colors.white, size: 24),
+                      const Icon(Icons.local_fire_department_rounded,
+                          color: Colors.white, size: 24),
                       const SizedBox(height: 8),
-                      Text(currentSaveStreak, style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.6)),
-                      Text('Current Save Streak', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.92))),
+                      Text(currentSaveStreak,
+                          style: const TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: -0.6)),
+                      Text('Current Save Streak',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white.withOpacity(0.92))),
                     ],
                   ),
                 ),
@@ -120,10 +165,20 @@ class _ChallengesPageState extends State<ChallengesPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 24),
+                      const Icon(Icons.auto_awesome_rounded,
+                          color: Colors.white, size: 24),
                       const SizedBox(height: 8),
-                      Text('${widget.totalPoints}', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.6)),
-                      Text('Current points', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.92))),
+                      Text('${widget.totalPoints + smartDecisionScore}',
+                          style: const TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: -0.6)),
+                      Text('Current points',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white.withOpacity(0.92))),
                     ],
                   ),
                 ),
@@ -136,21 +191,111 @@ class _ChallengesPageState extends State<ChallengesPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Streaks', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                const Text('Streaks',
+                    style:
+                        TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: progressStat(context, 'Risk avoidance', currentSaveStreak)),
+                    Expanded(
+                        child: progressStat(
+                            context, 'Risk avoidance', currentSaveStreak)),
                     const SizedBox(width: 10),
-                    Expanded(child: progressStat(context, 'Smart spending', '5 days')),
+                    Expanded(
+                      child: progressStat(
+                        context,
+                        'AI resilience',
+                        '$resilienceScore%',
+                      ),
+                    ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                GradientCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.psychology_alt_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Live AI Challenge Status',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Risk Level: ${riskLevel.toUpperCase()}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        coachingMessage,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.white,
+                          height: 1.4,
+                        ),
+                      ),
+                      if (aiExplanations.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        ...aiExplanations.take(3).map(
+                              (e) => Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      '• ',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        e,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                      ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    const Text('Level progress', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                    const Text('Level progress',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w700)),
                     const Spacer(),
-                    Text('Level $level', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.primary)),
+                    Text('Level $level',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: context.colors.primary)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -160,11 +305,14 @@ class _ChallengesPageState extends State<ChallengesPage> {
                     value: levelProgress,
                     minHeight: 10,
                     backgroundColor: context.colors.muted,
-                    valueColor: AlwaysStoppedAnimation<Color>(context.colors.primary),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(context.colors.primary),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text('$pointsToNextLevel pts to the next level', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
+                Text('$pointsToNextLevel pts to the next level',
+                    style: TextStyle(
+                        fontSize: 12, color: context.colors.mutedForeground)),
               ],
             ),
           ),
@@ -194,29 +342,55 @@ class _ChallengesPageState extends State<ChallengesPage> {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
-                                          if (quest.isCompleted) Icon(Icons.check_circle_rounded, size: 16, color: context.colors.success),
-                                          if (quest.isCompleted) const SizedBox(width: 6),
-                                          Expanded(child: Text(quest.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
+                                          if (quest.isCompleted)
+                                            Icon(Icons.check_circle_rounded,
+                                                size: 16,
+                                                color: context.colors.success),
+                                          if (quest.isCompleted)
+                                            const SizedBox(width: 6),
+                                          Expanded(
+                                              child: Text(quest.title,
+                                                  style: const TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w600))),
                                         ],
                                       ),
                                       const SizedBox(height: 4),
-                                      Text(quest.progressLabel, style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
+                                      Text(quest.progressLabel,
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: context
+                                                  .colors.mutedForeground)),
                                     ],
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: quest.isClaimed ? context.colors.success.withOpacity(0.18) : context.colors.accent.withOpacity(0.3),
+                                    color: quest.isClaimed
+                                        ? context.colors.success
+                                            .withOpacity(0.18)
+                                        : context.colors.accent
+                                            .withOpacity(0.3),
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                   child: Text(
-                                    quest.isClaimed ? 'Claimed' : quest.rewardLabel,
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: quest.isClaimed ? context.colors.success : context.colors.accentForeground),
+                                    quest.isClaimed
+                                        ? 'Claimed'
+                                        : quest.rewardLabel,
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: quest.isClaimed
+                                            ? context.colors.success
+                                            : context.colors.accentForeground),
                                   ),
                                 ),
                               ],
@@ -228,18 +402,25 @@ class _ChallengesPageState extends State<ChallengesPage> {
                                 value: quest.progress,
                                 minHeight: 7,
                                 backgroundColor: context.colors.muted,
-                                valueColor: AlwaysStoppedAnimation<Color>(context.colors.primary),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    context.colors.primary),
                               ),
                             ),
                             const SizedBox(height: 14),
                             QuestRewardButton(
                               label: quest.isClaimed
                                   ? 'Reward Claimed'
-                                  : (canClaim ? 'Claim Your Reward' : 'Unlock Reward'),
-                              icon: quest.isClaimed ? Icons.check_circle_rounded : Icons.card_giftcard_rounded,
+                                  : (canClaim
+                                      ? 'Claim Your Reward'
+                                      : 'Unlock Reward'),
+                              icon: quest.isClaimed
+                                  ? Icons.check_circle_rounded
+                                  : Icons.card_giftcard_rounded,
                               isClaimable: canClaim,
                               isClaimed: quest.isClaimed,
-                              onPressed: quest.isClaimed ? null : () => _handleRewardTap(quest),
+                              onPressed: quest.isClaimed
+                                  ? null
+                                  : () => _handleRewardTap(quest),
                             ),
                           ],
                         );
@@ -255,19 +436,25 @@ class _ChallengesPageState extends State<ChallengesPage> {
                 children: [
                   Row(
                     children: [
-                      const Text('Reward Shop', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      const Text('Reward Shop',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700)),
                       const Spacer(),
                       PointsChip(totalPoints: widget.totalPoints),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text('Redeem points for accessories, breed unlocks, and soft avatar effects.', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
+                  Text(
+                      'Redeem points for accessories, breed unlocks, and soft avatar effects.',
+                      style: TextStyle(
+                          fontSize: 12, color: context.colors.mutedForeground)),
                   const SizedBox(height: 14),
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: widget.rewardShopItems.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
@@ -279,9 +466,12 @@ class _ChallengesPageState extends State<ChallengesPage> {
                         context,
                         item,
                         totalPoints: widget.totalPoints,
-                        isEquipped: (item.category == 'breeds' && item.value == widget.breed) ||
-                            (item.category == 'accessories' && item.value == widget.accessory) ||
-                            (item.category == 'effects' && item.value == widget.effect),
+                        isEquipped: (item.category == 'breeds' &&
+                                item.value == widget.breed) ||
+                            (item.category == 'accessories' &&
+                                item.value == widget.accessory) ||
+                            (item.category == 'effects' &&
+                                item.value == widget.effect),
                         onRedeem: () => widget.onRedeemItem(item.id),
                       );
                     },
@@ -308,11 +498,20 @@ class _ChallengesPageState extends State<ChallengesPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Avatar loadout', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                      const Text('Avatar loadout',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 4),
-                      Text('${catBreedLabel(widget.breed)} · ${formatAccessoryLabel(widget.accessory)}', style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
+                      Text(
+                          '${catBreedLabel(widget.breed)} · ${formatAccessoryLabel(widget.accessory)}',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: context.colors.mutedForeground)),
                       const SizedBox(height: 2),
-                      Text(formatEffectLabel(widget.effect), style: TextStyle(fontSize: 12, color: context.colors.mutedForeground)),
+                      Text(formatEffectLabel(widget.effect),
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: context.colors.mutedForeground)),
                     ],
                   ),
                 ),
@@ -327,9 +526,12 @@ class _ChallengesPageState extends State<ChallengesPage> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.group_rounded, size: 16, color: context.colors.primary),
+                    Icon(Icons.group_rounded,
+                        size: 16, color: context.colors.primary),
                     const SizedBox(width: 8),
-                    const Text('Squad leaderboard', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                    const Text('Squad leaderboard',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w700)),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -338,25 +540,48 @@ class _ChallengesPageState extends State<ChallengesPage> {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: you ? context.colors.primary.withOpacity(0.1) : Colors.transparent, borderRadius: BorderRadius.circular(16)),
+                    decoration: BoxDecoration(
+                        color: you
+                            ? context.colors.primary.withOpacity(0.1)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(16)),
                     child: Row(
                       children: [
                         Container(
                           width: 32,
                           height: 32,
-                          decoration: BoxDecoration(color: context.colors.muted, shape: BoxShape.circle),
+                          decoration: BoxDecoration(
+                              color: context.colors.muted,
+                              shape: BoxShape.circle),
                           alignment: Alignment.center,
-                          child: Text('${item.$1}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                          child: Text('${item.$1}',
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w700)),
                         ),
                         const SizedBox(width: 10),
-                        avatarPreview(context, breed: item.$4, accessory: item.$5, effect: item.$6, mood: you ? AvatarMood.proud : AvatarMood.happy, size: 44, showBackground: false),
+                        avatarPreview(context,
+                            breed: item.$4,
+                            accessory: item.$5,
+                            effect: item.$6,
+                            mood: you ? AvatarMood.proud : AvatarMood.happy,
+                            size: 44,
+                            showBackground: false),
                         const SizedBox(width: 10),
-                        Expanded(child: Text(item.$2, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
+                        Expanded(
+                            child: Text(item.$2,
+                                style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600))),
                         Row(
                           children: [
-                            Icon(Icons.emoji_events_rounded, size: 14, color: context.colors.primary),
+                            Icon(Icons.emoji_events_rounded,
+                                size: 14, color: context.colors.primary),
                             const SizedBox(width: 4),
-                            Text('${item.$3}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.colors.primary)),
+                            Text('${item.$3}',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.colors.primary)),
                           ],
                         ),
                       ],
@@ -369,7 +594,10 @@ class _ChallengesPageState extends State<ChallengesPage> {
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: widget.onCustomizeAvatar,
-            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+            style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16))),
             child: const Text('Open avatar creator'),
           ),
         ],
@@ -385,12 +613,23 @@ class _ChallengesPageState extends State<ChallengesPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: active ? context.colors.primary.withOpacity(0.12) : context.colors.card,
+          color: active
+              ? context.colors.primary.withOpacity(0.12)
+              : context.colors.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: active ? context.colors.primary : Theme.of(context).dividerColor),
+          border: Border.all(
+              color: active
+                  ? context.colors.primary
+                  : Theme.of(context).dividerColor),
         ),
         alignment: Alignment.center,
-        child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: active ? context.colors.primary : context.colors.foreground)),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: active
+                    ? context.colors.primary
+                    : context.colors.foreground)),
       ),
     );
   }
@@ -418,41 +657,88 @@ class _ChallengesPageState extends State<ChallengesPage> {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: palette.$1.withOpacity(0.12), borderRadius: BorderRadius.circular(999)),
-                child: Text(formatRarityLabel(item.rarity), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: palette.$2)),
+                decoration: BoxDecoration(
+                    color: palette.$1.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(999)),
+                child: Text(formatRarityLabel(item.rarity),
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: palette.$2)),
               ),
               if (isEquipped)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: context.colors.success.withOpacity(0.14), borderRadius: BorderRadius.circular(999)),
-                  child: Text('Equipped', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: context.colors.success)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: context.colors.success.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(999)),
+                  child: Text('Equipped',
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: context.colors.success)),
                 )
               else if (owned)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: context.colors.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(999)),
-                  child: Text('Owned', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: context.colors.primary)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: context.colors.primary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(999)),
+                  child: Text('Owned',
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: context.colors.primary)),
                 ),
             ],
           ),
           const SizedBox(height: 10),
-          Center(child: RewardItemPreview(item: item, breed: widget.breed, equipped: isEquipped, locked: !owned, size: 96)),
+          Center(
+              child: RewardItemPreview(
+                  item: item,
+                  breed: widget.breed,
+                  equipped: isEquipped,
+                  locked: !owned,
+                  size: 96)),
           const SizedBox(height: 10),
-          Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, height: 1.2)),
+          Text(item.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w800, height: 1.2)),
           const SizedBox(height: 3),
-          Text(formatShopCategory(item.category), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.mutedForeground)),
+          Text(formatShopCategory(item.category),
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: context.colors.mutedForeground)),
           const Spacer(),
-          Text(owned ? (isEquipped ? 'Currently active' : 'Unlocked collectible') : '${item.price} pts', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: owned ? context.colors.success : context.colors.primary)),
+          Text(
+              owned
+                  ? (isEquipped ? 'Currently active' : 'Unlocked collectible')
+                  : '${item.price} pts',
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color:
+                      owned ? context.colors.success : context.colors.primary)),
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
             child: FilledButton.tonal(
               onPressed: owned ? null : (canAfford ? onRedeem : null),
               style: FilledButton.styleFrom(
-                backgroundColor: owned ? context.colors.muted : palette.$1.withOpacity(canAfford ? 0.16 : 0.08),
-                foregroundColor: owned ? context.colors.mutedForeground : palette.$2,
+                backgroundColor: owned
+                    ? context.colors.muted
+                    : palette.$1.withOpacity(canAfford ? 0.16 : 0.08),
+                foregroundColor:
+                    owned ? context.colors.mutedForeground : palette.$2,
               ),
-              child: Text(owned ? (isEquipped ? 'Equipped' : 'Owned') : (canAfford ? 'Unlock' : 'Locked')),
+              child: Text(owned
+                  ? (isEquipped ? 'Equipped' : 'Owned')
+                  : (canAfford ? 'Unlock' : 'Locked')),
             ),
           ),
         ],

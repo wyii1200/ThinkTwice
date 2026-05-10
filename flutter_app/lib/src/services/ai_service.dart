@@ -23,24 +23,36 @@ class AiService {
   static Future<Map<String, dynamic>> analyzeRisk() async {
     final url = Uri.parse('$baseUrl/analyze-risk');
 
-    final body = {
+    final body = highRiskDemoPayload();
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+
+      throw Exception(
+        'AI request failed with status ${response.statusCode}: ${response.body}',
+      );
+    } catch (e) {
+      throw Exception(
+        'Unable to connect to AI service at $baseUrl. Error: $e',
+      );
+    }
+  }
+
+  static Map<String, dynamic> highRiskDemoPayload() {
+    return {
       "user_id": "user_high_001",
-      "daily_budget": 50,
-      "current_daily_spending": 80,
+      "daily_budget": 100,
+      "current_daily_spending": 20,
       "savings_goal": 300,
       "transactions": [
-        {
-          "amount": 20,
-          "category": "food",
-          "time": "23:10",
-          "location": "Mid Valley"
-        },
-        {
-          "amount": 15,
-          "category": "food",
-          "time": "22:45",
-          "location": "Mid Valley"
-        },
         {
           "amount": 15,
           "category": "food",
@@ -66,25 +78,59 @@ class AiService {
         "interactionSource": "demo_button"
       }
     };
+  }
 
-    try {
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(body),
-      );
+  static List<String> extractInsightTexts(Map<String, dynamic> aiResult) {
+    final explanation = aiResult['aiExplanation'];
 
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
-      }
-
-      throw Exception(
-        'AI request failed with status ${response.statusCode}: ${response.body}',
-      );
-    } catch (e) {
-      throw Exception(
-        'Unable to connect to AI service at $baseUrl. Error: $e',
-      );
+    if (explanation is List) {
+      return explanation.map((item) => item.toString()).toList();
     }
+
+    return [];
+  }
+
+  static String extractRiskLevel(Map<String, dynamic> aiResult) {
+    return aiResult['riskAnalysis']?['riskLevel']?.toString() ?? 'low';
+  }
+
+  static String extractPrediction(Map<String, dynamic> aiResult) {
+    return aiResult['spendingVelocityAnalysis']?['overspendingPrediction']
+                ?['prediction']
+            ?.toString() ??
+        'AI is monitoring your spending behaviour.';
+  }
+
+  static String extractDashboardInsight(Map<String, dynamic> aiResult) {
+    return aiResult['intervention']?['dashboardInsight']?.toString() ??
+        aiResult['llmCoaching']?['dashboardInsight']?.toString() ??
+        'ThinkTwice is analysing your financial habits.';
+  }
+
+  static String extractCoachingMessage(Map<String, dynamic> aiResult) {
+    return aiResult['intervention']?['llmEnhancedNudge']?.toString() ??
+        aiResult['llmCoaching']?['coachingMessage']?.toString() ??
+        aiResult['intervention']?['nudge']?.toString() ??
+        'Keep tracking your spending habits.';
+  }
+
+  static int extractResilienceScore(Map<String, dynamic> aiResult) {
+    return aiResult['scoreAnalysis']?['resilienceScore'] ?? 50;
+  }
+
+  static int extractSmartDecisionScore(Map<String, dynamic> aiResult) {
+    return aiResult['scoreAnalysis']?['smartDecisionScore'] ?? 50;
+  }
+
+  static bool shouldTriggerSmartRadar(Map<String, dynamic> aiResult) {
+    return aiResult['integrationPayload']?['smartRadar']
+            ?['triggerSmartRadar'] ==
+        true;
+  }
+
+  static String extractRadarCategory(Map<String, dynamic> aiResult) {
+    return aiResult['integrationPayload']?['smartRadar']?['radarCategory']
+            ?.toString() ??
+        '';
   }
 }

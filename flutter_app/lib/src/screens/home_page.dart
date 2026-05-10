@@ -6,6 +6,7 @@ import '../widgets/shared.dart';
 import '../services/backend_api_service.dart';
 import '../services/ai_service.dart';
 import '../widgets/ai_analysis_card.dart';
+import '../services/ai_state.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -81,6 +82,7 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         aiResult = result;
+        AiState.latestAiResult = result;
         demoResilienceScore = result['scoreAnalysis']['resilienceScore'];
         demoSmartDecisionScore = result['scoreAnalysis']['smartDecisionScore'];
         isLoadingAi = false;
@@ -759,7 +761,7 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Live AI Demo',
+                        'Live AI Behaviour Check',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -767,7 +769,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Simulate a late-night food transaction and let ThinkTwice analyse the risk.',
+                        'Run a real-time AI check to detect spending risk and recommend the next best action.',
                         style: TextStyle(
                           fontSize: 12,
                           color: context.colors.mutedForeground,
@@ -786,8 +788,8 @@ class _HomePageState extends State<HomePage> {
                           ),
                           label: Text(
                             isLoadingAi
-                                ? 'AI analysing...'
-                                : 'Simulate RM80 Food Spending',
+                                ? 'AI analysing your behaviour...'
+                                : 'Run Live AI Analysis',
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: context.colors.primary,
@@ -1058,7 +1060,15 @@ class _HomePageState extends State<HomePage> {
                           'glasses',
                           'glow_outline'
                         ),
-                        (2, 'You', totalPoints, true, breed, accessory, effect),
+                        (
+                          2,
+                          'You',
+                          totalPoints + smartDecisionScore,
+                          true,
+                          breed,
+                          accessory,
+                          effect
+                        ),
                         (
                           3,
                           'Hafiz',
