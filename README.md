@@ -35,7 +35,6 @@
 - [How to Run](#-how-to-run-thinktwice)
 - [Project Structure](#-project-structure)
 - [Demo Scenario](#-demo-scenario)
-- [Presentation & Video](#-presentation--video)
 - [Team Distribution](#-team-distribution)
 - [Future Scalability](#-future-scalability)
 - [Final Positioning](#-final-positioning)
@@ -115,55 +114,17 @@ Contains:
 
 # 📊 Presentation Slide Deck
 
-### Pitch Presentation
-
 ```text
 [ Add Presentation Slide Link Here ]
 ```
-
-The presentation deck covers:
-
-- problem statement,
-- behavioural economics strategy,
-- AI architecture,
-- technical workflow,
-- prototype walkthrough,
-- scalability potential,
-- and real-world impact.
 
 ---
 
 # 🎥 Demo Video
 
-### Prototype Demonstration
-
 ```text
 [ Add Demo Video Link Here ]
 ```
-
-The demo video demonstrates:
-
-✅ real-time transaction ingestion  
-✅ AI overspending prediction  
-✅ behavioural nudges  
-✅ Smart Savings Radar  
-✅ auto-save intervention  
-✅ resilience score updates  
-✅ gamification workflow  
-✅ multi-agent AI orchestration
-
----
-
-# 📄 Additional Deliverables
-
-| Deliverable | Description |
-|---|---|
-| README Documentation | Full technical & architectural overview |
-| Use Case Diagram | Functional interaction modelling |
-| Architecture Flow Diagram | System orchestration & infrastructure |
-| Prototype Demo | Functional AI-powered financial resilience system |
-| Pitch Deck | Business & technical presentation |
-| Demo Video | End-to-end live demonstration |
 
 ---
 
@@ -889,36 +850,6 @@ Nudge Agent generates personalized recommendation
 Savings Streak Maintained
 Leaderboard Updated
 ```
-
----
-
-# 🎤 Presentation & Video
-
-# 📊 Presentation Slide
-
-The pitch deck includes:
-
-- problem analysis,
-- behavioural economics approach,
-- AI architecture,
-- system workflow,
-- prototype walkthrough,
-- scalability potential,
-- and real-world impact.
-
----
-
-# 🎥 Demo Video
-
-The demo video demonstrates:
-
-✅ real-time transaction processing  
-✅ AI overspending detection  
-✅ Smart Radar recommendations  
-✅ auto-save interventions  
-✅ resilience score updates  
-✅ gamification system  
-✅ AI orchestration pipeline
 
 ---
 
