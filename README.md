@@ -755,10 +755,11 @@ Leaderboard Updated
 
 | Team Member | Role | Core Responsibility |
 |---|---|---|
-| Fangyee | Backend & Orchestration Lead | Real-time transaction pipeline |
-| Cheeling | AI Agentic Intelligence Lead | Behavioural AI & intervention logic |
-| Enxi | Frontend & Gamification Lead | Dashboard & user experience |
-| Weiyi | Smart Features & Innovation Lead | Smart Radar & community deal ecosystem |
+| [Fangyee](https://github.com/wongfangyee) | Backend & Orchestration Lead | Real-time transaction pipeline |
+| [Cheeling](https://github.com/CL26005) | AI Agentic Intelligence Lead | Behavioural AI & intervention logic |
+| [Enxi](https://github.com/enxxxi) | Frontend & Gamification Lead | Dashboard & user experience |
+| [Weiyi](https://github.com/wyii1200) | Smart Features & Innovation Lead | Smart Radar & community deal ecosystem |
+
 
 ---
 
