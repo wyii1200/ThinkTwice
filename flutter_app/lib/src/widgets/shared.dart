@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/cat_head_avatar.dart';
 import '../core/app_theme.dart';
 import '../core/models.dart';
+import '../services/backend_api_service.dart';
 
 export '../../widgets/cat_head_avatar.dart'
     show AvatarMood, avatarMoodFromId, avatarMoodId, catBreedConfigs, catBreedLabel, moodLabel;
@@ -287,26 +288,38 @@ Widget avatarMoodBadge(BuildContext context, AvatarMood mood) {
 }
 
 class AIInterventionModal extends StatelessWidget {
+  final AiNudge? nudge;
+  final VoidCallback onSaveNow;
+  final VoidCallback onFindAlternative;
+  final VoidCallback onIgnore;
+
   const AIInterventionModal({
     super.key,
+    this.nudge,
     required this.onSaveNow,
     required this.onFindAlternative,
     required this.onIgnore,
   });
 
-  final VoidCallback onSaveNow;
-  final VoidCallback onFindAlternative;
-  final VoidCallback onIgnore;
-
   @override
   Widget build(BuildContext context) {
+    // Determine the save amount from nudge or fallback
+    final saveAmount = nudge?.saveAmount ?? 8.0;
+    final saveText = 'Save RM${saveAmount.toStringAsFixed(0)}';
+    
+    // Determine the main message
+    final mainMessage = nudge?.nudgeText ?? 'Your cat noticed a spend spiral starting.';
+        
+    // Determine the action message
+    final nudgeText = nudge?.suggestedAction ?? 
+        'Move RM${saveAmount.toStringAsFixed(0)} into savings now to protect your streak, calm the avatar, and stay under today\'s safe limit.';
     return Material(
       color: Colors.black.withOpacity(0.5),
       child: SafeArea(
         child: Align(
           alignment: Alignment.bottomCenter,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16.0),
             child: Container(
               constraints: const BoxConstraints(maxWidth: 430),
               padding: const EdgeInsets.all(20),
@@ -314,14 +327,21 @@ class AIInterventionModal extends StatelessWidget {
                 color: context.colors.card,
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 32, offset: const Offset(0, 18)),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
                 ],
+                border: Border.all(
+                  color: context.colors.accent.withOpacity(0.2),
+                  width: 1,
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       WalletGuardianPreview(
                         breed: 'siamese',
@@ -330,86 +350,101 @@ class AIInterventionModal extends StatelessWidget {
                         mood: AvatarMood.sad,
                         size: 68,
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Cat Companion', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: context.colors.accentForeground)),
-                            const SizedBox(height: 2),
-                            const Text('Gentle Money Nudge', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                            Text(
+                              'GENTLE MONEY NUDGE',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.2,
+                                color: context.colors.accent,
+                              ),
+                            ),
                             const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(Icons.favorite_rounded, size: 14, color: context.colors.warning),
-                                const SizedBox(width: 5),
-                                Text('Emotion-aware intervention', style: TextStyle(fontSize: 11, color: context.colors.mutedForeground)),
-                              ],
+                            Text(
+                              'Smart Radar Detected Risk',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: context.colors.foreground,
+                              ),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
                         onPressed: onIgnore,
-                        icon: const Icon(Icons.close_rounded),
-                        color: const Color(0xFF6B847E),
+                        icon: Icon(Icons.close, color: context.colors.foreground.withOpacity(0.5)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: context.colors.accent.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: context.colors.accent.withOpacity(0.1),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          mainMessage,
+                          style: const TextStyle(fontSize: 14, height: 1.45, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          nudgeText,
+                          style: TextStyle(fontSize: 13, height: 1.45, color: context.colors.foreground.withOpacity(0.8)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GradientButton(
+                          text: saveText,
+                          icon: Icons.savings_outlined,
+                          onPressed: onSaveNow,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: onFindAlternative,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            side: BorderSide(color: context.colors.accent.withOpacity(0.5)),
+                          ),
+                          child: Text(
+                            'Find Alternatives',
+                            style: TextStyle(color: context.colors.accent, fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      gradient: context.colors.softMintGradient,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Your cat noticed a spend spiral starting.',
-                          style: TextStyle(fontSize: 14, height: 1.45),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Move RM8 into savings now to protect your streak, calm the avatar, and stay under today\'s safe limit.',
-                          style: TextStyle(fontSize: 13, height: 1.45),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  GradientButton(
-                    text: 'Save RM8',
-                    icon: Icons.savings_outlined,
-                    onPressed: onSaveNow,
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton(
-                    onPressed: onFindAlternative,
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(44),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      side: BorderSide(color: context.colors.primary, width: 2),
-                      foregroundColor: context.colors.primary,
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('Find cheaper alternatives', style: TextStyle(fontWeight: FontWeight.w700)),
-                        SizedBox(width: 6),
-                        Icon(Icons.arrow_forward_rounded, size: 16),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
                   TextButton(
                     onPressed: onIgnore,
-                    style: TextButton.styleFrom(
-                      foregroundColor: context.colors.mutedForeground,
+                    child: Text(
+                      'I\'ll take the risk, thanks',
+                      style: TextStyle(
+                        color: context.colors.foreground.withOpacity(0.5),
+                        fontSize: 13,
+                      ),
                     ),
-                    child: Text('Ignore', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.mutedForeground)),
                   ),
                 ],
               ),

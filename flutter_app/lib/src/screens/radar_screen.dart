@@ -1,4 +1,4 @@
-﻿import 'dart:typed_data';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -61,6 +61,7 @@ class _RadarPageState extends State<RadarPage> {
   // Run `ipconfig` in PowerShell → IPv4 Address under WiFi adapter
   // e.g. 'http://192.168.1.105:4000'
   // Emulator: 'http://10.0.2.2:4000'  |  Web/desktop: 'http://localhost:4000'
+  // Deployed: 'https://thinktwice-zu5d.onrender.com/'
 
   static String get _userId {
     final user = FirebaseAuth.instance.currentUser;

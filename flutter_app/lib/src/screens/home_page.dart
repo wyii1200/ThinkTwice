@@ -23,6 +23,7 @@ class HomePage extends StatefulWidget {
     required this.accessory,
     required this.effect,
     required this.showAlert,
+    this.latestNudge,
     required this.onSaveAlert,
     required this.onOpenAlternatives,
     required this.onDismissAlert,
@@ -49,6 +50,7 @@ class HomePage extends StatefulWidget {
   final String accessory;
   final String effect;
   final bool showAlert;
+  final AiNudge? latestNudge;
   final VoidCallback onSaveAlert;
   final VoidCallback onOpenAlternatives;
   final VoidCallback onDismissAlert;
@@ -115,18 +117,25 @@ class _HomePageState extends State<HomePage> {
               ?.toString() ??
           'spending';
 
-      if (triggerSmartRadar && mounted) {
+      if (triggerSmartRadar && mounted && !widget.showAlert) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            duration: const Duration(seconds: 3),
-            content: Text(
-              'Smart Radar activated for $radarCategory spending. Opening Radar...',
+            content: Row(
+              children: [
+                const Icon(Icons.radar, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text(fullAiResult['integrationPayload']?['smartRadar']?['radarMessage'] ?? 'Smart Radar activated!')),
+              ],
             ),
+            backgroundColor: context.colors.accent,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
           ),
         );
 
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
+        // Only auto-navigate if the intervention modal isn't showing
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted && !widget.showAlert) {
             widget.onNavigate(1);
           }
         });
@@ -1161,6 +1170,7 @@ class _HomePageState extends State<HomePage> {
         if (showAlert)
           Positioned.fill(
             child: AIInterventionModal(
+              nudge: widget.latestNudge,
               onSaveNow: onSaveAlert,
               onFindAlternative: onOpenAlternatives,
               onIgnore: onDismissAlert,
