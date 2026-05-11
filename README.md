@@ -97,9 +97,7 @@ ThinkTwice includes a complete set of technical, presentation, and demonstration
 
 ### Main Repository
 
-```text
-[ Add GitHub Repository Link Here ]
-```
+- Repository: https://github.com/wyii1200/ThinkTwice.git
 
 Contains:
 
@@ -114,17 +112,15 @@ Contains:
 
 # 📊 Presentation Slide Deck
 
-```text
-[ Add Presentation Slide Link Here ]
-```
+- Presentation Slide:
+https://drive.google.com/file/d/1RyUj5PG6rYk7dVnPcC1BCiv8225yxVsB/view?usp=sharing
 
 ---
 
 # 🎥 Demo Video
 
-```text
-[ Add Demo Video Link Here ]
-```
+- Demo Video:
+https://youtu.be/2TUROc-0-kg
 
 ---
 
@@ -365,9 +361,7 @@ The dashboard visualizes:
 
 # Agentic Financial Behaviour Intelligence System
 
-```text
-Insert Use Case Diagram Image Here
-```
+![Use Case Diagram](docs/use_case_diagram.png)
 
 ---
 
@@ -384,63 +378,11 @@ into one continuous financial behaviour intervention ecosystem.
 
 ---
 
-## 🧩 Key Functional Areas
-
-### 1️⃣ User Setup & Authentication
-
-Users can:
-
-- sign up,
-- log in,
-- configure savings goals,
-- and initialize financial preferences.
-
----
-
-### 2️⃣ Transaction Ingestion & Monitoring
-
-GXBank transaction webhooks continuously send spending data into the system.
-
-The backend:
-
-- categorizes transactions,
-- stores financial activity,
-- and triggers AI analysis in real time.
-
----
-
-### 3️⃣ AI Behaviour Intelligence
-
-The AI Agentic Layer performs:
-
-- overspending detection,
-- spending velocity analysis,
-- financial risk prediction,
-- smart nudge generation,
-- resilience scoring,
-- and intervention orchestration.
-
----
-
-### 4️⃣ Smart Savings Radar Integration
-
-The Smart Radar system recommends:
-
-- nearby deals,
-- optimized spending routes,
-- and cheaper alternatives
-
-when location-based overspending behaviour is detected.
-
----
-
 # 🏗️ Architecture Flow Diagram
 
 # ThinkTwice Architecture Flow
 
-```text
-Insert Architecture Flow Diagram Here
-```
+![Architecture Flow Diagram](docs/architecture_flow_diagram.png)
 
 ---
 
@@ -689,7 +631,8 @@ VERTEX_AI_PROJECT=your_vertex_project
 # 📦 1. Clone Repository
 
 ```bash
-git clone YOUR_GITHUB_REPOSITORY_LINK
+git clone https://github.com/wyii1200/ThinkTwice.git
+
 cd ThinkTwice
 ```
 
@@ -705,12 +648,6 @@ flutter pub get
 flutter run -d chrome
 ```
 
-Frontend runs on:
-
-```text
-http://localhost:3000
-```
-
 ---
 
 # 🌐 3. Run Backend Server
@@ -721,12 +658,6 @@ cd backend
 npm install
 
 npm start
-```
-
-Backend runs on:
-
-```text
-http://localhost:5000
 ```
 
 ---
@@ -741,12 +672,6 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-AI service runs on:
-
-```text
-http://localhost:8000
-```
-
 ---
 
 # 🗺️ 5. Run Smart Savings Radar Service
@@ -757,34 +682,6 @@ cd thinktwice_smart_radar
 pip install -r requirements.txt
 
 python app.py
-```
-
-Radar service runs on:
-
-```text
-http://localhost:9000
-```
-
----
-
-# 🔥 6. Firebase Setup
-
-Login Firebase CLI:
-
-```bash
-firebase login
-```
-
-Initialize Firebase:
-
-```bash
-firebase init
-```
-
-Deploy frontend:
-
-```bash
-firebase deploy
 ```
 
 ---
@@ -801,7 +698,9 @@ ThinkTwice/
 │   ├── models/                   # AI Schemas
 │   └── docs/                     # AI Documentation
 ├── thinktwice_smart_radar/       # Smart Radar Service
-├── docs/                         # Architecture diagrams
+├── docs/
+│   ├── use_case_diagram.png
+│   └── architecture_flow_diagram.png
 └── README.md
 ```
 
