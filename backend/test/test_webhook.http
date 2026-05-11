@@ -1,5 +1,5 @@
 ### Trigger a test transaction
-POST http://localhost:3000/webhook/transaction
+POST https://us-central1-thinktwice-kamihack.cloudfunctions.net/api/webhook/transaction
 Content-Type: application/json
 
 {
@@ -13,7 +13,7 @@ Content-Type: application/json
 ###
 
 ### Approve autosave
-POST http://localhost:3000/autosave/approve
+POST https://us-central1-thinktwice-kamihack.cloudfunctions.net/api/autosave/approve
 Content-Type: application/json
 
 {
@@ -25,10 +25,10 @@ Content-Type: application/json
 ###
 
 ### Get transactions
-GET http://localhost:3000/transactions/user123
+GET https://us-central1-thinktwice-kamihack.cloudfunctions.net/api/transactions/user123
 
 ### Create user (enxi calls this on signup)
-POST http://localhost:3000/users/setup
+POST https://us-central1-thinktwice-kamihack.cloudfunctions.net/api/users/setup
 Content-Type: application/json
 
 {
@@ -40,12 +40,12 @@ Content-Type: application/json
 ###
 
 ### Get user profile (enxi calls this on home page load)
-GET http://localhost:3000/users/user123
+GET https://us-central1-thinktwice-kamihack.cloudfunctions.net/api/users/user123
 
 ###
 
 ### Update FCM token (enxi calls this after Firebase init)
-PUT http://localhost:3000/users/user123/fcm-token
+PUT https://us-central1-thinktwice-kamihack.cloudfunctions.net/api/users/user123/fcm-token
 Content-Type: application/json
 
 {
@@ -53,7 +53,7 @@ Content-Type: application/json
 }
 
 ### Full flow test — should return AI nudge
-POST http://localhost:3000/webhook/transaction
+POST https://us-central1-thinktwice-kamihack.cloudfunctions.net/api/webhook/transaction
 Content-Type: application/json
 
 {

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-const String _backendUrl = 'http://localhost:3000';
+const String _backendUrl = 'https://us-central1-thinktwice-kamihack.cloudfunctions.net/api';
 
 class UserProfile {
   final String userId;

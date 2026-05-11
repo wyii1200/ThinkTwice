@@ -5,7 +5,7 @@ const axios     = require('axios');
 
 if (!admin.apps.length) admin.initializeApp();
 
-const BACKEND_URL = process.env.BACKEND_URL || functions.config().backend?.url || 'http://localhost:3000';
+const BACKEND_URL = process.env.BACKEND_URL || functions.config().backend?.url || 'https://us-central1-thinktwice-kamihack.cloudfunctions.net/api';
 
 // ─── 1. On transaction created ────────────────────────────────────────────────
 // Triggers whenever a new doc is written to /transactions/{transactionId}
