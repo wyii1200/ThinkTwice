@@ -361,7 +361,7 @@ The dashboard visualizes:
 
 # Agentic Financial Behaviour Intelligence System
 
-![Use Case Diagram](docs/use_case_diagram.png)
+![Use Case Diagram](use_case_diagram.png)
 
 ---
 
@@ -382,11 +382,11 @@ into one continuous financial behaviour intervention ecosystem.
 
 # ThinkTwice Architecture Flow
 
-![Architecture Flow Diagram](docs/architecture_flow_diagram.png)
+![Architecture Flow Diagram](architecture_flow_diagram.png)
 
 ---
 
-# 🔍 Architecture Overview
+## 🔍 Architecture Overview
 
 The ThinkTwice architecture is designed around:
 
@@ -698,9 +698,8 @@ ThinkTwice/
 │   ├── models/                   # AI Schemas
 │   └── docs/                     # AI Documentation
 ├── thinktwice_smart_radar/       # Smart Radar Service
-├── docs/
-│   ├── use_case_diagram.png
-│   └── architecture_flow_diagram.png
+├── architecture_flow_diagram.png
+├── use_case_diagram.png
 └── README.md
 ```
 
