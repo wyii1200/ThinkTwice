@@ -1,16 +1,20 @@
 {
   "name": "thinktwice-backend",
   "version": "1.0.0",
+  "main": "src/functions/index.js",
+  "engines": { "node": "20" },
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "deploy": "firebase deploy --only functions"
   },
   "dependencies": {
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "firebase-admin": "^12.0.0",
-    "axios": "^1.6.0",
-    "dotenv": "^16.3.1",
-    "cors": "^2.8.5"
+    "firebase-functions": "^5.1.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

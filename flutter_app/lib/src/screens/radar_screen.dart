@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -15,7 +15,7 @@ import '../services/ai_state.dart';
 
 String _fmt(double amount) => amount.toStringAsFixed(2);
 
-final Map<String, String> _dealImageUrls = {};
+
 
 class RadarPage extends StatefulWidget {
   const RadarPage({
@@ -50,7 +50,7 @@ class _RadarPageState extends State<RadarPage> {
   bool _loadingDeals = true;
   String? _dealsError;
   String? _activeCategory = 'food';
-
+  final Map<String, String> _dealImageUrls = {};
   // FIX 2 & 3: Route state — only generated when user requests it
   RouteResult? _routeResult;
   bool _loadingRoute = false;
@@ -61,15 +61,10 @@ class _RadarPageState extends State<RadarPage> {
   // Run `ipconfig` in PowerShell → IPv4 Address under WiFi adapter
   // e.g. 'http://192.168.1.105:4000'
   // Emulator: 'http://10.0.2.2:4000'  |  Web/desktop: 'http://localhost:4000'
-  // Deployed: 'https://thinktwice-zu5d.onrender.com/'
+  // Deployed: 'https://thinktwice-zu5d.onrender.com'
 
-  static String get _userId {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('No user is currently signed in.');
-    }
-    return user.uid;
-  }
+  static String get _userId =>
+    FirebaseAuth.instance.currentUser?.uid ?? 'test_user_001';
 
   @override
   void initState() {

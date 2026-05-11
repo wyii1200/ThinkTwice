@@ -1,32 +1,33 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+console.log('Starting up, __dirname:', __dirname);
+console.log('Files:', require('fs').readdirSync(__dirname));
 
-const {setGlobalOptions} = require("firebase-functions");
-const {onRequest} = require("firebase-functions/https");
-const logger = require("firebase-functions/logger");
+try {
+  console.log('src files:', require('fs').readdirSync(__dirname + '/src'));
+  console.log('routes files:', require('fs').readdirSync(__dirname + '/src/routes'));
+} catch(e) {
+  console.error('DIRECTORY ERROR:', e.message);
+  process.exit(1);
+}
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
+const functions = require('firebase-functions');
+const admin     = require('firebase-admin');
+const express   = require('express');
+const cors      = require('cors');
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+if (!admin.apps.length) admin.initializeApp();
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+try { app.use('/webhook',      require('./src/routes/webhook'));      } catch(e) { console.error('webhook failed:', e.message); }
+try { app.use('/transactions', require('./src/routes/transactions')); } catch(e) { console.error('transactions failed:', e.message); }
+try { app.use('/nudge',        require('./src/routes/nudge'));        } catch(e) { console.error('nudge failed:', e.message); }
+try { app.use('/autosave',     require('./src/routes/autosave'));     } catch(e) { console.error('autosave failed:', e.message); }
+try { app.use('/users',        require('./src/routes/users'));        } catch(e) { console.error('users failed:', e.message); }
+try { app.use('/dashboard',    require('./src/routes/dashboard'));    } catch(e) { console.error('dashboard failed:', e.message); }
+try { app.use('/gamification', require('./src/routes/gamification')); } catch(e) { console.error('gamification failed:', e.message); }
+
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+exports.api = functions.https.onRequest(app);
