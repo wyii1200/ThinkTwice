@@ -143,7 +143,22 @@ ThinkTwice is a multi-agent AI system that detects risky spending behaviour in r
 
 ## 🚀 Try It Now
 
-*(Coming soon...)*
+Open the deployed frontend:
+
+- Frontend: `https://thinktwice-kamihack.web.app/`
+
+Live service endpoints:
+
+- `BACKEND_URL="https://us-central1-thinktwice-kamihack.cloudfunctions.net/api"`
+- `RADAR_URL="https://thinktwice-zu5d.onrender.com/"`
+- `AI_URL="https://thinktwice-guq9.onrender.com/"`
+
+Recommended quick test flow:
+
+1. Sign in on the deployed frontend.
+2. Complete onboarding if prompted.
+3. Trigger a sample transaction or AI analysis from the dashboard.
+4. Open Smart Radar to verify nearby deals, route suggestions, and savings tracking.
 
 ---
 
@@ -185,7 +200,7 @@ ThinkTwice uses a multi-agent architecture:
 
 ## 📝 License
 
-Private Project — All Rights Reserved
+For UTM x Hackathon 2026 use only. All Rights Reserved.
 
 ---
 
