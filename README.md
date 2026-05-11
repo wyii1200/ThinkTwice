@@ -23,6 +23,8 @@
 
 - [Problem Statement](#-problem-statement)
 - [Solution Overview](#-solution-overview)
+- [Deliverables](#-deliverables)
+- [Live Demo & Deployment](#-live-demo--deployment)
 - [Core Behaviour Loop](#-core-behaviour-loop)
 - [System Features](#-system-features)
 - [Use Case Diagram](#-use-case-diagram)
@@ -30,70 +32,290 @@
 - [AI Agentic Intelligence Layer](#-ai-agentic-intelligence-layer)
 - [System Workflow](#-system-workflow)
 - [Technology Stack](#-technology-stack)
+- [How to Run](#-how-to-run-thinktwice)
 - [Project Structure](#-project-structure)
 - [Demo Scenario](#-demo-scenario)
-- [Presentation & Pitch Materials](#-presentation--pitch-materials)
+- [Presentation & Video](#-presentation--video)
 - [Team Distribution](#-team-distribution)
 - [Future Scalability](#-future-scalability)
 - [Final Positioning](#-final-positioning)
+- [License](#-license)
 
 ---
 
 # 🚨 Problem Statement
 
-Despite high internet penetration, many Malaysian students and fresh graduates still struggle with:
+Despite high internet penetration, many Malaysian tertiary students and fresh graduates still struggle with:
 
 - overspending,
 - inconsistent savings habits,
 - debt accumulation,
-- poor financial planning,
-- and weak long-term financial resilience.
+- weak financial discipline,
+- and poor long-term financial planning.
 
 Most banking applications today only provide:
 
 - transaction history,
-- analytics dashboards,
-- and passive spending reports.
+- spending analytics,
+- and passive financial reports.
 
 They rarely guide users toward:
 
 - immediate behavioural correction,
 - proactive financial intervention,
-- or long-term habit formation.
+- or sustainable habit formation.
 
 As a result:
 
 > Users are financially aware, but financially inconsistent.
 
+ThinkTwice addresses this challenge by transforming passive banking into an AI-powered behavioural financial resilience ecosystem.
+
 ---
 
 # 💡 Solution Overview
 
-ThinkTwice is an **AI-powered Agentic Financial Behaviour Intelligence System** integrated with GXBank that transforms passive banking into a proactive financial habit-building ecosystem.
+ThinkTwice is an **AI-powered Agentic Financial Behaviour Intelligence System** integrated with GXBank that helps Malaysian youth build healthier financial habits automatically.
 
-Instead of only showing spending reports, ThinkTwice:
+Instead of only displaying spending reports, ThinkTwice:
 
 ✅ detects risky spending behaviour  
 ✅ predicts overspending patterns  
-✅ recommends smarter financial actions  
 ✅ triggers real-time behavioural interventions  
-✅ reinforces positive financial habits through gamification  
-✅ continuously improves through adaptive learning loops
+✅ recommends intelligent financial actions  
+✅ reinforces positive habits through gamification  
+✅ continuously improves using adaptive learning loops
+
+---
+
+# 🚀 Deliverables
+
+ThinkTwice includes a complete set of technical, presentation, and demonstration deliverables for the hackathon submission.
+
+---
+
+# 💻 GitHub Repository
+
+### Main Repository
+
+```text
+[ Add GitHub Repository Link Here ]
+```
+
+Contains:
+
+- Flutter frontend
+- Node.js backend
+- AI agentic intelligence layer
+- Smart Savings Radar services
+- Firebase integration
+- Architecture documentation
+
+---
+
+# 📊 Presentation Slide Deck
+
+### Pitch Presentation
+
+```text
+[ Add Presentation Slide Link Here ]
+```
+
+The presentation deck covers:
+
+- problem statement,
+- behavioural economics strategy,
+- AI architecture,
+- technical workflow,
+- prototype walkthrough,
+- scalability potential,
+- and real-world impact.
+
+---
+
+# 🎥 Demo Video
+
+### Prototype Demonstration
+
+```text
+[ Add Demo Video Link Here ]
+```
+
+The demo video demonstrates:
+
+✅ real-time transaction ingestion  
+✅ AI overspending prediction  
+✅ behavioural nudges  
+✅ Smart Savings Radar  
+✅ auto-save intervention  
+✅ resilience score updates  
+✅ gamification workflow  
+✅ multi-agent AI orchestration
+
+---
+
+# 📄 Additional Deliverables
+
+| Deliverable | Description |
+|---|---|
+| README Documentation | Full technical & architectural overview |
+| Use Case Diagram | Functional interaction modelling |
+| Architecture Flow Diagram | System orchestration & infrastructure |
+| Prototype Demo | Functional AI-powered financial resilience system |
+| Pitch Deck | Business & technical presentation |
+| Demo Video | End-to-end live demonstration |
+
+---
+
+# 🚀 Live Demo & Deployment
+
+# 🌐 Deployed Frontend
+
+Open the deployed ThinkTwice frontend:
+
+- Frontend: `https://thinktwice-kamihack.web.app/`
+- Frontend: <https://thinktwice-kamihack.web.app/>
+
+---
+
+# 🔗 Live Service Endpoints
+
+## Backend API
+
+- `BACKEND_URL="https://us-central1-thinktwice-kamihack.cloudfunctions.net/api"`
+- `BACKEND_URL`: <https://us-central1-thinktwice-kamihack.cloudfunctions.net/api>
+
+---
+
+## Smart Savings Radar Service
+
+- `RADAR_URL="https://thinktwice-zu5d.onrender.com/"`
+- `RADAR_URL`: <https://thinktwice-zu5d.onrender.com/>
+
+---
+
+## AI Agentic Intelligence Service
+
+- `AI_URL="https://thinktwice-guq9.onrender.com/"`
+- `AI_URL`: <https://thinktwice-guq9.onrender.com/>
+
+---
+
+# 🧪 Recommended Quick Test Flow
+
+## Step 1 — Open ThinkTwice
+
+Launch the deployed frontend:
+
+```text
+https://thinktwice-kamihack.web.app/
+```
+
+---
+
+## Step 2 — Complete User Onboarding
+
+Configure:
+
+- spending preferences,
+- savings goals,
+- budget limits,
+- and financial behaviour profile.
+
+---
+
+## Step 3 — Trigger AI Behaviour Analysis
+
+Simulate or trigger a sample transaction from the dashboard.
+
+Example:
+
+```text
+RM12 Coffee Purchase
+```
+
+The system will:
+
+- process transaction ingestion,
+- trigger AI behaviour analysis,
+- and evaluate financial risk.
+
+---
+
+## Step 4 — Observe Real-Time Intervention
+
+The AI Agentic Intelligence Layer will generate:
+
+- overspending prediction,
+- behavioural nudges,
+- or Smart Savings Radar recommendations.
+
+Example:
+
+> “Your food spending is above target.  
+> Save RM8 now to maintain your streak?”
+
+---
+
+## Step 5 — Open Smart Savings Radar
+
+Verify:
+
+- nearby deal recommendations,
+- optimized spending routes,
+- estimated savings,
+- and location-aware intervention logic.
+
+---
+
+## Step 6 — Verify Dashboard Updates
+
+Observe real-time updates for:
+
+- resilience score,
+- savings streak,
+- Smart Decision Score,
+- leaderboard ranking,
+- and AI-generated financial insights.
+
+---
+
+# 🔄 End-to-End System Validation
+
+```text
+Transaction
+      ↓
+GXBank Webhook
+      ↓
+Firebase Cloud Function
+      ↓
+AI Agentic Intelligence Layer
+      ↓
+Financial Orchestrator Agent
+      ↓
+Behavioural Intervention
+      ↓
+Smart Radar / Auto-Save
+      ↓
+Dashboard & Gamification Update
+      ↓
+Learning & Improvement Loop
+```
 
 ---
 
 # 🔄 Core Behaviour Loop
 
-## Detect → Nudge → Act → Reward → Repeat
+# Detect → Nudge → Act → Reward → Repeat
 
-ThinkTwice continuously guides users toward better financial behaviour using a closed-loop behavioural reinforcement system.
+ThinkTwice continuously guides users toward better financial behaviour through a closed-loop behavioural reinforcement system.
 
 | Stage | Description |
 |---|---|
-| Detect | AI analyses spending behaviour and financial risk |
-| Nudge | Personalized intervention is triggered |
+| Detect | AI analyses financial behaviour and spending risk |
+| Nudge | Personalized intervention triggered |
 | Act | User takes financial action |
-| Reward | System reinforces positive behaviour |
+| Reward | Positive behaviour reinforced |
 | Repeat | Learning loop improves future recommendations |
 
 ---
@@ -102,7 +324,7 @@ ThinkTwice continuously guides users toward better financial behaviour using a c
 
 # 🧠 AI Agentic Intelligence
 
-ThinkTwice uses a **multi-agent AI architecture** instead of a single AI model.
+ThinkTwice uses a **multi-agent AI architecture** instead of relying on a single AI model.
 
 The AI system can:
 
@@ -132,7 +354,7 @@ ThinkTwice recommends:
 - micro-saving actions,
 - round-up savings,
 - salary-triggered transfers,
-- and user-approved financial automation.
+- and user-approved automated savings behaviour.
 
 ---
 
@@ -174,19 +396,21 @@ The dashboard visualizes:
 - overspending avoided,
 - Smart Radar savings,
 - streak performance,
-- and AI insights.
+- and AI-generated financial insights.
 
 ---
 
 # 📍 Use Case Diagram
 
-## Agentic Financial Behaviour Intelligence System
+# Agentic Financial Behaviour Intelligence System
 
-![Use Case Diagram](./docs/ThinkTwice%20use%20case%20diagram.drawio.png)
+```text
+Insert Use Case Diagram Image Here
+```
 
 ---
 
-## 🔍 Use Case Overview
+## 🔍 Overview
 
 The use case diagram illustrates how ThinkTwice connects:
 
@@ -207,10 +431,8 @@ Users can:
 
 - sign up,
 - log in,
-- customize avatar,
-- and configure savings goals.
-
-This initializes the behavioural baseline for AI analysis.
+- configure savings goals,
+- and initialize financial preferences.
 
 ---
 
@@ -226,17 +448,16 @@ The backend:
 
 ---
 
-### 3️⃣ AI Financial Intelligence & Behaviour Intervention
+### 3️⃣ AI Behaviour Intelligence
 
 The AI Agentic Layer performs:
 
-- spending behaviour analysis,
-- overspending risk detection,
-- future overspending prediction,
+- overspending detection,
+- spending velocity analysis,
+- financial risk prediction,
 - smart nudge generation,
-- auto-save recommendation,
 - resilience scoring,
-- and reward allocation.
+- and intervention orchestration.
 
 ---
 
@@ -248,19 +469,21 @@ The Smart Radar system recommends:
 - optimized spending routes,
 - and cheaper alternatives
 
-when the AI detects location-based overspending behaviour.
+when location-based overspending behaviour is detected.
 
 ---
 
 # 🏗️ Architecture Flow Diagram
 
-## ThinkTwice Architecture Flow
+# ThinkTwice Architecture Flow
 
-![Architecture Flow Diagram](./docs/ThinkTwice%20Architecture%20Flow%20Diagram.png)
+```text
+Insert Architecture Flow Diagram Here
+```
 
 ---
 
-## 🔍 Architecture Overview
+# 🔍 Architecture Overview
 
 The ThinkTwice architecture is designed around:
 
@@ -269,11 +492,11 @@ The ThinkTwice architecture is designed around:
 - behavioural intervention pipelines,
 - and continuous learning loops.
 
-The system operates across three major behavioural phases:
+The system operates across three major behavioural phases.
 
 ---
 
-## 🟦 Before Spending
+# 🟦 BEFORE SPENDING
 
 Before spending happens, the system predicts financial risk using:
 
@@ -284,13 +507,14 @@ The AI analyses:
 
 - historical spending,
 - budget behaviour,
+- spending patterns,
 - and financial trends
 
 to proactively identify overspending risk.
 
 ---
 
-## 🟨 During Spending
+# 🟨 DURING SPENDING
 
 During transactions, the AI Agentic Team activates:
 
@@ -310,7 +534,7 @@ Examples:
 
 ---
 
-## 🟩 After Spending
+# 🟩 AFTER SPENDING
 
 After intervention, the system enters a continuous improvement cycle using:
 
@@ -335,14 +559,14 @@ to improve future recommendations.
 | AI Agent | Responsibility |
 |---|---|
 | Spending Risk Agent | Detect overspending & abnormal transactions |
-| Behaviour Analysis Agent | Analyse spending patterns & financial habits |
+| Behaviour Analysis Agent | Analyse financial habits |
 | Nudge Agent | Generate behavioural interventions |
 | Auto-Save Agent | Recommend micro-saving actions |
 | Smart Radar Agent | Recommend cheaper alternatives |
-| Gamification Agent | Update resilience score & streaks |
-| Safety & Consent Agent | Ensure user-approved financial actions |
-| Financial Orchestrator Agent | Coordinate all AI decisions |
-| Explainability Agent | Explain AI decisions clearly |
+| Gamification Agent | Update resilience score & rewards |
+| Safety & Consent Agent | Ensure user-approved actions |
+| Financial Orchestrator Agent | Coordinate intervention strategies |
+| Explainability Agent | Explain AI decisions |
 | Learning Loop Agent | Improve future recommendations |
 
 ---
@@ -375,95 +599,232 @@ Learning & Improvement Loop
 
 # 🛠️ Technology Stack
 
-# 📱 Frontend
+# 📱 Frontend Layer
 
-## Flutter
-
-Used for:
-
-- Android
-- iOS
-- Web
-- Windows
-- macOS
-
-### Key Packages
-
-- riverpod / provider
-- fl_chart
-- firebase_messaging
-- google_maps_flutter
-- flutter_animate
-- go_router
+| Technology | Purpose |
+|---|---|
+| Flutter | Cross-platform mobile & web application |
+| Riverpod / Provider | State management |
+| fl_chart | Resilience score visualization |
+| google_maps_flutter | Smart Savings Radar integration |
+| flutter_animate | UI animations |
+| go_router | Navigation flow |
+| Firebase Messaging | Real-time notifications |
 
 ---
 
-# 🌐 Backend
+# 🌐 Backend Layer
 
-## Node.js + Express.js
-
-Handles:
-
-- GXBank webhook events,
-- APIs,
-- orchestration pipeline,
-- gamification engine,
-- and notification services.
+| Technology | Purpose |
+|---|---|
+| Node.js | Backend runtime |
+| Express.js | REST APIs & webhook services |
+| Firebase Cloud Functions | Event-driven transaction processing |
+| Firebase Authentication | Secure login system |
+| REST APIs | Frontend & AI communication |
 
 ---
 
 # ⚡ Real-Time Infrastructure
 
-## Firebase Ecosystem
-
-### Firebase Services
-
-- Firebase Authentication
-- Firestore
-- Firebase Cloud Functions
-- Firebase Cloud Messaging
-- Firebase Hosting
+| Technology | Purpose |
+|---|---|
+| Firebase Firestore | Real-time database |
+| Firebase Cloud Messaging | Behavioural nudges |
+| Firebase Hosting | Frontend deployment |
+| Firestore Streams | Live dashboard synchronization |
 
 ---
 
-# 🧠 AI & Machine Learning
+# 🧠 AI Agentic Intelligence Layer
 
-## Python FastAPI Microservice
-
-### AI Technologies
-
-- Gemini 2.5 Flash
-- Vertex AI
-- Firebase Genkit
-- OpenClaw-style Agentic Layer
-
-### ML Libraries
-
-- pandas
-- numpy
-- scikit-learn
+| Technology | Purpose |
+|---|---|
+| Python FastAPI | AI microservice |
+| Gemini 2.5 Flash | Behaviour reasoning & coaching |
+| Vertex AI | AI orchestration |
+| Firebase Genkit | AI workflow integration |
+| OpenClaw-style Agentic Layer | Multi-agent orchestration |
+| pandas | Transaction analysis |
+| numpy | Financial calculations |
+| scikit-learn | Risk prediction |
 
 ---
 
 # 🗺️ Smart Savings Radar
 
-## Google Maps Platform APIs
-
-- Directions API
-- Places API
-- Distance Matrix API
+| Technology | Purpose |
+|---|---|
+| Google Maps Platform | Location intelligence |
+| Directions API | Route optimization |
+| Places API | Nearby recommendations |
+| Distance Matrix API | Cost estimation |
 
 ---
 
-# ☁️ Deployment
+# 🗄️ Database Layer
 
-| Layer | Deployment |
+| Technology | Purpose |
 |---|---|
-| Frontend | Firebase Hosting |
-| Backend | Cloud Functions / Render |
-| AI Services | Python FastAPI |
-| Database | Firestore |
-| Notifications | Firebase Cloud Messaging |
+| Firebase Firestore | User & transaction storage |
+| Firebase Storage | Media uploads |
+| Firestore Collections | AI logs & leaderboard data |
+
+---
+
+# ☁️ Deployment & Hosting
+
+| Technology | Purpose |
+|---|---|
+| Firebase Hosting | Frontend hosting |
+| Cloud Run | Backend & AI deployment |
+| Render / Railway | Alternative backend deployment |
+| GitHub | Version control & collaboration |
+
+---
+
+# ⚙️ How to Run ThinkTwice
+
+# 📋 Prerequisites
+
+Before running ThinkTwice, install:
+
+| Software | Version |
+|---|---|
+| Flutter | 3.16+ |
+| Node.js | 18+ |
+| Python | 3.10+ |
+| Firebase CLI | Latest |
+| Git | Latest |
+
+---
+
+# 🔑 Environment Variables
+
+# Backend `.env`
+
+```env
+PORT=5000
+
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_CLIENT_EMAIL=your_client_email
+FIREBASE_PRIVATE_KEY=your_private_key
+
+AI_SERVICE_URL=http://localhost:8000
+RADAR_SERVICE_URL=http://localhost:9000
+```
+
+---
+
+# AI Service `.env`
+
+```env
+GEMINI_API_KEY=your_gemini_api_key
+VERTEX_AI_PROJECT=your_vertex_project
+```
+
+---
+
+# 📦 1. Clone Repository
+
+```bash
+git clone YOUR_GITHUB_REPOSITORY_LINK
+cd ThinkTwice
+```
+
+---
+
+# 📱 2. Run Flutter Frontend
+
+```bash
+cd flutter_app
+
+flutter pub get
+
+flutter run -d chrome
+```
+
+Frontend runs on:
+
+```text
+http://localhost:3000
+```
+
+---
+
+# 🌐 3. Run Backend Server
+
+```bash
+cd backend
+
+npm install
+
+npm start
+```
+
+Backend runs on:
+
+```text
+http://localhost:5000
+```
+
+---
+
+# 🧠 4. Run AI Agentic Intelligence Service
+
+```bash
+cd AI
+
+pip install -r requirements.txt
+
+uvicorn main:app --reload --port 8000
+```
+
+AI service runs on:
+
+```text
+http://localhost:8000
+```
+
+---
+
+# 🗺️ 5. Run Smart Savings Radar Service
+
+```bash
+cd thinktwice_smart_radar
+
+pip install -r requirements.txt
+
+python app.py
+```
+
+Radar service runs on:
+
+```text
+http://localhost:9000
+```
+
+---
+
+# 🔥 6. Firebase Setup
+
+Login Firebase CLI:
+
+```bash
+firebase login
+```
+
+Initialize Firebase:
+
+```bash
+firebase init
+```
+
+Deploy frontend:
+
+```bash
+firebase deploy
+```
 
 ---
 
@@ -479,7 +840,7 @@ ThinkTwice/
 │   ├── models/                   # AI Schemas
 │   └── docs/                     # AI Documentation
 ├── thinktwice_smart_radar/       # Smart Radar Service
-├── docs/                         # Diagrams & Assets
+├── docs/                         # Architecture diagrams
 └── README.md
 ```
 
@@ -487,7 +848,7 @@ ThinkTwice/
 
 # 🧪 Demo Scenario
 
-## Scenario
+# Scenario
 
 A student purchases:
 
@@ -497,7 +858,7 @@ RM12 Coffee at Mid Valley
 
 ---
 
-## System Flow
+# System Flow
 
 ```text
 GXBank transaction webhook triggered
@@ -513,14 +874,14 @@ Nudge Agent generates personalized recommendation
 
 ---
 
-## User Receives
+# User Receives
 
 > “Your food spending is 42% above average.  
 > Save RM8 now to maintain your streak?”
 
 ---
 
-## Dashboard Updates
+# Dashboard Updates
 
 ```text
 +RM15 Saved
@@ -531,19 +892,19 @@ Leaderboard Updated
 
 ---
 
-# 🎤 Presentation & Pitch Materials
+# 🎤 Presentation & Video
 
-# 📊 Pitch Deck
+# 📊 Presentation Slide
 
-The presentation deck includes:
+The pitch deck includes:
 
 - problem analysis,
 - behavioural economics approach,
 - AI architecture,
 - system workflow,
-- demo walkthrough,
+- prototype walkthrough,
 - scalability potential,
-- and business impact.
+- and real-world impact.
 
 ---
 
@@ -558,26 +919,6 @@ The demo video demonstrates:
 ✅ resilience score updates  
 ✅ gamification system  
 ✅ AI orchestration pipeline
-
----
-
-# 🎯 Real-World Impact
-
-ThinkTwice is designed to:
-
-- reduce financial risk among youth,
-- improve savings consistency,
-- encourage healthier financial behaviour,
-- and strengthen long-term financial resilience.
-
-The system combines:
-
-- AI,
-- behavioural economics,
-- gamification,
-- and real-time financial intelligence
-
-to create a scalable financial wellness ecosystem.
 
 ---
 
@@ -598,9 +939,9 @@ Future enhancements may include:
 
 - personalized investment coaching,
 - AI financial forecasting,
-- salary optimization planning,
 - debt recovery intervention,
-- AI-powered budgeting assistant,
+- salary optimization planning,
+- AI budgeting assistant,
 - and nationwide merchant partnerships.
 
 ---
