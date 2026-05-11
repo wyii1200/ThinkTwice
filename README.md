@@ -145,13 +145,13 @@ ThinkTwice is a multi-agent AI system that detects risky spending behaviour in r
 
 Open the deployed frontend:
 
-- Frontend: `https://thinktwice-kamihack.web.app/`
+- Frontend: <https://thinktwice-kamihack.web.app/>
 
 Live service endpoints:
 
-- `BACKEND_URL="https://us-central1-thinktwice-kamihack.cloudfunctions.net/api"`
-- `RADAR_URL="https://thinktwice-zu5d.onrender.com/"`
-- `AI_URL="https://thinktwice-guq9.onrender.com/"`
+- `BACKEND_URL`: <https://us-central1-thinktwice-kamihack.cloudfunctions.net/api>
+- `RADAR_URL`: <https://thinktwice-zu5d.onrender.com/>
+- `AI_URL`: <https://thinktwice-guq9.onrender.com/>
 
 Recommended quick test flow:
 
