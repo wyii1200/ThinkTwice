@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../core/app_theme.dart';
 import '../core/models.dart';
 import '../core/seed_data.dart';
@@ -70,89 +71,110 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   Map<String, dynamic>? aiResult;
-  bool isLoadingAi = false;
   int? demoResilienceScore;
   int? demoSmartDecisionScore;
+  double? _simulatedBalance;
+  final List<TransactionRecord> _simulatedTransactions = <TransactionRecord>[];
 
-  Future<void> simulateAiTransaction() async {
-    setState(() {
-      isLoadingAi = true;
-    });
+  Future<void> _openPaymentSimulation() async {
+    final request = await showModalBottomSheet<_PaymentSimulationRequest>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _PaymentSimulationSheet(
+        userId: widget.userId.isNotEmpty ? widget.userId : 'demo_user_001',
+        dailyBudget: widget.plan.dailyLimit > 0 ? widget.plan.dailyLimit : 30,
+        currentDailySpending: _estimateCurrentDailySpending(),
+        savingsGoal: widget.goal > 0 ? widget.goal : 500,
+      ),
+    );
 
-    try {
-      final result = await BackendApiService.postTransaction(
-        userId: widget.userId,
-        amount: 120,
-        category: 'food',
-        merchant: 'Mid Valley',
-        description: 'Real end-to-end Smart Radar AI demo',
-      );
+    if (!mounted || request == null) return;
 
-      final fullAiResult = result.aiResult;
+    await Future<void>.delayed(const Duration(milliseconds: 90));
+    if (!mounted) return;
 
-      final newResilienceScore = fullAiResult['scoreAnalysis']
-              ?['resilienceScore'] ??
-          widget.resilienceScore;
-
-      final newSmartDecisionScore = fullAiResult['scoreAnalysis']
-              ?['smartDecisionScore'] ??
-          widget.smartDecisionScore;
-
-      setState(() {
-        aiResult = fullAiResult;
-        AiState.latestAiResult = fullAiResult;
-        demoResilienceScore = newResilienceScore;
-        demoSmartDecisionScore = newSmartDecisionScore;
-        isLoadingAi = false;
-      });
-
-      widget.onAiNudge(result.nudge, result.newBalance);
-
-      final triggerSmartRadar = fullAiResult['integrationPayload']
-              ?['smartRadar']?['triggerSmartRadar'] ==
-          true;
-
-      final radarCategory = fullAiResult['integrationPayload']?['smartRadar']
-                  ?['radarCategory']
-              ?.toString() ??
-          'spending';
-
-      if (triggerSmartRadar && mounted && !widget.showAlert) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.radar, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text(fullAiResult['integrationPayload']?['smartRadar']?['radarMessage'] ?? 'Smart Radar activated!')),
-              ],
-            ),
-            backgroundColor: context.colors.accent,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
+    final result = await showGeneralDialog<_PaymentSimulationResolution>(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'ThinkTwice Alert',
+      barrierColor: Colors.black.withOpacity(0.55),
+      transitionDuration: const Duration(milliseconds: 320),
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          _ThinkTwiceSimulationAlertDialog(
+        request: request,
+        breed: widget.breed,
+        accessory: widget.accessory,
+        effect: widget.effect,
+      ),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final fade = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        final scale = Tween<double>(begin: 0.92, end: 1).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+        );
+        final slide = Tween<Offset>(
+          begin: const Offset(0, 0.06),
+          end: Offset.zero,
+        ).animate(fade);
+        return FadeTransition(
+          opacity: fade,
+          child: SlideTransition(
+            position: slide,
+            child: ScaleTransition(scale: scale, child: child),
           ),
         );
+      },
+    );
 
-        // Only auto-navigate if the intervention modal isn't showing
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted && !widget.showAlert) {
-            widget.onNavigate(1);
-          }
-        });
+    if (!mounted || result == null) return;
+
+    setState(() {
+      aiResult = result.aiResult;
+      AiState.latestAiResult = result.aiResult;
+      final scoreAnalysis =
+          result.aiResult['scoreAnalysis'] as Map<String, dynamic>?;
+      demoResilienceScore =
+          (scoreAnalysis?['resilienceScore'] as num?)?.toInt() ??
+              demoResilienceScore;
+      demoSmartDecisionScore =
+          (scoreAnalysis?['smartDecisionScore'] as num?)?.toInt() ??
+              demoSmartDecisionScore;
+      if (result.newBalance != null) {
+        _simulatedBalance = result.newBalance;
       }
-    } catch (e) {
-      setState(() {
-        isLoadingAi = false;
-      });
+      if (result.completedTransaction != null) {
+        _simulatedTransactions.removeWhere(
+          (item) => item.id == result.completedTransaction!.id,
+        );
+        _simulatedTransactions.insert(0, result.completedTransaction!);
+      }
+    });
 
-      if (!mounted) return;
+    if (result.radarContext != null) {
+      AiState.latestSimulationContext = result.radarContext;
+      widget.onNavigate(1);
+      return;
+    }
 
+    if (result.savedInstead) {
+      widget.onSaveAlert();
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('End-to-end AI error: $e'),
-        ),
+        SnackBar(content: Text(result.bannerBody)),
       );
     }
+  }
+
+  double _estimateCurrentDailySpending() {
+    final recentSpend = widget.transactions
+        .where((tx) => tx.amount < 0)
+        .take(3)
+        .fold<double>(0, (sum, tx) => sum + tx.amount.abs());
+    if (recentSpend <= 0) return 18;
+    return (recentSpend / 3).clamp(12, 80).toDouble();
   }
 
   @override
@@ -165,7 +187,11 @@ class _HomePageState extends State<HomePage> {
         demoSmartDecisionScore ?? widget.smartDecisionScore;
     final currentStreak = widget.currentStreak;
     final recentPoints = widget.recentPoints;
-    final transactions = widget.transactions;
+    final transactionIds = _simulatedTransactions.map((item) => item.id).toSet();
+    final transactions = [
+      ..._simulatedTransactions,
+      ...widget.transactions.where((item) => !transactionIds.contains(item.id)),
+    ];
     final breed = widget.breed;
     final accessory = widget.accessory;
     final effect = widget.effect;
@@ -175,13 +201,11 @@ class _HomePageState extends State<HomePage> {
     final onDismissAlert = widget.onDismissAlert;
     final onNavigate = widget.onNavigate;
     final userName = widget.userName;
-    final balance = widget.balance;
+    final balance = _simulatedBalance ?? widget.balance;
     final savingsPocket = widget.savingsPocket;
     final aiInsights = widget.aiInsights;
     final lastNudgeText = widget.lastNudgeText;
     final lastRiskLevel = widget.lastRiskLevel;
-    final userId = widget.userId;
-    final onAiNudge = widget.onAiNudge;
     final overspendingRisk = plan.allocations
             .firstWhere((item) => item.name == 'Food & drinks')
             .percent >=
@@ -267,20 +291,21 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   const Spacer(),
-                  IconButton(
-                    onPressed: () async {
-                      final result = await BackendApiService.postTransaction(
-                        userId: userId,
-                        amount: 45,
-                        category: 'food',
-                        merchant: 'McDonald KLCC',
-                        description: 'Late night supper',
-                      );
-                      onAiNudge(result.nudge, result.newBalance);
-                    },
-                    icon: Icon(Icons.refresh_rounded,
-                        color: context.colors.mutedForeground),
-                    tooltip: 'Simulate transaction',
+                  FilledButton.tonalIcon(
+                    onPressed: _openPaymentSimulation,
+                    icon: const Icon(Icons.payments_rounded, size: 18),
+                    label: const Text('Simulate Payment'),
+                    style: FilledButton.styleFrom(
+                      foregroundColor: context.colors.primary,
+                      backgroundColor: context.colors.primary.withOpacity(0.12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
                   ),
                   TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0.96, end: 1.02),
@@ -786,61 +811,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 16),
-              StaggeredReveal(
-                index: 2,
-                child: WhiteCard(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Live AI Behaviour Check',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Run a real-time AI check to detect spending risk and recommend the next best action.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.colors.mutedForeground,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: isLoadingAi ? null : simulateAiTransaction,
-                          icon: Icon(
-                            isLoadingAi
-                                ? Icons.hourglass_top_rounded
-                                : Icons.auto_awesome_rounded,
-                          ),
-                          label: Text(
-                            isLoadingAi
-                                ? 'AI analysing your behaviour...'
-                                : 'Run Live AI Analysis',
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: context.colors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
               if (aiResult != null) ...[
                 const SizedBox(height: 12),
                 AiAnalysisCard(aiResult: aiResult!),
@@ -1280,5 +1250,1321 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
+  }
+}
+
+enum _SimulationStage { entry, preview, analysing, intervention }
+
+class _PaymentSimulationRequest {
+  const _PaymentSimulationRequest({
+    required this.userId,
+    required this.amount,
+    required this.categoryLabel,
+    required this.normalizedCategory,
+    required this.merchant,
+    required this.description,
+    required this.location,
+    required this.dailyBudget,
+    required this.currentDailySpending,
+    required this.savingsGoal,
+    required this.transactionPayload,
+    required this.aiPayload,
+  });
+
+  final String userId;
+  final double amount;
+  final String categoryLabel;
+  final String normalizedCategory;
+  final String merchant;
+  final String description;
+  final String location;
+  final double dailyBudget;
+  final double currentDailySpending;
+  final double savingsGoal;
+  final Map<String, dynamic> transactionPayload;
+  final Map<String, dynamic> aiPayload;
+}
+
+class _PaymentSimulationResolution {
+  const _PaymentSimulationResolution({
+    required this.aiResult,
+    required this.bannerTitle,
+    required this.bannerBody,
+    required this.bannerTone,
+    this.completedTransaction,
+    this.newBalance,
+    this.radarContext,
+    this.savedInstead = false,
+  });
+
+  final Map<String, dynamic> aiResult;
+  final String bannerTitle;
+  final String bannerBody;
+  final String bannerTone;
+  final TransactionRecord? completedTransaction;
+  final double? newBalance;
+  final Map<String, dynamic>? radarContext;
+  final bool savedInstead;
+}
+
+class _PaymentSimulationSheet extends StatefulWidget {
+  const _PaymentSimulationSheet({
+    required this.userId,
+    required this.dailyBudget,
+    required this.currentDailySpending,
+    required this.savingsGoal,
+  });
+
+  final String userId;
+  final double dailyBudget;
+  final double currentDailySpending;
+  final double savingsGoal;
+
+  @override
+  State<_PaymentSimulationSheet> createState() => _PaymentSimulationSheetState();
+}
+
+class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
+  static const LatLng _demoCoordinates = LatLng(3.1390, 101.6869);
+
+  final _formKey = GlobalKey<FormState>();
+  final _amountController = TextEditingController();
+  final _merchantController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _locationController = TextEditingController();
+
+  _SimulationStage _stage = _SimulationStage.entry;
+  String? _selectedCategory;
+
+  final List<_SimulationTemplate> _quickTemplates = const [
+    _SimulationTemplate(
+      label: 'Late-night bubble tea',
+      amount: '19.90',
+      category: 'Food',
+      merchant: 'Tealive Bukit Bintang',
+      description: 'Late night craving for bubble tea after class',
+      location: 'Bukit Bintang',
+    ),
+    _SimulationTemplate(
+      label: 'Shopping impulse',
+      amount: '36.00',
+      category: 'Shopping',
+      merchant: 'MINISO',
+      description: 'Impulse treat after spotting a cute desk item',
+      location: 'Mid Valley',
+    ),
+    _SimulationTemplate(
+      label: 'Transport overspend',
+      amount: '28.50',
+      category: 'Transport',
+      merchant: 'Grab',
+      description: 'Peak hour ride instead of train',
+      location: 'KL Sentral',
+    ),
+    _SimulationTemplate(
+      label: 'Food budget risk',
+      amount: '24.00',
+      category: 'Food',
+      merchant: 'McDonald KLCC',
+      description: 'Treat meal while already close to food budget',
+      location: 'KLCC',
+    ),
+  ];
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _merchantController.dispose();
+    _descriptionController.dispose();
+    _locationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _previewPayment() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _stage = _SimulationStage.preview);
+  }
+
+  void _confirmPayment() {
+    final amount = double.tryParse(_amountController.text.trim());
+    if (amount == null || _selectedCategory == null) return;
+
+    final now = DateTime.now().toIso8601String();
+    final normalizedCategory = _normalizeCategory(_selectedCategory!);
+    final hasLocation = _locationController.text.trim().isNotEmpty;
+    final coordinates = hasLocation ? _demoCoordinates : null;
+
+    final transactionPayload = <String, dynamic>{
+      'userId': widget.userId,
+      'amount': amount,
+      'category': normalizedCategory,
+      'merchant': _merchantController.text.trim(),
+      'description': _descriptionController.text.trim(),
+      'userAction': 'confirm_payment',
+      'lat': coordinates?.latitude,
+      'lng': coordinates?.longitude,
+    };
+
+    final aiPayload = <String, dynamic>{
+      'user_id': widget.userId,
+      'daily_budget': widget.dailyBudget > 0 ? widget.dailyBudget : 30,
+      'current_daily_spending':
+          widget.currentDailySpending > 0 ? widget.currentDailySpending : 18,
+      'savings_goal': widget.savingsGoal > 0 ? widget.savingsGoal : 500,
+      'transactions': [
+        {
+          'transaction_id':
+              'txn_${DateTime.now().microsecondsSinceEpoch.toString()}',
+          'amount': amount,
+          'category': normalizedCategory,
+          'time': now,
+          'location': _locationController.text.trim(),
+        }
+      ],
+      'user_action': {
+        'actionType': 'confirm_payment',
+        'timestamp': now,
+        'interactionSource': 'simulation',
+      },
+    };
+
+    Navigator.of(context).pop(
+      _PaymentSimulationRequest(
+        userId: widget.userId,
+        amount: amount,
+        categoryLabel: _selectedCategory!,
+        normalizedCategory: normalizedCategory,
+        merchant: _merchantController.text.trim(),
+        description: _descriptionController.text.trim(),
+        location: _locationController.text.trim(),
+        dailyBudget: widget.dailyBudget > 0 ? widget.dailyBudget : 30,
+        currentDailySpending:
+            widget.currentDailySpending > 0 ? widget.currentDailySpending : 18,
+        savingsGoal: widget.savingsGoal > 0 ? widget.savingsGoal : 500,
+        transactionPayload: transactionPayload,
+        aiPayload: aiPayload,
+      ),
+    );
+  }
+
+  String _normalizeCategory(String category) {
+    return category.toLowerCase().replaceAll('&', 'and').replaceAll(' ', '_');
+  }
+
+  void _applyTemplate(_SimulationTemplate template) {
+    setState(() {
+      _amountController.text = template.amount;
+      _selectedCategory = template.category;
+      _merchantController.text = template.merchant;
+      _descriptionController.text = template.description;
+      _locationController.text = template.location;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final amount = double.tryParse(_amountController.text.trim());
+    final merchantText = _merchantController.text.trim();
+    final payeeLabel =
+        merchantText.isNotEmpty ? merchantText : (_selectedCategory ?? 'merchant');
+
+    return SafeArea(
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.95,
+        decoration: BoxDecoration(
+          color: context.colors.background,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 56,
+              height: 5,
+              margin: const EdgeInsets.only(top: 12),
+              decoration: BoxDecoration(
+                color: context.colors.muted,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Simulate Payment',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'A clean payment flow before ThinkTwice jumps in.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: context.colors.mutedForeground,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _StepStrip(stage: _stage),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _quickTemplates
+                            .map(
+                              (template) => ActionChip(
+                                avatar: const Icon(
+                                  Icons.flash_on_rounded,
+                                  size: 16,
+                                ),
+                                label: Text(template.label),
+                                onPressed: () => _applyTemplate(template),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      if (_stage == _SimulationStage.entry) ...[
+                        _fieldLabel('Amount (RM)'),
+                        TextFormField(
+                          controller: _amountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: _inputDecoration('Enter payment amount'),
+                          validator: (value) {
+                            final parsed = double.tryParse((value ?? '').trim());
+                            if (parsed == null || parsed <= 0) {
+                              return 'Amount is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel('Category'),
+                        DropdownButtonFormField<String>(
+                          value: _selectedCategory,
+                          decoration: _inputDecoration('Choose a category'),
+                          items: const [
+                            DropdownMenuItem(value: 'Food', child: Text('Food')),
+                            DropdownMenuItem(
+                              value: 'Transport',
+                              child: Text('Transport'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Shopping',
+                              child: Text('Shopping'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Entertainment',
+                              child: Text('Entertainment'),
+                            ),
+                            DropdownMenuItem(value: 'Bills', child: Text('Bills')),
+                            DropdownMenuItem(
+                              value: 'Education',
+                              child: Text('Education'),
+                            ),
+                            DropdownMenuItem(value: 'Other', child: Text('Other')),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _selectedCategory = value),
+                          validator: (value) =>
+                              value == null ? 'Category is required' : null,
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel('Merchant'),
+                        TextFormField(
+                          controller: _merchantController,
+                          decoration: _inputDecoration('Optional merchant name'),
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel('Description'),
+                        TextFormField(
+                          controller: _descriptionController,
+                          decoration:
+                              _inputDecoration('Optional spending context'),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: 12),
+                        _fieldLabel('Location / area'),
+                        TextFormField(
+                          controller: _locationController,
+                          decoration: _inputDecoration('Optional area or mall'),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _previewPayment,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: context.colors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                            ),
+                            child: const Text('Preview Payment'),
+                          ),
+                        ),
+                      ],
+                      if (_stage == _SimulationStage.preview) ...[
+                        _PreviewCard(
+                          amountLabel: amount != null
+                              ? 'RM ${amount.toStringAsFixed(2)}'
+                              : 'RM 0.00',
+                          payeeLabel: payeeLabel,
+                          category: _selectedCategory ?? 'Other',
+                          description: _descriptionController.text.trim(),
+                          location: _locationController.text.trim(),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _confirmPayment,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: context.colors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                            ),
+                            child: const Text('Confirm Payment'),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () =>
+                                setState(() => _stage = _SimulationStage.entry),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                            ),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _fieldLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hintText) {
+    return InputDecoration(
+      hintText: hintText,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: Color(0xFFE5EBE7)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: Color(0xFFE5EBE7)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: context.colors.primary, width: 1.5),
+      ),
+    );
+  }
+}
+
+class _StepStrip extends StatelessWidget {
+  const _StepStrip({required this.stage});
+
+  final _SimulationStage stage;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeIndex = switch (stage) {
+      _SimulationStage.entry => 0,
+      _SimulationStage.preview => 1,
+      _SimulationStage.analysing => 2,
+      _SimulationStage.intervention => 2,
+    };
+
+    const labels = [
+      '1. Enter payment',
+      '2. Preview payment',
+      '3. AI intervention',
+    ];
+
+    return Row(
+      children: List.generate(labels.length, (index) {
+        final active = index <= activeIndex;
+        return Expanded(
+          child: Container(
+            margin: EdgeInsets.only(right: index == labels.length - 1 ? 0 : 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            decoration: BoxDecoration(
+              color: active
+                  ? context.colors.primary.withOpacity(0.14)
+                  : context.colors.card,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: active
+                    ? context.colors.primary.withOpacity(0.35)
+                    : Theme.of(context).dividerColor,
+              ),
+            ),
+            child: Text(
+              labels[index],
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: active
+                    ? context.colors.primary
+                    : context.colors.mutedForeground,
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _PreviewCard extends StatelessWidget {
+  const _PreviewCard({
+    required this.amountLabel,
+    required this.payeeLabel,
+    required this.category,
+    required this.description,
+    required this.location,
+  });
+
+  final String amountLabel;
+  final String payeeLabel;
+  final String category;
+  final String description;
+  final String location;
+
+  @override
+  Widget build(BuildContext context) {
+    return WhiteCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: context.colors.softMintGradient,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet_rounded,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'GXBank-style confirmation',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'You are about to pay $amountLabel to $payeeLabel.',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Category: $category',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: context.colors.mutedForeground,
+            ),
+          ),
+          if (description.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              description,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.45,
+                color: context.colors.foreground,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          if (location.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(Icons.place_rounded,
+                    size: 14, color: context.colors.primary),
+                const SizedBox(width: 6),
+                Text(
+                  location,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ThinkTwiceSimulationAlertDialog extends StatefulWidget {
+  const _ThinkTwiceSimulationAlertDialog({
+    required this.request,
+    required this.breed,
+    required this.accessory,
+    required this.effect,
+  });
+
+  final _PaymentSimulationRequest request;
+  final String breed;
+  final String accessory;
+  final String effect;
+
+  @override
+  State<_ThinkTwiceSimulationAlertDialog> createState() =>
+      _ThinkTwiceSimulationAlertDialogState();
+}
+
+class _ThinkTwiceSimulationAlertDialogState
+    extends State<_ThinkTwiceSimulationAlertDialog> {
+  Map<String, dynamic>? _analysisResult;
+  bool _loading = true;
+  bool _submitting = false;
+  String? _statusMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _runAnalysis();
+  }
+
+  Future<void> _runAnalysis() async {
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    try {
+      final result =
+          await AiService.analyzeRiskWithPayload(widget.request.aiPayload);
+      if (!mounted) return;
+      setState(() {
+        _analysisResult = result;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _analysisResult = _buildSimulationFallbackAiResult(widget.request);
+        _loading = false;
+        _statusMessage = 'Using local fallback scoring for the demo.';
+      });
+    }
+  }
+
+  Future<void> _resolveContinue() async {
+    if (_analysisResult == null || _submitting) return;
+    setState(() => _submitting = true);
+
+    double? newBalance;
+    try {
+      final result = await BackendApiService.postTransaction(
+        userId: widget.request.userId,
+        amount: widget.request.amount,
+        category: widget.request.normalizedCategory,
+        merchant: widget.request.merchant.isEmpty
+            ? widget.request.categoryLabel
+            : widget.request.merchant,
+        description: widget.request.description.isEmpty
+            ? null
+            : widget.request.description,
+      );
+      newBalance = result.newBalance;
+    } catch (_) {
+      newBalance = null;
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).pop(
+      _PaymentSimulationResolution(
+        aiResult: _analysisResult!,
+        bannerTitle: 'Payment completed.',
+        bannerBody:
+            'Payment completed, but ThinkTwice logged this as a risky decision.',
+        bannerTone: 'warning',
+        newBalance: newBalance,
+        completedTransaction: TransactionRecord(
+          id: 'sim_${DateTime.now().microsecondsSinceEpoch}',
+          merchant: widget.request.merchant.isEmpty
+              ? widget.request.categoryLabel
+              : widget.request.merchant,
+          amount: -widget.request.amount.abs(),
+          icon: _iconForCategory(widget.request.normalizedCategory),
+          timestampLabel: 'Just now',
+          category: widget.request.categoryLabel,
+        ),
+      ),
+    );
+  }
+
+  void _resolveSave() {
+    if (_analysisResult == null || _submitting) return;
+    Navigator.of(context).pop(
+      _PaymentSimulationResolution(
+        aiResult: _analysisResult!,
+        bannerTitle: 'Nice choice - RM8 moved to your savings goal.',
+        bannerBody: '+RM8 saved. +5 resilience score. Streak maintained.',
+        bannerTone: 'success',
+        savedInstead: true,
+      ),
+    );
+  }
+
+  void _resolveRadar() {
+    if (_analysisResult == null || _submitting) return;
+    Navigator.of(context).pop(
+      _PaymentSimulationResolution(
+        aiResult: _analysisResult!,
+        bannerTitle: 'Smart Radar opened from ThinkTwice AI.',
+        bannerBody:
+            'Nearby alternatives are ready so the judge can compare cheaper options before paying.',
+        bannerTone: 'primary',
+        radarContext: {
+          'amount': widget.request.amount,
+          'category': widget.request.normalizedCategory,
+          'merchant': widget.request.merchant,
+          'description': widget.request.description,
+          'location': widget.request.location,
+          'lat': widget.request.transactionPayload['lat'],
+          'lng': widget.request.transactionPayload['lng'],
+          'source': 'payment_simulation',
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context).size;
+    final maxDialogHeight = media.height * 0.78;
+    final visibility =
+        _analysisResult?['aiVisibility'] as Map<String, dynamic>?;
+    final reasons = (visibility?['bulletReasons'] as List<dynamic>? ??
+            _analysisResult?['riskAnalysis']?['reasons'] as List<dynamic>? ??
+            const <dynamic>[])
+        .map((item) => item.toString())
+        .toList();
+    final riskLevel =
+        _analysisResult?['riskAnalysis']?['riskLevel']?.toString() ?? 'low';
+    final avatarMood = switch (riskLevel) {
+      'high' => AvatarMood.sad,
+      'medium' => AvatarMood.neutral,
+      _ => AvatarMood.happy,
+    };
+    final title = visibility?['summary']?.toString() ??
+        'Impulse spending detected.';
+    final prediction = visibility?['predictionText']?.toString() ??
+        'Your weekly food budget may exceed in 2 days.';
+    final recommendedAction =
+        visibility?['recommendedActionText']?.toString() ?? 'Save RM8 Instead';
+    final riskLabel = visibility?['riskLabel']?.toString() ??
+        riskLevel.toUpperCase();
+    final riskScore =
+        _analysisResult?['riskAnalysis']?['riskScore']?.toString() ??
+            visibility?['severityScoreText']?.toString() ??
+            '0/100';
+    final confidence = visibility?['confidenceText']?.toString() ??
+        '${_analysisResult?['interventionConfidence'] ?? 0}%';
+
+    return Material(
+      color: Colors.transparent,
+      child: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: maxDialogHeight,
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: context.colors.card,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.22),
+                        blurRadius: 30,
+                        offset: const Offset(0, 18),
+                      ),
+                    ],
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 260),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    child: _loading
+                        ? Padding(
+                          key: const ValueKey('loading'),
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              WalletGuardianPreview(
+                                breed: widget.breed,
+                                accessory: widget.accessory,
+                                effect: widget.effect,
+                                mood: AvatarMood.sad,
+                                size: 96,
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Analysing spending behaviour...',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'ThinkTwice is interrupting this payment attempt in real time.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  height: 1.45,
+                                  color: context.colors.mutedForeground,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              CircularProgressIndicator(
+                                color: context.colors.primary,
+                              ),
+                            ],
+                          ),
+                        )
+                        : SingleChildScrollView(
+                            key: const ValueKey('alert'),
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Center(
+                                child: WalletGuardianPreview(
+                                  breed: widget.breed,
+                                  accessory: widget.accessory,
+                                  effect: widget.effect,
+                                  mood: avatarMood,
+                                  size: 96,
+                                ),
+                                ),
+                                const SizedBox(height: 12),
+                                Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 7,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: context.colors.primary
+                                          .withOpacity(0.10),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      'ThinkTwice AI Intervention',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.6,
+                                        color: context.colors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                Text(
+                                  title,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w900,
+                                    height: 1.08,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  prediction,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.4,
+                                    color: context.colors.foreground,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _AlertMetricTile(
+                                        label: 'Risk Level',
+                                        value: riskLabel,
+                                        tone: riskLevel,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: _AlertMetricTile(
+                                        label: 'Risk Score',
+                                        value: riskScore,
+                                        tone: riskLevel,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: _AlertMetricTile(
+                                        label: 'Confidence',
+                                        value: confidence,
+                                        tone: riskLevel,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    gradient: context.colors.primaryGradient,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: context.colors.primary
+                                          .withOpacity(0.22),
+                                      blurRadius: 18,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Recommended Action',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        recommendedAction,
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
+                                          height: 1.1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                if (reasons.isNotEmpty)
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      color: context.colors.background,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Theme.of(context)
+                                            .dividerColor
+                                            .withOpacity(0.7),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Why ThinkTwice stepped in',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        ...reasons.take(3).map(
+                                              (reason) => Padding(
+                                                padding: const EdgeInsets.only(
+                                                  bottom: 8,
+                                                ),
+                                                child: Row(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.circle,
+                                                      size: 8,
+                                                      color: context
+                                                          .colors.primary,
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        reason,
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          height: 1.4,
+                                                          color: context.colors
+                                                              .mutedForeground,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                      ],
+                                    ),
+                                  ),
+                                if (_statusMessage != null) ...[
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    _statusMessage!,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: context.colors.mutedForeground,
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 14),
+                                SizedBox(
+                                  width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed:
+                                      _submitting ? null : _resolveContinue,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: context.colors.foreground,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(18),
+                                      ),
+                                    ),
+                                    child: const Text('Continue Anyway'),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: _submitting ? null : _resolveSave,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: context.colors.primary,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(18),
+                                      ),
+                                    ),
+                                    child: const Text('Save RM8 Instead'),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton(
+                                    onPressed:
+                                        _submitting ? null : _resolveRadar,
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(18),
+                                      ),
+                                    ),
+                                    child: const Text('Find Cheaper Nearby'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AlertMetricTile extends StatelessWidget {
+  const _AlertMetricTile({
+    required this.label,
+    required this.value,
+    required this.tone,
+  });
+
+  final String label;
+  final String value;
+  final String tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (tone) {
+      'high' => context.colors.warning,
+      'medium' => context.colors.accent,
+      _ => context.colors.primary,
+    };
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Map<String, dynamic> _buildSimulationFallbackAiResult(
+  _PaymentSimulationRequest request,
+) {
+  final transaction =
+      (request.aiPayload['transactions'] as List<dynamic>).first
+          as Map<String, dynamic>;
+  final amount = (transaction['amount'] as num).toDouble();
+  final category = transaction['category'].toString();
+  final description = request.description.toLowerCase();
+  final currentDaily = request.currentDailySpending;
+  final dailyBudget = request.dailyBudget;
+
+  double riskScore = 18;
+  final reasons = <String>[];
+
+  if (amount > 15) {
+    riskScore += 18;
+    reasons.add('Amount is above the usual low-risk micro-spend range.');
+  }
+
+  if (const {'food', 'shopping', 'entertainment'}.contains(category)) {
+    riskScore += 16;
+    reasons.add(
+      '${request.categoryLabel} often drives impulse spending for this demo profile.',
+    );
+  }
+
+  if (RegExp(r'impulse|craving|treat|bubble tea|late night')
+      .hasMatch(description)) {
+    riskScore += 18;
+    reasons.add('Description suggests an impulse or late-night purchase.');
+  }
+
+  if (currentDaily + amount > dailyBudget) {
+    riskScore += 32;
+    reasons.add(
+      'This payment would push today\'s spending above the safe daily budget.',
+    );
+  }
+
+  final riskLevel = riskScore >= 65
+      ? 'high'
+      : riskScore >= 38
+          ? 'medium'
+          : 'low';
+  final confidence = riskLevel == 'high'
+      ? 86
+      : riskLevel == 'medium'
+          ? 78
+          : 68;
+  final prediction = currentDaily + amount > dailyBudget
+      ? 'Impulse spending detected. Your weekly ${category.toLowerCase()} budget may exceed in 2 days.'
+      : 'Impulse spending detected. This purchase could weaken your saving rhythm tonight.';
+  final recommendedAction = riskLevel == 'low'
+      ? 'Continue with awareness'
+      : category == 'transport'
+          ? 'Find cheaper nearby'
+          : 'Save RM8 Instead';
+  final shouldTriggerRadar = riskLevel != 'low' &&
+      const {'food', 'shopping', 'transport'}.contains(category);
+
+  return {
+    'userId': request.userId,
+    'fallbackUsed': true,
+    'riskAnalysis': {
+      'riskLevel': riskLevel,
+      'riskScore': riskScore.round(),
+      'reasons': reasons,
+    },
+    'scoreAnalysis': {
+      'resilienceScore': riskLevel == 'high'
+          ? 44
+          : riskLevel == 'medium'
+              ? 57
+              : 71,
+      'smartDecisionScore': riskLevel == 'high'
+          ? 41
+          : riskLevel == 'medium'
+              ? 55
+              : 68,
+    },
+    'spendingVelocityAnalysis': {
+      'overspendingPrediction': {'prediction': prediction},
+    },
+    'intervention': {
+      'finalAction': recommendedAction.toLowerCase().replaceAll(' ', '_'),
+      'recommendedButtonText': recommendedAction,
+    },
+    'integrationPayload': {
+      'smartRadar': {
+        'triggerSmartRadar': shouldTriggerRadar,
+        'radarCategory': category,
+        'radarMessage':
+            'ThinkTwice spotted cheaper ${category.toLowerCase()} alternatives nearby.',
+      },
+    },
+    'interventionConfidence': confidence,
+    'behaviourSeverityScore': riskScore.round(),
+    'aiVisibility': {
+      'riskLabel': riskLevel.toUpperCase(),
+      'summary': riskLevel == 'high'
+          ? 'Impulse spending detected.'
+          : riskLevel == 'medium'
+              ? 'ThinkTwice spotted budget pressure.'
+              : 'Low pre-payment risk detected.',
+      'bulletReasons': reasons,
+      'predictionText': prediction,
+      'recommendedActionText': recommendedAction,
+      'confidenceText': '$confidence%',
+      'severityScoreText': '${riskScore.round()}/100',
+    },
+    'transactionPayload': request.transactionPayload,
+  };
+}
+class _SimulationTemplate {
+  const _SimulationTemplate({
+    required this.label,
+    required this.amount,
+    required this.category,
+    required this.merchant,
+    required this.description,
+    required this.location,
+  });
+
+  final String label;
+  final String amount;
+  final String category;
+  final String merchant;
+  final String description;
+  final String location;
+}
+
+IconData _iconForCategory(String category) {
+  switch (category) {
+    case 'food':
+      return Icons.restaurant_rounded;
+    case 'transport':
+      return Icons.directions_car_rounded;
+    case 'shopping':
+      return Icons.shopping_bag_rounded;
+    case 'entertainment':
+      return Icons.movie_rounded;
+    case 'bills':
+      return Icons.receipt_long_rounded;
+    case 'education':
+      return Icons.school_rounded;
+    default:
+      return Icons.payments_rounded;
   }
 }

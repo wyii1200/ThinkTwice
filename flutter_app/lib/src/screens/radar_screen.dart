@@ -72,6 +72,11 @@ class _RadarPageState extends State<RadarPage> {
   @override
   void initState() {
     super.initState();
+    final simulationContext = AiState.latestSimulationContext;
+    final simulatedCategory = simulationContext?['category']?.toString();
+    if (simulatedCategory != null && simulatedCategory.isNotEmpty) {
+      _activeCategory = simulatedCategory;
+    }
     _detectLocation();
     _loadDeals();
     _loadMonthlySummary();
@@ -831,6 +836,7 @@ class _RadarPageState extends State<RadarPage> {
         _apiDeals.fold<double>(0, (s, d) => s + d.price * 0.2);
 
     final aiResult = AiState.latestAiResult;
+    final simulationContext = AiState.latestSimulationContext;
 
     final aiTriggeredRadar =
         aiResult != null && AiService.shouldTriggerSmartRadar(aiResult);
@@ -846,6 +852,13 @@ class _RadarPageState extends State<RadarPage> {
     final aiPrediction = aiResult != null
         ? AiService.extractPrediction(aiResult)
         : 'ThinkTwice will recommend nearby savings opportunities when risk is detected.';
+
+    final simulationMerchant =
+        simulationContext?['merchant']?.toString().trim() ?? '';
+    final simulationLocation =
+        simulationContext?['location']?.toString().trim() ?? '';
+    final simulationCategory =
+        simulationContext?['category']?.toString().trim() ?? radarCategory;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
@@ -924,6 +937,56 @@ class _RadarPageState extends State<RadarPage> {
           ),
 
           const SizedBox(height: 16),
+          if (simulationContext != null) ...[
+            WhiteCard(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: context.colors.accent.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.radar_rounded,
+                      color: context.colors.accent,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Triggered by ThinkTwice AI',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Looking for cheaper ${simulationCategory.toUpperCase()} options'
+                          '${simulationMerchant.isNotEmpty ? ' near $simulationMerchant' : ''}'
+                          '${simulationLocation.isNotEmpty ? ' around $simulationLocation' : ''}.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            height: 1.4,
+                            color: context.colors.mutedForeground,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // ── Savings card — tap to see breakdown ───────────────────────────
           GestureDetector(
