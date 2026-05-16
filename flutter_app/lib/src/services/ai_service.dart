@@ -6,6 +6,9 @@ import 'package:http/http.dart' as http;
 
 class AiService {
   static String get baseUrl {
+    const configured = String.fromEnvironment('THINKTWICE_AI_URL');
+    if (configured.isNotEmpty) return configured;
+
     // Flutter Web
     if (kIsWeb) {
       return 'http://127.0.0.1:8000';
@@ -21,9 +24,13 @@ class AiService {
   }
 
   static Future<Map<String, dynamic>> analyzeRisk() async {
-    final url = Uri.parse('$baseUrl/analyze-risk');
+    return analyzeRiskWithPayload(highRiskDemoPayload());
+  }
 
-    final body = highRiskDemoPayload();
+  static Future<Map<String, dynamic>> analyzeRiskWithPayload(
+    Map<String, dynamic> body,
+  ) async {
+    final url = Uri.parse('$baseUrl/analyze-risk');
 
     try {
       final response = await http.post(
