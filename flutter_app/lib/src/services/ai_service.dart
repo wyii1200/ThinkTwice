@@ -4,25 +4,26 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+// Import your radar service to access RouteResult for the analyzeRouteWorth method
+import '../services/radar_api_service.dart'; 
+
 class AiService {
   static String get baseUrl {
-    // Flutter Web
-    if (kIsWeb) {
-      return 'http://127.0.0.1:8000';
-    }
-
-    // Android Emulator
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8000';
-    }
-
-    // Windows / macOS / iOS Simulator
+    // Force the app to use your live AI orchestrator so it works anywhere
+    return 'https://thinktwice-guq9.onrender.com';
+    
+    // TIP: If you need to test locally again, uncomment this block:
+    /*
+    if (kIsWeb) return 'http://127.0.0.1:8000';
+    if (Platform.isAndroid) return 'http://10.0.2.2:8000';
     return 'http://127.0.0.1:8000';
+    */
   }
+
+  // ─── Core AI Endpoints ──────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> analyzeRisk() async {
     final url = Uri.parse('$baseUrl/analyze-risk');
-
     final body = highRiskDemoPayload();
 
     try {
@@ -45,6 +46,37 @@ class AiService {
       );
     }
   }
+
+  /// Analyzes a generated route and returns a 1-sentence verdict
+  static Future<String> analyzeRouteWorth(RouteResult route) async {
+    try {
+      final url = Uri.parse('$baseUrl/analyze-route');
+      
+      final payload = {
+        'distanceKm': route.totalDistanceKm,
+        'travelCostRM': route.savings.travelCostRM,
+        'grossSavingRM': route.savings.grossSavingRM,
+        'netSavingRM': route.savings.netSavingRM,
+      };
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 10)); 
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        return body['verdict'] ?? 'AI recommends this route!'; 
+      }
+      return 'Smart Route ready. Net savings: RM ${route.savings.netSavingRM.toStringAsFixed(2)}';
+    } catch (e) {
+      debugPrint('AI Route Analysis Error: $e');
+      return 'Smart Route ready. Net savings: RM ${route.savings.netSavingRM.toStringAsFixed(2)}';
+    }
+  }
+
+  // ─── Demo Payloads ──────────────────────────────────────────────────────
 
   static Map<String, dynamic> highRiskDemoPayload() {
     return {
@@ -97,13 +129,13 @@ class AiService {
     };
   }
 
+  // ─── Data Extraction Helpers ────────────────────────────────────────────
+
   static List<String> extractInsightTexts(Map<String, dynamic> aiResult) {
     final explanation = aiResult['aiExplanation'];
-
     if (explanation is List) {
       return explanation.map((item) => item.toString()).toList();
     }
-
     return [];
   }
 

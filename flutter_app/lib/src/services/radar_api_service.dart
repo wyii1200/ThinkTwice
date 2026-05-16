@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
+//testing with local server
+const String _baseUrl = 'http://localhost:4000';
 
-//const String _baseUrl = 'https://thinktwice-zu5d.onrender.com/';
-
-const String _baseUrl = 'https://thinktwice-zu5d.onrender.com';
+//const String _baseUrl = 'https://thinktwice-zu5d.onrender.com';
 // ─── Response models ──────────────────────────────────────────────────────────
+
+  //final String submittedBy;
 
 class ApiDeal {
   final String dealId;
@@ -14,6 +16,7 @@ class ApiDeal {
   final String storeName;
   final String category;
   final double price;
+  final double originalPrice;
   final double lat;
   final double lng;
   final String address;
@@ -26,6 +29,8 @@ class ApiDeal {
   final bool hidden;
   final String createdAt;
   final String? expiresAt;
+  
+
 
   const ApiDeal({
     required this.dealId,
@@ -33,6 +38,7 @@ class ApiDeal {
     required this.storeName,
     required this.category,
     required this.price,
+    required this.originalPrice,
     required this.lat,
     required this.lng,
     required this.address,
@@ -55,6 +61,7 @@ class ApiDeal {
       storeName: json['storeName'] as String? ?? '',
       category: json['category'] as String? ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0,
+      originalPrice: (json['originalPrice'] as num?)?.toDouble() ?? ((json['price'] as num?)?.toDouble() ?? 0) * 1.2,
       lat: (loc?['_latitude'] as num?)?.toDouble() ?? 0,
       lng: (loc?['_longitude'] as num?)?.toDouble() ?? 0,
       address: json['address'] as String? ?? '',
@@ -180,22 +187,24 @@ class MonthlySummary {
   final double totalSavedRM;
   final Map<String, double> byType;
   final int recordCount;
+  final List<dynamic> records;
 
   const MonthlySummary({
     required this.month,
     required this.totalSavedRM,
     required this.byType,
     required this.recordCount,
+    required this.records,
   });
 
-  factory MonthlySummary.fromJson(Map<String, dynamic> json) {
+    factory MonthlySummary.fromJson(Map<String, dynamic> json) {
     final rawByType = json['byType'] as Map<String, dynamic>? ?? {};
     return MonthlySummary(
       month: json['month'] as String? ?? '',
       totalSavedRM: (json['totalSavedRM'] as num?)?.toDouble() ?? 0,
-      byType: rawByType
-          .map((k, v) => MapEntry(k, (v as num).toDouble())),
+      byType: rawByType.map((k, v) => MapEntry(k, (v as num).toDouble())),
       recordCount: (json['recordCount'] as num?)?.toInt() ?? 0,
+      records: json['records'] as List<dynamic>? ?? [], // 👈 3. ADD THIS
     );
   }
 }
@@ -233,6 +242,40 @@ class RadarApiService {
     return list.map((d) => ApiDeal.fromJson(d as Map<String, dynamic>)).toList();
   }
 
+  // Add to radar_api_service.dart
+  static Future<void> deleteDeal({required String dealId, required String userId}) async {
+    final uri = Uri.parse('$_baseUrl/deals/$dealId');
+    final res = await _client.delete(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'userId': userId}),
+    );
+    if (res.statusCode != 200) throw Exception('Failed to delete deal');
+  }
+
+    static Future<void> editDeal({
+    required String dealId,
+    required String userId,
+    required String title,
+    required double price,
+    required String description,
+    required double originalPrice,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/deals/$dealId');
+    final res = await _client.patch(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'userId': userId,
+        'title': title,
+        'price': price,
+        'description': description,
+        'originalPrice': originalPrice,
+      }),
+    );
+    if (res.statusCode != 200) throw Exception('Failed to edit deal');
+  }
+
   // POST /deals — submit a community deal
   static Future<ApiDeal> postDeal({
     required String title,
@@ -243,6 +286,7 @@ class RadarApiService {
     required double lng,
     required String address,
     required String userId,
+    required double originalPrice,
     Uint8List? imageBytes,
   }) async {
     final body = <String, dynamic>{
@@ -250,6 +294,7 @@ class RadarApiService {
       'storeName': storeName,
       'category': category,
       'price': price,
+      'originalPrice': originalPrice,
       'lat': lat,
       'lng': lng,
       'address': address,
@@ -335,6 +380,7 @@ class RadarApiService {
     required String dealId,
     required double amountSaved,
     required String category,
+    required String dealTitle,
   }) async {
     final uri = Uri.parse('$_baseUrl/deals/use');
     final res = await _client
@@ -345,6 +391,7 @@ class RadarApiService {
               'dealId': dealId,
               'amountSaved': amountSaved,
               'category': category,
+              'dealTitle': dealTitle,
             }))
         .timeout(const Duration(seconds: 10));
 

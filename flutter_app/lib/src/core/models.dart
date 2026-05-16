@@ -50,10 +50,12 @@ class CommunityDeal {
     required this.discountLabel,
     required this.upvotes,
     required this.verifications,
+    required this.submittedBy,
+    this.imageUrl,
     this.imageBytes,
     this.distanceKm,
     this.postedByUser = false,
-
+    
   });
 
   final double? distanceKm;
@@ -72,6 +74,8 @@ class CommunityDeal {
   final int verifications;
   final Uint8List? imageBytes; 
   final bool postedByUser;
+  final String submittedBy;
+  final String? imageUrl;
 
   double get estimatedSavings => math.max(0, originalPrice - dealPrice);
 
@@ -93,6 +97,8 @@ class CommunityDeal {
     Uint8List? imageBytes,
     double? distanceKm,
     bool? postedByUser,
+    String? submittedBy,
+
   }) {
     return CommunityDeal(
       id: id ?? this.id,
@@ -111,6 +117,7 @@ class CommunityDeal {
       imageBytes: imageBytes ?? this.imageBytes,
       distanceKm: distanceKm ?? this.distanceKm,
       postedByUser: postedByUser ?? this.postedByUser,
+      submittedBy: submittedBy ?? this.submittedBy,    
     );
   }
 }

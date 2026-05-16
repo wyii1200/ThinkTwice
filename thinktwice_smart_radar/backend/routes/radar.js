@@ -108,6 +108,7 @@ router.post("/route-optimize", async (req, res) => {
           dealPrice: deal.price,
           trustScore: deal.trustScore,
           items: items.slice(i * itemsPerStop, (i + 1) * itemsPerStop),
+          source: 'ThinkTwice Community'
         }));
       } else {
         // No real deals found — fallback to a generic nearby stop
@@ -116,6 +117,7 @@ router.post("/route-optimize", async (req, res) => {
           lat: parseFloat((oLat + 0.005).toFixed(6)),
           lng: parseFloat((oLng + 0.005).toFixed(6)),
           items: groceryList || [],
+          source: 'Google Places AI'
         }];
       }
     }

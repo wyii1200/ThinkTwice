@@ -60,7 +60,7 @@ router.get("/:id", async (req, res) => {
 // Body: { title, storeName, category, price, lat, lng, address, imageBase64, submittedBy }
 router.post("/", async (req, res) => {
   try {
-    const { title, storeName, category, price, lat, lng, address, imageBase64, submittedBy } = req.body;
+    const { title, storeName, category, price, originalPrice , lat, lng, address, imageBase64, submittedBy } = req.body;
 
     if (!title || !storeName || !category || !price || !lat || !lng || !submittedBy) {
       return res.status(400).json({ success: false, error: "Missing required fields: title, storeName, category, price, lat, lng, submittedBy" });
@@ -93,6 +93,7 @@ router.post("/", async (req, res) => {
       storeName,
       category,
       price: parseFloat(price),
+      originalPrice: originalPrice ? parseFloat(originalPrice) : parseFloat(price) * 1.2, // Fallback for safety
       location: { _latitude: parseFloat(lat), _longitude: parseFloat(lng) },
       address: address || "",
       imageUrl,
@@ -157,7 +158,7 @@ router.post("/:id/downvote", async (req, res) => {
 // Body: { userId, dealId, amountSaved, category }
 router.post("/use", async (req, res) => {
   try {
-    const { userId, dealId, amountSaved, category } = req.body;
+    const { userId, dealId, amountSaved, category, dealTitle } = req.body;
     if (!userId || !dealId || !amountSaved) {
       return res.status(400).json({ success: false, error: "userId, dealId, amountSaved required" });
     }
@@ -167,9 +168,67 @@ router.post("/use", async (req, res) => {
       amountSaved: parseFloat(amountSaved),
       category: category || "general",
       dealId,
+      dealTitle: dealTitle || "Community Deal", // <--- ADD THIS
     });
 
     res.json({ success: true, proofId });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── DELETE /deals/:id ───────────────────────────────────────────────────────
+// Only the submitter can delete their own deal
+// Body: { userId }
+router.delete("/:id", async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ success: false, error: "userId required" });
+
+    const ref = db.collection("deals").doc(req.params.id);
+    const doc = await ref.get();
+
+    if (!doc.exists) return res.status(404).json({ success: false, error: "Deal not found" });
+    if (doc.data().submittedBy !== userId) {
+      return res.status(403).json({ success: false, error: "You can only delete your own deals" });
+    }
+
+    await ref.delete();
+    res.json({ success: true, message: "Deal deleted" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── PATCH /deals/:id ─────────────────────────────────────────────────────────
+// Only the submitter can edit their own deal
+// Body: { userId, title?, price?, description? }
+router.patch("/:id", async (req, res) => {
+  try {
+    // 1. Add originalPrice to the destructured body
+    const { userId, title, price, originalPrice, description } = req.body;
+    
+    if (!userId) return res.status(400).json({ success: false, error: "userId required" });
+
+    const ref = db.collection("deals").doc(req.params.id);
+    const doc = await ref.get();
+
+    if (!doc.exists) return res.status(404).json({ success: false, error: "Deal not found" });
+    if (doc.data().submittedBy !== userId) {
+      return res.status(403).json({ success: false, error: "You can only edit your own deals" });
+    }
+
+    const updates = { updatedAt: new Date().toISOString() };
+    if (title) updates.title = title;
+    if (price != null) updates.price = parseFloat(price);
+    if (description) updates.description = description;
+    
+    // 2. Add the originalPrice update logic
+    if (originalPrice != null) updates.originalPrice = parseFloat(originalPrice);
+
+    await ref.update(updates);
+    const updated = (await ref.get()).data();
+    res.json({ success: true, deal: updated });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

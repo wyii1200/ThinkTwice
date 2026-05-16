@@ -25,6 +25,7 @@ List<CommunityDeal> seedDeals() {
       discountLabel: 'Save RM7',
       upvotes: 42,
       verifications: 9,
+      submittedBy: 'user_123',
     ),
     CommunityDeal(
       id: 'deal-2',
@@ -40,6 +41,7 @@ List<CommunityDeal> seedDeals() {
       discountLabel: 'Save RM3',
       upvotes: 28,
       verifications: 6,
+      submittedBy: 'user_123',  
     ),
     CommunityDeal(
       id: 'deal-3',
@@ -55,6 +57,7 @@ List<CommunityDeal> seedDeals() {
       discountLabel: 'Save RM4',
       upvotes: 19,
       verifications: 4,
+      submittedBy: 'user_123',
     ),
   ];
 }

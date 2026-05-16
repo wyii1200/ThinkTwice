@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../core/app_theme.dart';
 import '../core/models.dart';
@@ -56,6 +57,8 @@ class _RadarPageState extends State<RadarPage> {
   bool _loadingRoute = false;
   String? _routeError;
   final List<String> _groceryItems = [];
+  String? _aiRouteVerdict;
+  
 
   // FIX 1: Change this to your laptop WiFi IP when testing on physical device
   // Run `ipconfig` in PowerShell → IPv4 Address under WiFi adapter
@@ -217,6 +220,12 @@ class _RadarPageState extends State<RadarPage> {
       setState(() {
         _routeResult = result;
         _loadingRoute = false;
+        _aiRouteVerdict = null; // Clear previous verdict
+      });
+
+      // Trigger AI analysis asynchronously
+      AiService.analyzeRouteWorth(result).then((verdict) {
+        if (mounted) setState(() => _aiRouteVerdict = verdict);
       });
 
       _animateMapToRoute();
@@ -347,6 +356,7 @@ class _RadarPageState extends State<RadarPage> {
         storeName: result.storeName,
         category: result.category,
         price: result.price,
+        originalPrice: result.originalPrice ,
         lat: result.lat,
         lng: result.lng,
         address: result.address,
@@ -385,6 +395,209 @@ class _RadarPageState extends State<RadarPage> {
       ));
     }
   }
+// 1. The Claim Logic
+  Future<void> _claimDeal(CommunityDeal deal) async {
+    try {
+      await RadarApiService.useDeal(
+        userId: _userId,
+        dealId: deal.id,
+        amountSaved: deal.originalPrice - deal.dealPrice,
+        category: deal.category,
+        dealTitle: deal.title,// <--- Add this property to your Api Service
+      );
+            await _loadMonthlySummary();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.celebration, color: Colors.white),
+              const SizedBox(width: 12),
+              Text('Awesome! Added RM ${(deal.originalPrice - deal.dealPrice).toStringAsFixed(2)} to your savings.'),
+            ],
+          ),
+          backgroundColor: const Color(0xFF41B89B),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to claim deal: $e')),
+      );
+    }
+  }
+
+  // 2. The Bottom Sheet UI
+  void _showDealDetailsSheet(CommunityDeal deal) {
+    final isOwner = deal.submittedBy == _userId;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            Text(deal.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text('${deal.storeName} • ${deal.category}', style: TextStyle(color: context.colors.mutedForeground)),
+            
+            const SizedBox(height: 16),
+            Container(
+              height: 180, width: double.infinity,
+              decoration: BoxDecoration(color: context.colors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+              clipBehavior: Clip.antiAlias,
+              child: _buildDealImage(deal),
+            ),
+            
+            const SizedBox(height: 16),
+            // THE DESCRIPTION YOU WANTED
+            const Text('Description', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(deal.description.isNotEmpty ? deal.description : 'No description provided.', 
+                 style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.4)),
+            
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Deal Price', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text('RM ${deal.dealPrice.toStringAsFixed(2)}', style: TextStyle(fontSize: 24, color: context.colors.success, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text('Usually', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text('RM ${deal.originalPrice.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, decoration: TextDecoration.lineThrough, color: Colors.grey)),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // THE CLAIM BUTTON
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _claimDeal(deal);
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: context.colors.success,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                icon: const Icon(Icons.receipt_long_rounded),
+                label: const Text('Claim Deal & Record Savings', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ),
+
+            // EDIT/DELETE IF IT'S THEIR OWN DEAL
+            if (isOwner) ...[
+              const Divider(height: 32),
+              Row(
+                children: [
+                // Inside _showDealDetailsSheet under the "Edit" button:
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        Navigator.pop(ctx); // Close details sheet
+                        
+                        // Simple edit dialog
+                        final titleCtrl = TextEditingController(text: deal.title);
+                        final priceCtrl = TextEditingController(text: deal.dealPrice.toString());
+                        final descCtrl = TextEditingController(text: deal.description);
+                        final origPriceCtrl = TextEditingController(text: deal.originalPrice.toString());
+
+                        await showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Edit Deal'),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Title')),
+                                TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: 'Price (RM)')),
+                                TextField(controller: origPriceCtrl, decoration: const InputDecoration(labelText: 'Original Price (RM)'), keyboardType: TextInputType.number),
+                                TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description')),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                              FilledButton(
+                                onPressed: () async {
+                                  await RadarApiService.editDeal(
+                                    dealId: deal.id,
+                                    userId: _userId,
+                                    title: titleCtrl.text,
+                                    price: double.tryParse(priceCtrl.text) ?? deal.dealPrice,
+                                    description: descCtrl.text,
+                                    originalPrice: double.tryParse(origPriceCtrl.text) ?? deal.originalPrice,
+                                  );
+                                  Navigator.pop(context);
+                                  _loadDeals(); // Refresh the screen!
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deal updated!')));
+                                },
+                                child: const Text('Save'),
+                              )
+                            ],
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.edit, size: 18),
+                      label: const Text('Edit'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await RadarApiService.deleteDeal(dealId: deal.id, userId: _userId);
+                          Navigator.pop(ctx);
+                          _loadDeals(); // Refresh list
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deal deleted')));
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: BorderSide(color: Colors.red.shade200),
+                      ),
+                      icon: const Icon(Icons.delete, size: 18),
+                      label: const Text('Delete'),
+                    ),
+                  ),
+                ],
+              )
+            ]
+          ],
+        ),
+      ),
+    );
+  }
+
 
   // ── Use route ──────────────────────────────────────────────────────────────
 
@@ -395,6 +608,7 @@ class _RadarPageState extends State<RadarPage> {
         dealId: deal.id,
         amountSaved: deal.estimatedSavings,
         category: deal.category,
+        dealTitle: deal.title, // <--- Add this property to your Api Service
       );
       if (_routeResult != null) {
         await RadarApiService.acceptRoute(
@@ -424,29 +638,26 @@ class _RadarPageState extends State<RadarPage> {
 
   // ── UI components ───────────────────────────────────────────────────────────
   Widget _buildDealImage(CommunityDeal deal) {
+    // 1. If they just posted it, show the local bytes instantly
     if (deal.imageBytes != null) {
       return Image.memory(deal.imageBytes!, fit: BoxFit.cover);
     }
 
-    final url = _dealImageUrls[deal.id];
-    if (url != null && url.isNotEmpty) {
-      return Image.network(
-        url,
+    // 2. If it has a URL from the database, fetch and display it
+    if (deal.imageUrl != null && deal.imageUrl!.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: deal.imageUrl!,
         fit: BoxFit.cover,
-        loadingBuilder: (ctx, child, progress) => progress == null
-            ? child
-            : const Center(
-                child: SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2))),
-        errorBuilder: (ctx, _, __) => Icon(Icons.storefront_rounded,
-            size: 24, color: Theme.of(ctx).colorScheme.secondary),
+        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+        errorWidget: (context, url, error) => const Icon(Icons.error),
       );
     }
 
-    return Icon(Icons.storefront_rounded,
-        size: 24, color: Theme.of(context).colorScheme.secondary);
+    // 3. Fallback if no image exists at all
+    return Icon(
+      Icons.storefront_rounded,
+      size: 28, color: Theme.of(context).colorScheme.secondary,
+    );
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -476,6 +687,8 @@ class _RadarPageState extends State<RadarPage> {
       upvotes: d.upvotes,
       verifications: d.trustScore,
       distanceKm: distKm,
+      submittedBy: d.submittedBy,
+      imageUrl: d.imageUrl,
     );
   }
 
@@ -485,6 +698,7 @@ class _RadarPageState extends State<RadarPage> {
         storeName: d.storeName,
         category: d.category,
         price: d.dealPrice,
+        originalPrice: d.originalPrice,
         lat: d.latitude,
         lng: d.longitude,
         address: '',
@@ -509,6 +723,7 @@ class _RadarPageState extends State<RadarPage> {
     };
 
     // Community deal markers
+    // Community deal markers
     for (final deal in _apiDeals) {
       markers.add(Marker(
         markerId: MarkerId(deal.dealId),
@@ -522,8 +737,13 @@ class _RadarPageState extends State<RadarPage> {
               ? BitmapDescriptor.hueGreen
               : BitmapDescriptor.hueOrange,
         ),
-        onTap: () =>
-            setState(() => _selectedDeal = _apiDealToCommunityDeal(deal)),
+        onTap: () {
+          final communityDeal = _apiDealToCommunityDeal(deal);
+          setState(() => _selectedDeal = communityDeal);
+          
+          // 👈 ADD THIS LINE TO MAP MARKERS TOO!
+          _showDealDetailsSheet(communityDeal); 
+        },
       ));
     }
 
@@ -1159,6 +1379,7 @@ class _RadarPageState extends State<RadarPage> {
                     const SizedBox(height: 14),
 
                     // FIX 5: Savings breakdown with gross/travel/net
+// FIX 5: Savings breakdown with gross/travel/net
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
@@ -1193,6 +1414,31 @@ class _RadarPageState extends State<RadarPage> {
                                     color: Colors.orange.shade700),
                               ),
                             ),
+                            
+                          // 👈 3. ADD THIS AI VERDICT UI HERE
+                          if (_aiRouteVerdict != null) ...[
+                            const Divider(height: 16),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.auto_awesome, size: 16, color: Colors.purple),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _aiRouteVerdict!,
+                                    style: const TextStyle(
+                                      fontSize: 12, 
+                                      fontStyle: FontStyle.italic, 
+                                      color: Colors.purple,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          // END OF AI VERDICT UI
+                          
                         ],
                       ),
                     ),
@@ -1269,15 +1515,24 @@ class _RadarPageState extends State<RadarPage> {
               padding: EdgeInsets.all(32),
               child: CircularProgressIndicator(),
             ))
-          else
+            else
             ...sortedDeals.map((deal) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: WhiteCard(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(children: [
-                      Row(
+                  // 1. THIS GESTURE DETECTOR BRINGS THE CLICK BACK!
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() => _selectedDeal = deal);
+                      _mapController?.animateCamera(
+                          CameraUpdate.newLatLng(LatLng(deal.latitude, deal.longitude)));
+                      _showDealDetailsSheet(deal); // Opens the description sheet!
+                    },
+                    child: WhiteCard(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(children: [
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Left: The Deal Image
                             Container(
                               width: 52,
                               height: 52,
@@ -1289,75 +1544,78 @@ class _RadarPageState extends State<RadarPage> {
                               child: _buildDealImage(deal),
                             ),
                             const SizedBox(width: 12),
+                            
+                            // Middle: Title, Store, Distance
                             Expanded(
                               child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(deal.title,
-                                        style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700)),
-                                    const SizedBox(height: 2),
-                                    Text('${deal.storeName} • ${deal.category}',
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            color: context
-                                                .colors.mutedForeground)),
-                                    const SizedBox(height: 4),
-                                    // FIX 5: Price comparison in list
-                                    Row(children: [
-                                      Text(
-                                        'RM ${_fmt(deal.originalPrice)}',
-                                        style: const TextStyle(
-                                            fontSize: 11,
-                                            decoration:
-                                                TextDecoration.lineThrough,
-                                            color: Colors.grey),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'RM ${_fmt(deal.dealPrice)}',
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: context.colors.success),
-                                      ),
-                                    ]),
-                                    Text(
-                                      '${deal.distanceKm?.toStringAsFixed(2) ?? '--'} km away'
-                                      ' • expires ${deal.expiryDate.day}/${deal.expiryDate.month}',
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(deal.title,
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700)),
+                                  const SizedBox(height: 2),
+                                  Text('${deal.storeName} • ${deal.category}',
                                       style: TextStyle(
-                                          fontSize: 11,
-                                          color:
-                                              context.colors.mutedForeground),
-                                    ),
-                                  ]),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() => _selectedDeal = deal);
-                                _mapController?.animateCamera(
-                                    CameraUpdate.newLatLng(
-                                        LatLng(deal.latitude, deal.longitude)));
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color:
-                                      context.colors.success.withOpacity(0.14),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  'Save RM ${_fmt(deal.estimatedSavings)}',
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: context.colors.success),
-                                ),
+                                          fontSize: 12,
+                                          color: context.colors.mutedForeground)),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${deal.distanceKm?.toStringAsFixed(2) ?? '--'} km away\nexpires ${deal.expiryDate.day}/${deal.expiryDate.month}',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        height: 1.3,
+                                        color: context.colors.mutedForeground),
+                                  ),
+                                ],
                               ),
                             ),
-                          ]),
+                            
+                            // Right: Original Price, Deal Price, and Save Badge
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'RM ${_fmt(deal.originalPrice)}',
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          decoration: TextDecoration.lineThrough,
+                                          color: Colors.grey),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'RM ${_fmt(deal.dealPrice)}',
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                          color: context.colors.success),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: context.colors.success.withOpacity(0.14),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'Save RM ${_fmt(deal.estimatedSavings)}',
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: context.colors.success),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        
                       const SizedBox(height: 12),
                       Row(children: [
                         Expanded(
@@ -1405,7 +1663,7 @@ class _RadarPageState extends State<RadarPage> {
                     ]),
                   ),
                 )),
-        ],
+        )],
       ),
     );
   }
@@ -1414,6 +1672,8 @@ class _RadarPageState extends State<RadarPage> {
 
   void _showSavingsRecords(BuildContext context) {
     final summary = _monthlySummary;
+
+
 
     showModalBottomSheet(
       context: context,
@@ -1479,50 +1739,40 @@ class _RadarPageState extends State<RadarPage> {
 
             const SizedBox(height: 16),
 
-            // Breakdown by type
-            if (summary != null && summary.byType.isNotEmpty) ...[
-              const Text('Breakdown',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+            // Breakdown / Recent History
+            if (summary != null && summary.records.isNotEmpty) ...[
+              const Text('Recent History', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
               const SizedBox(height: 10),
-              ...summary.byType.entries.map((entry) {
-                final icon = switch (entry.key) {
-                  'deal_used' => Icons.local_offer_rounded,
-                  'route_used' => Icons.route_rounded,
-                  'nudge_accepted' => Icons.notifications_rounded,
-                  _ => Icons.savings_rounded,
-                };
-                final label = switch (entry.key) {
-                  'deal_used' => 'Deals used',
-                  'route_used' => 'Routes followed',
-                  'nudge_accepted' => 'Nudges accepted',
-                  _ => entry.key,
-                };
+              ...summary.records.map((record) {
+                // Change icon based on whether it was a deal or a route
+                final isDeal = record['type'] == 'deal_used';
+                
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Row(children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 40, height: 40,
                       decoration: BoxDecoration(
                         color: const Color(0xFF41B89B).withOpacity(0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       alignment: Alignment.center,
-                      child:
-                          Icon(icon, color: const Color(0xFF41B89B), size: 18),
+                      child: Icon(
+                        isDeal ? Icons.local_offer_rounded : Icons.route_rounded, 
+                        color: const Color(0xFF41B89B), 
+                        size: 18
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(label,
-                          style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w500)),
+                      child: Text(
+                        record['dealTitle'] ?? (isDeal ? 'Community Deal' : 'Smart Route'), 
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)
+                      ),
                     ),
                     Text(
-                      '+ RM ${_fmt(entry.value)}',
-                      style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF41B89B)),
+                      '+ RM ${_fmt((record['amountSaved'] as num).toDouble())}', 
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF41B89B))
                     ),
                   ]),
                 );
@@ -1534,14 +1784,12 @@ class _RadarPageState extends State<RadarPage> {
                   child: Text(
                     summary == null
                         ? 'Loading records...'
-                        : 'No savings recorded yet.Start using deals and routes!',
+                        : 'No savings recorded yet. Start using deals and routes!',
                     textAlign: TextAlign.center,
-                    style:
-                        TextStyle(fontSize: 13, color: Theme.of(ctx).hintColor),
+                    style: TextStyle(fontSize: 13, color: Theme.of(context).hintColor),
                   ),
                 ),
               ),
-
             const SizedBox(height: 8),
           ],
         ),
@@ -1569,6 +1817,7 @@ class _RadarPageState extends State<RadarPage> {
     required Color color,
     required String store,
     required List<String> items,
+    String? source,
   }) {
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Container(
@@ -1584,10 +1833,20 @@ class _RadarPageState extends State<RadarPage> {
       ),
       const SizedBox(width: 12),
       Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(store,
-              style:
-                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(
+                children: [
+                  Text(store, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  if (source != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                      child: Text(source, style: const TextStyle(fontSize: 8, color: Colors.blue)),
+                    )
+                  ]
+                ],
+              ),
           if (items.isNotEmpty)
             Text(items.join(', '),
                 style: TextStyle(
@@ -1799,6 +2058,7 @@ class _PostDealResult {
   final String storeName;
   final String category;
   final double price;
+  final double originalPrice;
   final double lat;
   final double lng;
   final String address;
@@ -1809,6 +2069,7 @@ class _PostDealResult {
     required this.storeName,
     required this.category,
     required this.price,
+    required this.originalPrice,
     required this.lat,
     required this.lng,
     required this.address,
@@ -1831,6 +2092,7 @@ class _PostDealSheetState extends State<PostDealSheet> {
   final _priceController = TextEditingController();
   final _addressController = TextEditingController(text: 'Current location');
   final _descriptionController = TextEditingController();
+  final _originalPriceController = TextEditingController();
   String _selectedCategory = 'food';
   DateTime _expiryDate = DateTime.now().add(const Duration(days: 7));
   Uint8List? _imageBytes;
@@ -1858,6 +2120,8 @@ class _PostDealSheetState extends State<PostDealSheet> {
 
   void _submit() {
     final price = double.tryParse(_priceController.text) ?? 0;
+    final originalPrice = double.tryParse(_originalPriceController.text) ?? price * 1.2;
+
     if (_titleController.text.trim().isEmpty ||
         _storeController.text.trim().isEmpty ||
         price <= 0) {
@@ -1871,6 +2135,7 @@ class _PostDealSheetState extends State<PostDealSheet> {
       storeName: _storeController.text.trim(),
       category: _selectedCategory,
       price: price,
+      originalPrice: originalPrice,
       lat: widget.userLocation.latitude + 0.0025,
       lng: widget.userLocation.longitude + 0.0025,
       address: _addressController.text.trim().isEmpty
@@ -1941,6 +2206,8 @@ class _PostDealSheetState extends State<PostDealSheet> {
                 },
               ),
               const SizedBox(height: 10),
+              _field(controller: _originalPriceController, label: 'Original price (RM)', keyboardType: TextInputType.number),
+const SizedBox(height: 10),
               _field(
                   controller: _priceController,
                   label: 'Deal price (RM)',

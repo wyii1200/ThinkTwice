@@ -34,6 +34,7 @@ function aggregateMonthlySavings(savingsProofRecords) {
     totalSavedRM: parseFloat(totalSaved.toFixed(2)),
     byType,
     recordCount: savingsProofRecords.length,
+    records: savingsProofRecords,
   };
 }
  
