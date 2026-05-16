@@ -20,32 +20,6 @@ class AiService {
     */
   }
 
-  // ─── Core AI Endpoints ──────────────────────────────────────────────────
-
-  static Future<Map<String, dynamic>> analyzeRisk() async {
-    final url = Uri.parse('$baseUrl/analyze-risk');
-    final body = highRiskDemoPayload();
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(body),
-      );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
-      }
-
-      throw Exception(
-        'AI request failed with status ${response.statusCode}: ${response.body}',
-      );
-    } catch (e) {
-      throw Exception(
-        'Unable to connect to AI service at $baseUrl. Error: $e',
-      );
-    }
-  }
 
   /// Analyzes a generated route and returns a 1-sentence verdict
   static Future<String> analyzeRouteWorth(RouteResult route) async {
@@ -76,6 +50,37 @@ class AiService {
     }
   }
 
+
+  static Future<Map<String, dynamic>> analyzeRisk() async {
+    return analyzeRiskWithPayload(highRiskDemoPayload());
+  }
+
+  static Future<Map<String, dynamic>> analyzeRiskWithPayload(
+    Map<String, dynamic> body,
+  ) async {
+    final url = Uri.parse('$baseUrl/analyze-risk');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+
+      throw Exception(
+        'AI request failed with status ${response.statusCode}: ${response.body}',
+      );
+    } catch (e) {
+      throw Exception(
+        'Unable to connect to AI service at $baseUrl. Error: $e',
+      );
+    }
+  }
+  
   // ─── Demo Payloads ──────────────────────────────────────────────────────
 
   static Map<String, dynamic> highRiskDemoPayload() {
