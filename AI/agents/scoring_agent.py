@@ -191,5 +191,18 @@ def calculate_scores(
 
         "streakStatus": streak_status,
 
-        "smartSpendingStreak": smart_spending_streak
+        "smartSpendingStreak": smart_spending_streak,
+
+        "scoreImpactLabel": (
+            "+3" if risk_level == "low"
+            else "+1" if risk_level == "medium"
+            else "-2"
+        ),
+
+        "frontendScoreStatus": (
+            "safe" if average_score >= 65
+            else "warning" if average_score >= 50
+            else "risk"
+        )
+
     }

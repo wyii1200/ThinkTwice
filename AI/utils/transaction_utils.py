@@ -79,6 +79,9 @@ def normalize_category(category: str) -> str:
 
 
 def get_transaction_amount(transaction):
+    if isinstance(transaction, dict):
+        return safe_amount(transaction.get("amount", 0))
+
     return safe_amount(
         getattr(
             transaction,
@@ -89,6 +92,9 @@ def get_transaction_amount(transaction):
 
 
 def get_transaction_category(transaction):
+    if isinstance(transaction, dict):
+        return normalize_category(transaction.get("category", "other"))
+
     return normalize_category(
         getattr(
             transaction,

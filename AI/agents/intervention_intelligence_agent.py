@@ -250,6 +250,16 @@ def evaluate_intervention_intelligence(
             "AI will continue monitoring spending behaviour."
         )
 
+    recommended_intervention = (
+    "Smart Radar + Save Recommendation"
+    if confidence >= 85
+    else
+    "Budget Warning"
+    if confidence >= 60
+    else
+    "Monitoring Only"
+)
+
     # =========================================================
     # RETURN
     # =========================================================
@@ -272,5 +282,9 @@ def evaluate_intervention_intelligence(
         ai_confidence_label,
 
         "aiMonitoringMode":
-        "pre_confirmation_intervention"
+        "pre_confirmation_intervention",
+
+        "frontendUrgency": priority,
+
+        "recommendedIntervention": recommended_intervention
     }

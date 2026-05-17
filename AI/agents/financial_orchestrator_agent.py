@@ -200,71 +200,71 @@ def orchestrate_intervention(
 
         if primary_category == "food":
             final_action = FINAL_ACTIONS.get(
-            "SMART_RADAR_AND_SAVE_NUDGE",
-            "SMART_RADAR_AND_SAVE_NUDGE"
-        )
+                "SMART_RADAR_AND_SAVE_NUDGE",
+                "SMART_RADAR_AND_SAVE_NUDGE"
+            )
 
             smart_radar = {
-            "triggerSmartRadar": True,
-            "radarCategory": primary_category,
-            "radarMessage": (
-                f"We found cheaper nearby {primary_category} options that could help you save RM{savings_amount}."
-            ),
-            "openMode": "auto_expand",
-            "recommendedRoute": "/smart-radar",
-            "estimatedSavings": f"RM{savings_amount}",
-            "aiReasoning": (
-                "ThinkTwice noticed food budget pressure and prepared a cheaper nearby option before payment confirmation."
-            )
-        }
+                "triggerSmartRadar": True,
+                "radarCategory": primary_category,
+                "radarMessage": (
+                    f"We found cheaper nearby {primary_category} options that could help you save RM{savings_amount}."
+                ),
+                "openMode": "auto_expand",
+                "recommendedRoute": "/smart-radar",
+                "estimatedSavings": f"RM{savings_amount}",
+                "aiReasoning": (
+                    "ThinkTwice noticed food budget pressure and prepared a cheaper nearby option before payment confirmation."
+                )
+            }
 
             notification.update({
-            "sendPushNotification": True,
-            "notificationTitle": "⚠️ Budget Warning",
-            "notificationBody": (
-                f"You could save RM{savings_amount} today with a cheaper nearby option."
-            ),
-            "notificationType": "smart_radar"
-        })
+                "sendPushNotification": True,
+                "notificationTitle": "⚠️ Budget Warning",
+                "notificationBody": (
+                    f"You could save RM{savings_amount} today with a cheaper nearby option."
+                ),
+                "notificationType": "smart_radar"
+            })
 
             intervention_reason = (
-            "ThinkTwice noticed food budget pressure and recommended a cheaper nearby option before payment confirmation."
-        )
+                "ThinkTwice noticed food budget pressure and recommended a cheaper nearby option before payment confirmation."
+            )
 
             human_recommended_action = (
-            f"Want to save RM{savings_amount} or find a cheaper option nearby?"
-        )
+                f"Want to save RM{savings_amount} or find a cheaper option nearby?"
+            )
 
             emotional_feedback = (
-            "Small savings become big habits."
-        )
+                "Small savings become big habits."
+            )
 
         else:
             final_action = FINAL_ACTIONS.get(
-            "CONTINUE_WITH_WARNING",
-            "CONTINUE_WITH_WARNING"
-        )
+                "CONTINUE_WITH_WARNING",
+                "CONTINUE_WITH_WARNING"
+            )
 
-        notification.update({
-            "sendPushNotification": True,
-            "notificationTitle": "⚠️ Budget Warning",
-            "notificationBody": (
-                f"This purchase may slightly affect your {primary_category} budget."
-            ),
-            "notificationType": "budget_warning"
-        })
+            notification.update({
+                "sendPushNotification": True,
+                "notificationTitle": "⚠️ Budget Warning",
+                "notificationBody": (
+                    f"This purchase may slightly affect your {primary_category} budget."
+                ),
+                "notificationType": "budget_warning"
+            })
 
-        intervention_reason = (
-            "ThinkTwice noticed you are approaching your spending limit and generated a gentle warning before confirmation."
-        )
+            intervention_reason = (
+                "ThinkTwice noticed you are approaching your spending limit and generated a gentle warning before confirmation."
+            )
 
-        human_recommended_action = (
-            f"Want to save RM{savings_amount} or find a cheaper option nearby?"
-        )
+            human_recommended_action = (
+                f"Want to save RM{savings_amount} or find a cheaper option nearby?"
+            )
 
-        emotional_feedback = (
-            "You’re still in control of your spending."
-        )
+            emotional_feedback = (
+                "You’re still in control of your spending."
+            )
 
     # =========================================================
     # LOW RISK INTERVENTION
@@ -316,11 +316,26 @@ def orchestrate_intervention(
         else "no_reward"
     )
 
+    orchestrator_confidence = (
+        95 if risk_level == RISK_LEVELS["HIGH"]
+        else 82 if risk_level == RISK_LEVELS["MEDIUM"]
+        else 70
+    )
     # =========================================================
     # FINAL DECISION OBJECT
     # =========================================================
 
     final_decision = {
+
+        "uiPriority": intervention_priority,
+
+        "requiresUserDecision": risk_level != RISK_LEVELS["LOW"],
+
+        "recommendedPrimaryAction": "smart_radar"
+            if smart_radar["triggerSmartRadar"]
+                else "save_instead"
+            if risk_level != RISK_LEVELS["LOW"]
+                else "continue",
 
         "finalAction": final_action,
 
@@ -335,8 +350,25 @@ def orchestrate_intervention(
         "interventionPriority":
         intervention_priority,
 
+        "orchestratorConfidence":
+        orchestrator_confidence,
+
+        "availableUserActions": [
+            "continue_anyway",
+            "save_instead",
+            "smart_radar"
+        ],
+
         "smartRadar":
-        smart_radar,
+        {
+            **smart_radar,
+
+            "frontendReason": (
+                f"ThinkTwice found nearby alternatives that could help save RM{savings_amount}."
+                if smart_radar["triggerSmartRadar"]
+                else "No smarter nearby alternatives needed."
+            )
+        },
 
         "notification":
         notification,
@@ -365,7 +397,10 @@ def orchestrate_intervention(
             "ThinkTwice Financial Orchestrator",
 
             "decisionMode":
-            "pre_confirmation_intervention"
+            "pre_confirmation_intervention",
+
+            "aiMode":
+            "PROACTIVE_BEFORE_PAYMENT_INTERVENTION"
         }
     }
 

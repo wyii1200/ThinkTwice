@@ -13,8 +13,10 @@ def _get_category_total(user, target_category):
 
     for transaction in user.transactions:
         category = normalize_category(
-            transaction.category
-        )
+        transaction["category"]
+        if isinstance(transaction, dict)
+        else transaction.category
+    )
 
         if category == target_category:
             total += transaction.amount
@@ -207,13 +209,31 @@ def analyse_spending_velocity(user):
     else:
         velocity_label = "✅ Stable Spending"
 
+    velocity_confidence = (
+        93 if predicted_risk == "high"
+        else 82 if predicted_risk in ["medium", "moderate"]
+        else 70
+    )
+
+    normalized_velocity_score = round(
+        min(max(velocity_score, 0), 100),
+        2
+    )
+
+    velocity_urgency = (
+    "critical"
+    if predicted_risk == "high"
+    else "warning"
+    if predicted_risk in ["medium", "moderate"]
+    else "safe"
+)
+
     return {
+        "velocityUrgency": velocity_urgency,
+        "velocityConfidence": velocity_confidence,
         "spendingVelocity": velocity,
         "velocityLabel": velocity_label,
-        "velocityScore": round(
-            velocity_score,
-            2
-        ),
+        "velocityScore": normalized_velocity_score,
         "categoryVelocity": {
             "category": latest_category,
             "categoryTotalToday": round(

@@ -1,10 +1,10 @@
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from models.schemas import UserProfile
+from models.schemas import UserProfile, AiDecisionResponse
 
 from agents.spending_risk_agent import calculate_risk
 from agents.nudge_agent import generate_nudge
@@ -18,15 +18,24 @@ from agents.spending_velocity_agent import analyse_spending_velocity
 from agents.intervention_intelligence_agent import evaluate_intervention_intelligence
 from agents.decision_layer_agent import build_decision_layer
 from agents.llm_coaching_agent import generate_llm_coaching_message
+from agents.safety_consent_agent import check_safety_and_consent
 
+from test_cases.demo_responses import DEMO_RESPONSES
+
+
+# =========================
+# App setup
+# =========================
 
 env_path = Path(__file__).resolve().parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
+DEMO_MODE = True
+
 app = FastAPI(
     title="ThinkTwice AI Service",
     description="Pre-confirmation AI behavioural intervention service for ThinkTwice.",
-    version="2.0.0",
+    version="3.0.0",
 )
 
 app.add_middleware(
@@ -38,16 +47,26 @@ app.add_middleware(
 )
 
 
+# =========================
+# Helper functions
+# =========================
+
 def _safe_get(data, key, default=None):
     if isinstance(data, dict):
         return data.get(key, default)
-    return default
+    return getattr(data, key, default)
 
 
 def _normalize_risk_level(risk_level):
     if not risk_level:
         return "low"
-    return str(risk_level).lower()
+
+    risk_level = str(risk_level).lower()
+
+    if risk_level in ["low", "medium", "high", "critical"]:
+        return risk_level
+
+    return "low"
 
 
 def _build_transaction_intent(user):
@@ -60,73 +79,128 @@ def _build_transaction_intent(user):
     amount = _safe_get(latest_transaction, "amount", None)
     category = _safe_get(latest_transaction, "category", None)
     time = _safe_get(latest_transaction, "time", None)
-    location = _safe_get(latest_transaction, "location", None)
 
     return {
         "merchant": merchant or "Bubble Tea",
         "amount": amount or 18,
         "category": category or "food",
-        "time": time or "10:45 PM",
-        "location": location or "Mid Valley",
-        "status": "before_confirmation",
+        "time": time or "21:30",
     }
 
 
-def _risk_label(risk_level):
+def _headline(risk_level):
+    if risk_level == "critical":
+        return "High-impact purchase warning"
     if risk_level == "high":
-        return "🔥 Impulse Purchase Detected"
+        return "Impulse spending detected"
     if risk_level == "medium":
-        return "⚠️ Budget Warning"
-    return "✅ Safe Spending"
+        return "Budget warning"
+    return "Safe spending detected"
 
 
-def _risk_color(risk_level):
-    return {
-        "high": "red",
-        "medium": "orange",
-        "low": "green",
-    }.get(risk_level, "grey")
-
-
-def _human_summary(risk_level):
+def _budget_status(risk_level):
+    if risk_level == "critical":
+        return "high_risk"
     if risk_level == "high":
-        return "There’s a high chance this purchase may affect your weekly budget."
+        return "at_risk"
     if risk_level == "medium":
-        return "This purchase may slightly affect your budget, so ThinkTwice is checking it first."
-    return "This purchase looks manageable based on your current spending pattern."
+        return "monitor"
+    return "healthy"
 
 
-def _money_habit_score_impact(risk_level, trigger_smart_radar):
-    if risk_level == "high" and trigger_smart_radar:
-        return "+3"
+def _resilience_score_change(risk_level):
+    if risk_level == "critical":
+        return -8
+    if risk_level == "high":
+        return -4
     if risk_level == "medium":
-        return "+1"
-    return "+1"
+        return -1
+    return 2
 
 
-def _build_ai_timeline(trigger_smart_radar):
-    timeline = [
-        "Payment intent detected",
-        "Spending behaviour analysed",
-        "Overspending risk predicted",
-        "Intervention options generated",
-    ]
+def _build_actions(risk_level, savings_amount, trigger_smart_radar):
+    if risk_level == "low":
+        return {
+            "primary": "Continue",
+            "secondary": "View Budget",
+            "danger": None,
+        }
 
     if trigger_smart_radar:
-        timeline.append("Smart Radar activated")
-    else:
-        timeline.append("Safe spending feedback prepared")
+        return {
+            "primary": "Find Cheaper Nearby",
+            "secondary": f"Save RM{savings_amount} Instead",
+            "danger": "Continue Anyway",
+        }
 
-    return timeline
+    return {
+        "primary": "Pause Purchase",
+        "secondary": f"Save RM{savings_amount} First",
+        "danger": "Continue Anyway",
+    }
 
+
+def _apply_demo_override(transaction_intent, risk_result, behaviour_result, velocity_result):
+    amount = float(transaction_intent.get("amount", 0) or 0)
+    category = str(transaction_intent.get("category", "")).lower()
+    merchant = str(transaction_intent.get("merchant", "")).lower()
+
+    is_bubble_tea_demo = (
+        amount >= 15
+        and category == "food"
+        and ("bubble" in merchant or merchant == "bubble tea")
+    )
+
+    if DEMO_MODE and is_bubble_tea_demo:
+        risk_result["riskLevel"] = "high"
+        risk_result["riskScore"] = max(risk_result.get("riskScore", 0), 82)
+        risk_result["reasons"] = [
+            "Food spending exceeded safe limit",
+            "Late-night spending detected",
+            "Spending frequency increased this week",
+        ]
+
+        behaviour_result["primaryCategory"] = "food"
+        behaviour_result["userFriendlyInsight"] = (
+            "You have been spending more often than usual on food tonight."
+        )
+
+        velocity_result["velocityScore"] = max(
+            velocity_result.get("velocityScore", 0),
+            90,
+        )
+        velocity_result["overspendingPrediction"] = {
+            "prediction": "Your weekly food budget may exceed in 2 days.",
+            "predictedRisk": "high",
+        }
+
+    return risk_result, behaviour_result, velocity_result
+
+
+# =========================
+# Routes
+# =========================
 
 @app.get("/")
 def home():
     return {
         "message": "ThinkTwice AI Service is running",
         "mode": "pre-confirmation intervention",
-        "availableEndpoints": ["/analyze-risk"],
+        "availableEndpoints": [
+            "/analyze-risk",
+            "/demo-response/bubble_tea",
+            "/demo-response/mrt",
+            "/demo-response/shoes",
+        ],
     }
+
+
+@app.get("/demo-response/{scenario}", response_model=AiDecisionResponse)
+def get_demo_response(scenario: str):
+    if scenario not in DEMO_RESPONSES:
+        raise HTTPException(status_code=404, detail="Invalid scenario")
+
+    return DEMO_RESPONSES[scenario]
 
 
 @app.post("/analyze-risk")
@@ -137,11 +211,18 @@ def analyze_risk(user: UserProfile):
     risk_result = calculate_risk(user)
     velocity_result = analyse_spending_velocity(user)
 
+    risk_result, behaviour_result, velocity_result = _apply_demo_override(
+        transaction_intent,
+        risk_result,
+        behaviour_result,
+        velocity_result,
+    )
+
     risk_level = _normalize_risk_level(risk_result.get("riskLevel", "low"))
 
     score_result = calculate_scores(user, risk_level)
     savings_result = suggest_savings(risk_level)
-    savings_amount = savings_result.get("suggestedAmount", 8)
+    savings_amount = savings_result.get("suggestedAmount", 0)
 
     nudge_result = generate_nudge(
         risk_level,
@@ -162,6 +243,8 @@ def analyze_risk(user: UserProfile):
         savings_amount,
     )
 
+    orchestrator_result = check_safety_and_consent(orchestrator_result)
+
     learning_result = learning_feedback(
         risk_level,
         orchestrator_result.get("finalAction", "SAFE_SPENDING_REWARD"),
@@ -181,20 +264,6 @@ def analyze_risk(user: UserProfile):
         velocity_result,
     )
 
-    trigger_smart_radar = orchestrator_result.get(
-        "smartRadar",
-        {},
-    ).get("triggerSmartRadar", risk_level == "high")
-
-    intervention_confidence = intelligence_result.get("interventionConfidence", 92)
-
-    combined_score = (
-        risk_result.get("riskScore", 0) * 0.6
-        + velocity_result.get("velocityScore", 0) * 0.4
-    )
-
-    behaviour_severity_score = round(min(combined_score, 100), 2)
-
     llm_base_response = {
         "riskAnalysis": risk_result,
         "behaviourAnalysis": behaviour_result,
@@ -204,6 +273,19 @@ def analyze_risk(user: UserProfile):
     }
 
     llm_result = generate_llm_coaching_message(llm_base_response)
+
+    trigger_smart_radar = orchestrator_result.get(
+        "smartRadar",
+        {},
+    ).get(
+        "triggerSmartRadar",
+        risk_level in ["high", "critical"],
+    )
+
+    intervention_confidence = intelligence_result.get(
+        "interventionConfidence",
+        92 if risk_level in ["high", "critical"] else 80,
+    )
 
     prediction_text = velocity_result.get(
         "overspendingPrediction",
@@ -215,277 +297,85 @@ def analyze_risk(user: UserProfile):
 
     human_explanation = behaviour_result.get(
         "userFriendlyInsight",
-        _human_summary(risk_level),
+        "ThinkTwice checked this purchase against your current spending pattern.",
     )
 
     recommended_action = orchestrator_result.get(
         "humanRecommendedAction",
         llm_result.get(
             "recommendedButtonText",
-            "Want to save money or find a smarter option nearby?",
+            "Choose a smarter option before confirming payment.",
         ),
     )
 
-    ai_timeline_simple = _build_ai_timeline(trigger_smart_radar)
+    reasons = risk_result.get("reasons", [])
 
-    demo_decision = {
-        "transactionIntent": transaction_intent,
-        "riskLevel": risk_level.upper(),
-        "riskLabel": _risk_label(risk_level),
-        "humanExplanation": human_explanation,
-        "futureImpact": prediction_text,
-        "recommendedAction": recommended_action,
-        "interventionOptions": [
-            "Continue Anyway",
-            f"Save RM{savings_amount} Instead",
-            "Find Cheaper Nearby",
-        ],
-        "triggerSmartRadar": trigger_smart_radar,
-        "estimatedSavings": f"RM{savings_amount}",
-        "orchestratorDecision": orchestrator_result.get(
-            "finalAction",
-            "SMART_RADAR_AND_SAVE_NUDGE" if trigger_smart_radar else "SAFE_SPENDING_REWARD",
-        ),
-        "moneyHabitScoreImpact": _money_habit_score_impact(
+    if not reasons:
+        reasons = explanation_result.get(
+            "explainabilitySummary",
+            {},
+        ).get(
+            "reasons",
+            ["Spending pattern was analysed before payment confirmation."],
+        )
+
+    final_response = {
+        "transaction": {
+            "amount": transaction_intent["amount"],
+            "merchant": transaction_intent["merchant"],
+            "category": transaction_intent["category"],
+            "time": transaction_intent["time"],
+        },
+
+        "risk": {
+            "level": risk_level,
+            "score": risk_result.get("riskScore", 0),
+            "confidence": round(intervention_confidence / 100, 2),
+        },
+
+        "ui": {
+            "headline": _headline(risk_level),
+            "explanation": human_explanation,
+            "futureImpact": prediction_text,
+            "suggestedAction": recommended_action,
+        },
+
+        "reasons": reasons,
+
+        "actions": _build_actions(
             risk_level,
+            savings_amount,
             trigger_smart_radar,
         ),
-        "confidence": intervention_confidence,
-        "aiTimelineSimple": ai_timeline_simple,
-        "reasons": risk_result.get("reasons", []),
-    }
 
-    response = {
-        "userId": user.user_id,
-        "aiService": "ThinkTwice Agentic Financial Intelligence",
-        "mode": "PRE_CONFIRMATION_INTERVENTION",
-
-        "transactionIntent": transaction_intent,
-
-        "riskAnalysis": {
-            **risk_result,
-            "riskLevel": risk_level,
-            "riskLabel": _risk_label(risk_level),
-        },
-
-        "behaviourAnalysis": behaviour_result,
-        "spendingVelocityAnalysis": velocity_result,
-        "scoreAnalysis": score_result,
-
-        "intervention": {
-            **orchestrator_result,
-            **nudge_result,
-            "suggestedSavingsAmount": savings_amount,
-            "savingsInsights": savings_result,
-            **intelligence_result,
-            "llmEnhancedNudge": llm_result.get("coachingMessage", ""),
-            "dashboardInsight": llm_result.get("dashboardInsight", ""),
-            "recommendedButtonText": llm_result.get(
-                "recommendedButtonText",
-                "Choose a smarter option",
-            ),
-        },
-
-        "learningLoop": learning_result,
-
-        "decisionLayer": decision_layer_result,
-        "explanation": explanation_result,
-
-        "llmCoaching": llm_result,
-
-        "interventionConfidence": intervention_confidence,
-        "behaviourSeverityScore": behaviour_severity_score,
-
-        "aiVisibility": {
-            "title": "ThinkTwice AI Analysis",
-            "riskLabel": _risk_label(risk_level),
-            "riskColor": _risk_color(risk_level),
-            "summary": _human_summary(risk_level),
-            "bulletReasons": risk_result.get("reasons", []),
-            "predictionText": prediction_text,
-            "recommendedActionText": recommended_action,
-            "confidenceText": f"{intervention_confidence}%",
-            "severityScoreText": f"{behaviour_severity_score}/100",
-            "riskTags": intelligence_result.get("riskTags", []),
-            "recommendationPriority": intelligence_result.get(
-                "recommendationPriority",
-                "normal",
-            ),
-            "isAiMonitoringLive": True,
-            "aiStatus": "Checking if this purchase may affect your budget...",
-        },
-
-        "explainability": {
-            "question": "Why am I seeing this?",
-            "reasons": risk_result.get("reasons", []),
-            "behaviourInsights": [
-                behaviour_result.get(
-                    "behaviourPattern",
-                    "Spending behaviour was analysed.",
-                ),
-                velocity_result.get(
-                    "spendingTrend",
-                    "Spending behaviour remains stable.",
-                ),
-                "ThinkTwice checks risky purchases before you confirm payment.",
-            ],
-            "transparencyNote": (
-                "ThinkTwice only recommends actions. "
-                "Financial actions always require user approval."
-            ),
-            "summary": explanation_result.get("explainabilitySummary", {}),
-        },
-
-        "aiTimeline": [
-            {"step": index + 1, "event": event}
-            for index, event in enumerate(ai_timeline_simple)
-        ],
-
-        "demoDecision": demo_decision,
-    }
-
-    response["integrationPayload"] = {
-        "userId": user.user_id,
-        "transactionIntent": transaction_intent,
-        "finalAction": demo_decision["orchestratorDecision"],
         "smartRadar": {
-            **orchestrator_result.get("smartRadar", {}),
-            "triggerSmartRadar": trigger_smart_radar,
-            "radarCategory": orchestrator_result.get(
-                "smartRadar",
-                {},
-            ).get("radarCategory", transaction_intent["category"]),
-            "estimatedSavings": f"RM{savings_amount}",
-            "radarMessage": (
-                f"AI found cheaper nearby choices that could help you save RM{savings_amount}."
+            "trigger": trigger_smart_radar,
+            "category": transaction_intent["category"],
+            "message": (
+                f"Cheaper nearby choices may help you save RM{savings_amount}."
                 if trigger_smart_radar
-                else "No Smart Radar needed for this safe purchase."
+                else "No cheaper alternative needed."
             ),
         },
-        "notification": {
-            **orchestrator_result.get("notification", {}),
-            "sendPushNotification": risk_level in ["high", "medium"],
-            "notificationTitle": demo_decision["riskLabel"],
-            "notificationBody": llm_result.get(
-                "coachingMessage",
-                demo_decision["futureImpact"],
-            ),
-            "notificationType": "PRE_CONFIRMATION_NUDGE",
+
+        "dashboardUpdate": {
+            "resilienceScoreChange": _resilience_score_change(risk_level),
+            "savingOpportunity": savings_amount,
+            "budgetStatus": _budget_status(risk_level),
         },
-        "safetyCheck": orchestrator_result.get(
-            "safetyCheck",
-            {
-                "requiresUserConsent": True,
-                "consentStatus": "required_before_action",
-                "canExecuteAction": False,
-            },
-        ),
-        "fcmPayload": {
-            "shouldSend": risk_level in ["high", "medium"],
-            "title": demo_decision["riskLabel"],
-            "body": llm_result.get(
-                "coachingMessage",
-                demo_decision["futureImpact"],
-            ),
-            "data": {
-                "finalAction": demo_decision["orchestratorDecision"],
-                "triggerSmartRadar": str(trigger_smart_radar).lower(),
-                "radarCategory": transaction_intent["category"],
-                "notificationType": "PRE_CONFIRMATION_NUDGE",
-            },
+
+        "debug": {
+            "riskAnalysis": risk_result,
+            "behaviourAnalysis": behaviour_result,
+            "spendingVelocityAnalysis": velocity_result,
+            "scoreAnalysis": score_result,
+            "nudge": nudge_result,
+            "intervention": orchestrator_result,
+            "decisionLayer": decision_layer_result,
+            "learningLoop": learning_result,
+            "explainability": explanation_result,
+            "llmCoaching": llm_result,
         },
     }
 
-    response["firestorePayload"] = {
-        "collectionPath": f"users/{user.user_id}/ai/latest_ai_analysis",
-        "data": {
-            "userId": user.user_id,
-            "transactionIntent": transaction_intent,
-            "riskLevel": risk_level,
-            "riskLabel": demo_decision["riskLabel"],
-            "riskScore": risk_result.get("riskScore", 0),
-            "spendingRatio": risk_result.get("spendingRatio", 0),
-            "reasons": risk_result.get("reasons", []),
-            "prediction": prediction_text,
-            "recommendedAction": recommended_action,
-            "finalAction": demo_decision["orchestratorDecision"],
-            "interventionConfidence": intervention_confidence,
-            "behaviourSeverityScore": behaviour_severity_score,
-            "triggerSmartRadar": trigger_smart_radar,
-            "radarCategory": transaction_intent["category"],
-            "estimatedSavings": f"RM{savings_amount}",
-            "moneyHabitScoreImpact": demo_decision["moneyHabitScoreImpact"],
-            "resilienceScore": score_result.get("resilienceScore", 50),
-            "smartDecisionScore": score_result.get("smartDecisionScore", 50),
-            "behaviourGrade": score_result.get("behaviourGrade", "moderate"),
-            "streakStatus": score_result.get("streakStatus", "at_risk"),
-            "learningStatus": learning_result.get("learningStatus", ""),
-            "nextBestIntervention": learning_result.get(
-                "nextBestIntervention",
-                "",
-            ),
-            "updatedAt": "SERVER_TIMESTAMP",
-        },
-    }
-
-    response["aiHistory"] = [
-        {
-            "date": "2026-05-17",
-            "riskLevel": risk_level,
-            "finalAction": demo_decision["orchestratorDecision"],
-            "confidence": intervention_confidence,
-            "severityScore": behaviour_severity_score,
-        }
-    ]
-
-    response["frontendPayload"] = {
-        "riskLevel": risk_level,
-        "riskLabel": demo_decision["riskLabel"],
-
-        "mainReason": demo_decision["humanExplanation"],
-
-        "secondaryReason": demo_decision["futureImpact"],
-
-        "recommendedAction": demo_decision["recommendedAction"],
-
-        "estimatedSavings": demo_decision["estimatedSavings"],
-
-        "triggerSmartRadar": demo_decision["triggerSmartRadar"],
-
-        "moneyHabitScore": score_result.get(
-            "moneyHabitScore",
-            score_result.get("resilienceScore", 62)
-        ),
-
-        "smartDecisionScore": score_result.get(
-            "smartDecisionScore",
-            68
-        ),
-
-        "moneyHabitScoreImpact":
-        demo_decision["moneyHabitScoreImpact"],
-
-        "confidence":
-        demo_decision["confidence"],
-
-        "interventionOptions":
-        demo_decision["interventionOptions"],
-
-        "demoFlowStage": {
-            "currentStage": "AI_INTERVENTION",
-
-            "nextStage": (
-                "SMART_RADAR_SELECTION"
-                if demo_decision["triggerSmartRadar"]
-                else "PAYMENT_CONFIRMATION"
-            ),
-
-            "uiAnimation": (
-                "pulse_warning"
-                if risk_level == "high"
-                else "soft_success"
-            )
-        }
-    }
-
-    return response
+    return final_response

@@ -127,6 +127,8 @@ def generate_explanation(
         "aiExplanation": explanations,
 
         "explainabilitySummary": {
+            "explainabilityLevel": "high",
+
             "mainReason": main_reason,
 
             "whyThisMatters": (
@@ -144,7 +146,7 @@ def generate_explanation(
             "popupReasons": explainability_reasons,
 
             "simpleFlow": [
-                "Payment intent detected",
+                "Payment intent detected before confirmation",
                 "Spending pattern checked",
                 "Budget impact predicted",
                 "Best intervention selected"

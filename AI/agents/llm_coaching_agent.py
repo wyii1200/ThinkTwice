@@ -106,7 +106,7 @@ def generate_llm_coaching_message(ai_result: dict) -> dict:
         )
 
         model = genai.GenerativeModel(
-            "gemini-2.5-flash"
+            "gemini-2.5-flash-preview-05-20"
         )
 
         risk_level = risk_analysis.get(
@@ -229,6 +229,9 @@ STRICT RULES:
             raw_text
         )
 
+        if not isinstance(parsed, dict):
+            raise ValueError("Invalid Gemini JSON response")
+
         return {
 
             "llmEnabled":
@@ -268,7 +271,10 @@ STRICT RULES:
             ),
 
             "llmStatus":
-            "Gemini coaching generated successfully."
+            "Gemini coaching generated successfully.",
+
+            "aiEnhancementMode":
+            "gemini_behavioural_coaching"
         }
 
     except Exception as e:
@@ -301,5 +307,9 @@ STRICT RULES:
             "supportive",
 
             "llmStatus":
-            f"Gemini failed. Using fallback. Error: {str(e)}"
+            f"Gemini failed. Using fallback. Error: {str(e)}",
+
+           "aiEnhancementMode":
+            "rule_based_fallback"
+            
         }

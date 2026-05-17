@@ -190,6 +190,17 @@ def learning_feedback(
             "Learning loop updated: future nudges will be softer and clearer."
         )
 
+    learning_confidence = (
+        92 if accepted_nudge
+        else 70
+    )
+
+    frontend_learning_status = (
+        "positive_adaptation"
+        if accepted_nudge
+        else "soft_recalibration"
+    )
+
     return {
         "acceptedNudge": accepted_nudge,
         "learningStatus": learning_status,
@@ -202,5 +213,7 @@ def learning_feedback(
         "trackedAction": final_action,
         "userActionType": action_type,
         "feedbackSource": feedback_source,
-        "learningLoopVisible": True
+        "learningLoopVisible": True,
+        "learningConfidence": learning_confidence,
+        "frontendLearningStatus": frontend_learning_status
     }

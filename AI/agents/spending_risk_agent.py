@@ -15,7 +15,10 @@ HIGH_RISK_MERCHANTS = [
     "snack",
     "shopping",
     "shoes",
-    "fashion"
+    "fashion",
+    "milk tea",
+    "teh tarik",
+    "matcha"
 ]
 
 
@@ -46,7 +49,7 @@ def calculate_risk(user):
             "You have already exceeded today's safe spending limit."
         )
 
-        risk_score += 30
+        risk_score += 18
 
     elif spending_ratio >= 1:
 
@@ -54,7 +57,7 @@ def calculate_risk(user):
             "You are very close to exceeding today's spending limit."
         )
 
-        risk_score += 20
+        risk_score += 12
 
     elif spending_ratio >= 0.75:
 
@@ -73,7 +76,9 @@ def calculate_risk(user):
     for transaction in user.transactions:
 
         category = normalize_category(
-            transaction.category
+        transaction["category"]
+        if isinstance(transaction, dict)
+        else transaction.category
         )
 
         category_totals[category] = (
@@ -108,7 +113,7 @@ def calculate_risk(user):
             "Your food spending is higher than usual today."
         )
 
-        risk_score += 20
+        risk_score += 12
 
     if shopping_spending >= 40:
 
@@ -194,7 +199,7 @@ def calculate_risk(user):
                 "This purchase may be an impulse spending decision."
             )
 
-            risk_score += 20
+            risk_score += 12
 
     # =========================================================
     # 6. PRE-CONFIRMATION AI INTERVENTION
@@ -214,7 +219,7 @@ def calculate_risk(user):
                 "ThinkTwice is checking this purchase before payment confirmation."
             )
 
-            risk_score += 15
+            risk_score += 10
 
     # =========================================================
     # 7. HIGH AMOUNT DETECTION
@@ -230,7 +235,7 @@ def calculate_risk(user):
                 "This is a higher-value purchase compared to your usual spending."
             )
 
-            risk_score += 20
+            risk_score += 12
 
         elif latest_amount >= 50:
 
@@ -238,7 +243,7 @@ def calculate_risk(user):
                 "This purchase amount is slightly higher than normal."
             )
 
-            risk_score += 15
+            risk_score += 10
 
     # =========================================================
     # 8. FALLBACK
@@ -273,7 +278,7 @@ def calculate_risk(user):
     if risk_level == "high":
 
         human_risk_label = (
-            "🔥 Impulse Purchase Detected"
+            "🔥 Impulse Spending Detected"
         )
 
     elif risk_level == "medium":
@@ -314,14 +319,34 @@ def calculate_risk(user):
     # 12. RETURN
     # =========================================================
 
+    normalized_risk_score = round(
+        min(max(risk_score, 0), 100),
+        2
+    )
+
+    predicted_impact = (
+        "Your weekly food budget may exceed within 2 days."
+        if risk_level == RISK_LEVELS["HIGH"]
+        else
+        "This purchase may slightly affect your weekly budget."
+        if risk_level == RISK_LEVELS["MEDIUM"]
+        else
+        "Your spending behaviour currently looks stable."
+    )
+
+    risk_confidence = (
+        94 if risk_level == RISK_LEVELS["HIGH"]
+        else 82 if risk_level == RISK_LEVELS["MEDIUM"]
+        else 70
+    )
+
     return {
         "riskLevel": risk_level,
         "riskLabel": human_risk_label,
         "riskSummary": human_summary,
-        "riskScore": round(
-            min(risk_score, 100),
-            2
-        ),
+        "riskScore": normalized_risk_score,
+        "riskConfidence": risk_confidence,
+        "predictedImpact": predicted_impact,
         "spendingRatio": round(
             spending_ratio,
             2

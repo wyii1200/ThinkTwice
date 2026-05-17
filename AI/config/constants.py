@@ -40,7 +40,8 @@ FINANCIAL_ACTIONS_REQUIRING_CONSENT = [
     "micro_save_recommendation",
     "round_up_save",
     "transfer_to_savings",
-    "salary_auto_allocation"
+    "salary_auto_allocation",
+    "smart_radar_and_save_nudge"
 ]
 
 
@@ -59,7 +60,7 @@ RISK_COLORS = {
 
 
 HUMAN_RISK_LABELS = {
-    "high": "🔥 Impulse Purchase Detected",
+    "high": "🔥 Impulse Spending Detected",
     "medium": "⚠️ Budget Warning",
     "low": "✅ Safe Spending"
 }

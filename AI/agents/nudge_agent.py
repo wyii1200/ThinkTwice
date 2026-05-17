@@ -56,7 +56,16 @@ def generate_nudge(
             "protective",
 
             "loadingMessage":
-            "Checking whether this purchase may affect your budget..."
+            "Checking whether this purchase may affect your budget...",
+
+            "nudgeConfidence":
+            95,
+
+            "aiVisibilityStatus":
+            "AI detected possible impulse spending behaviour.",
+
+            "uiPriority":
+            "critical",
         }
 
     # =========================================================
@@ -89,13 +98,13 @@ def generate_nudge(
             ),
 
             "ctaButtonText":
-            "Review Budget",
+            f"Save RM{savings_amount} Instead",
 
             "secondaryActionText":
-            "Continue Anyway",
+            "Find Cheaper Nearby",
 
             "continueActionText":
-            "Continue",
+            "Continue Anyway",
 
             "microcopy":
             (
@@ -111,7 +120,16 @@ def generate_nudge(
             "supportive",
 
             "loadingMessage":
-            "Reviewing your spending pattern..."
+            "Reviewing your spending pattern...",
+
+            "nudgeConfidence":
+            84,
+
+            "aiVisibilityStatus":
+            "AI is monitoring your spending pattern.",
+
+            "uiPriority":
+            "warning",
         }
 
     # =========================================================
@@ -166,5 +184,14 @@ def generate_nudge(
             "positive",
 
             "loadingMessage":
-            "Checking purchase impact..."
+            "Checking purchase impact...",
+
+            "nudgeConfidence":
+            72,
+
+            "aiVisibilityStatus":
+            "AI confirmed this purchase looks manageable.",
+
+            "uiPriority":
+            "safe",
         }
