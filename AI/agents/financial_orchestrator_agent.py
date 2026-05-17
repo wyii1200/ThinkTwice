@@ -1,5 +1,9 @@
 from agents.safety_consent_agent import check_safety_and_consent
-from config.constants import FINAL_ACTIONS, RISK_LEVELS
+
+from config.constants import (
+    FINAL_ACTIONS,
+    RISK_LEVELS
+)
 
 
 def orchestrate_intervention(
@@ -30,7 +34,18 @@ def orchestrate_intervention(
         0
     )
 
-    final_action = FINAL_ACTIONS["CONTINUE_TRACKING"]
+    reasons = risk_result.get(
+        "reasons",
+        []
+    )
+
+    # =========================================================
+    # DEFAULT STATE
+    # =========================================================
+
+    final_action = FINAL_ACTIONS[
+        "CONTINUE_TRACKING"
+    ]
 
     smart_radar = {
         "triggerSmartRadar": False,
@@ -38,7 +53,8 @@ def orchestrate_intervention(
         "radarMessage": None,
         "openMode": "none",
         "recommendedRoute": None,
-        "estimatedSavings": f"RM{savings_amount}"
+        "estimatedSavings": f"RM{savings_amount}",
+        "aiReasoning": None
     }
 
     notification = {
@@ -49,129 +65,214 @@ def orchestrate_intervention(
     }
 
     intervention_reason = (
-        "Your spending looks manageable, so ThinkTwice will continue monitoring quietly."
+        "ThinkTwice analysed this purchase and found no major budget concerns."
     )
 
     human_recommended_action = (
-        "Keep tracking your spending."
+        "You can continue safely."
     )
 
+    emotional_feedback = (
+        "Nice choice 👏"
+    )
+
+    intervention_priority = "low"
+
+    # =========================================================
+    # HIGH RISK INTERVENTION
+    # =========================================================
+
     if risk_level == RISK_LEVELS["HIGH"]:
+
+        intervention_priority = "critical"
 
         notification["sendPushNotification"] = True
 
         should_trigger_radar = (
             late_night_spending
-            or primary_category in ["food", "shopping", "entertainment"]
-            or risk_score >= 120
+            or primary_category in [
+                "food",
+                "shopping",
+                "entertainment"
+            ]
+            or risk_score >= 85
         )
+
+        # -----------------------------------------------------
+        # SMART RADAR FLOW
+        # -----------------------------------------------------
 
         if should_trigger_radar:
 
             final_action = FINAL_ACTIONS.get(
                 "SMART_RADAR_AND_SAVE_NUDGE",
-                FINAL_ACTIONS["SMART_RADAR_AND_AUTO_SAVE"]
+                "SMART_RADAR_AND_SAVE_NUDGE"
             )
 
             smart_radar = {
                 "triggerSmartRadar": True,
+
                 "radarCategory": primary_category,
+
                 "radarMessage": (
-                    f"Want a cheaper {primary_category} option nearby? "
-                    f"You could save RM{savings_amount} today."
+                    f"We found cheaper nearby {primary_category} options that could help you save RM{savings_amount}."
                 ),
-                "openMode": "category_filter",
+
+                "openMode": "auto_expand",
+
                 "recommendedRoute": "/smart-radar",
-                "estimatedSavings": f"RM{savings_amount}"
+
+                "estimatedSavings": f"RM{savings_amount}",
+
+                "aiReasoning": (
+                    f"ThinkTwice detected possible {primary_category} overspending behaviour and found a smarter nearby alternative."
+                )
             }
 
             notification.update({
-                "notificationTitle": "Want a cheaper option nearby?",
+
+                "notificationTitle":
+                "🔥 Impulse Spending Detected",
+
                 "notificationBody": (
-                    f"ThinkTwice noticed possible {primary_category} overspending. "
-                    f"You could save RM{savings_amount} today."
+                    f"You could save RM{savings_amount} today with a smarter nearby option."
                 ),
-                "notificationType": "smart_radar"
+
+                "notificationType":
+                "smart_radar"
             })
 
             intervention_reason = (
-                "ThinkTwice found that this purchase may affect your budget, so it opened a cheaper nearby option."
+                "ThinkTwice predicted that this purchase may affect your weekly budget, so it recommended a cheaper nearby option before payment confirmation."
             )
 
             human_recommended_action = (
-                f"Save RM{savings_amount} or find a cheaper option nearby."
+                f"Want to save RM{savings_amount} or find a cheaper option nearby?"
             )
+
+            emotional_feedback = (
+                "Your future self will thank you."
+            )
+
+        # -----------------------------------------------------
+        # SAVE INSTEAD FLOW
+        # -----------------------------------------------------
 
         else:
 
             final_action = FINAL_ACTIONS.get(
                 "MICRO_SAVE_RECOMMENDATION",
-                FINAL_ACTIONS["AUTO_SAVE"]
+                "MICRO_SAVE_RECOMMENDATION"
             )
 
             notification.update({
-                "notificationTitle": "Small save suggested",
+
+                "notificationTitle":
+                "⚠️ Budget Warning",
+
                 "notificationBody": (
-                    f"Saving RM{savings_amount} now could help protect your weekly goal."
+                    f"Saving RM{savings_amount} now may help protect your weekly budget."
                 ),
-                "notificationType": "auto_save"
+
+                "notificationType":
+                "micro_save"
             })
 
             intervention_reason = (
-                "ThinkTwice detected budget risk, so it suggests a small saving action before spending."
+                "ThinkTwice detected increased financial risk and recommended a small saving action before continuing."
             )
 
             human_recommended_action = (
                 f"Save RM{savings_amount} instead."
             )
 
+            emotional_feedback = (
+                "Small savings become big habits."
+            )
+
+    # =========================================================
+    # MEDIUM RISK INTERVENTION
+    # =========================================================
+
     elif risk_level == RISK_LEVELS["MEDIUM"]:
+
+        intervention_priority = "medium"
 
         final_action = FINAL_ACTIONS.get(
             "CONTINUE_WITH_WARNING",
-            FINAL_ACTIONS["SEND_WARNING_NUDGE"]
+            "CONTINUE_WITH_WARNING"
         )
 
         notification.update({
+
             "sendPushNotification": True,
-            "notificationTitle": "Budget warning",
+
+            "notificationTitle":
+            "⚠️ Budget Warning",
+
             "notificationBody": (
-                f"You are close to your {primary_category} budget today."
+                f"This purchase may slightly affect your {primary_category} budget."
             ),
-            "notificationType": "budget_warning"
+
+            "notificationType":
+            "budget_warning"
         })
 
         intervention_reason = (
-            "ThinkTwice noticed that you are close to your budget, so it gives a gentle warning before confirmation."
+            "ThinkTwice noticed you are approaching your spending limit and generated a gentle warning before confirmation."
         )
 
         human_recommended_action = (
-            "Review your budget before continuing."
+            "Review your spending before continuing."
         )
+
+        emotional_feedback = (
+            "You’re still in control of your spending."
+        )
+
+    # =========================================================
+    # LOW RISK INTERVENTION
+    # =========================================================
 
     else:
 
+        intervention_priority = "safe"
+
         final_action = FINAL_ACTIONS.get(
             "SAFE_SPENDING_REWARD",
-            FINAL_ACTIONS["CONTINUE_TRACKING"]
+            "SAFE_SPENDING_REWARD"
         )
 
         notification.update({
+
             "sendPushNotification": False,
-            "notificationTitle": "Safe spending",
+
+            "notificationTitle":
+            "✅ Safe Spending",
+
             "notificationBody": (
-                "This purchase looks safe based on your current spending pattern."
+                "This purchase looks manageable based on your current spending behaviour."
             ),
-            "notificationType": "positive_reinforcement"
+
+            "notificationType":
+            "positive_reinforcement"
         })
 
         intervention_reason = (
-            "This purchase looks manageable, so ThinkTwice gives positive feedback."
+            "ThinkTwice analysed this purchase and found that it fits your current spending behaviour."
         )
 
         human_recommended_action = (
             "You can continue safely."
         )
+
+        emotional_feedback = (
+            "Good choice today 👏"
+        )
+
+    # =========================================================
+    # REWARD ENGINE
+    # =========================================================
 
     reward_action = (
         "streak_bonus"
@@ -179,14 +280,62 @@ def orchestrate_intervention(
         else "no_reward"
     )
 
+    # =========================================================
+    # FINAL DECISION OBJECT
+    # =========================================================
+
     final_decision = {
+
         "finalAction": final_action,
+
         "interventionReason": intervention_reason,
-        "humanRecommendedAction": human_recommended_action,
-        "smartRadar": smart_radar,
-        "notification": notification,
-        "rewardAction": reward_action
+
+        "humanRecommendedAction":
+        human_recommended_action,
+
+        "emotionalFeedback":
+        emotional_feedback,
+
+        "interventionPriority":
+        intervention_priority,
+
+        "smartRadar":
+        smart_radar,
+
+        "notification":
+        notification,
+
+        "rewardAction":
+        reward_action,
+
+        "orchestratorMetadata": {
+
+            "riskLevel":
+            risk_level,
+
+            "riskScore":
+            risk_score,
+
+            "primaryCategory":
+            primary_category,
+
+            "lateNightSpending":
+            late_night_spending,
+
+            "reasonCount":
+            len(reasons),
+
+            "aiDecisionEngine":
+            "ThinkTwice Financial Orchestrator",
+
+            "decisionMode":
+            "pre_confirmation_intervention"
+        }
     }
+
+    # =========================================================
+    # SAFETY CHECK
+    # =========================================================
 
     final_decision = check_safety_and_consent(
         final_decision

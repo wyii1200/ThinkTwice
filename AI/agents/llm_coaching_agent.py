@@ -1,95 +1,179 @@
 import os
 import json
+
 import google.generativeai as genai
 
-def generate_llm_coaching_message(response):
-    enable_gemini = os.getenv("ENABLE_GEMINI", "false").lower() == "true"
-
-    intervention = response.get("intervention", {})
-    nudge = intervention.get(
-        "nudge",
-        "Keep tracking your spending habits."
-    )
-
-    if not enable_gemini:
-        return {
-            "llmEnabled": False,
-            "coachingMessage": nudge,
-            "dashboardInsight": "Rule-based AI coaching is active for demo stability.",
-            "recommendedButtonText": intervention.get(
-                "ctaButtonText",
-                "View Insight"
-            ),
-            "llmStatus": "Gemini disabled. Stable rule-based AI fallback active."
-        }
 
 def generate_llm_coaching_message(ai_result: dict) -> dict:
     """
-    Gemini-powered coaching layer for ThinkTwice.
+    Gemini-enhanced behavioural coaching layer.
 
-    Rule-based agents still control:
-    - risk scoring
-    - spending velocity
-    - intervention decision
-    - safety and consent
-    - Smart Radar trigger
-
-    Gemini only enhances:
-    - notification message
-    - dashboard insight
-    - action button text
+    IMPORTANT:
+    - Rule-based agents remain the PRIMARY decision system.
+    - Gemini only enhances:
+        * coaching message
+        * dashboard insight
+        * button wording
+        * emotional microcopy
+    - System must remain stable even if Gemini fails.
     """
 
-    api_key = os.getenv("GEMINI_API_KEY")
+    enable_gemini = (
+        os.getenv(
+            "ENABLE_GEMINI",
+            "false"
+        ).lower() == "true"
+    )
 
-    fallback_nudge = ai_result.get("intervention", {}).get(
+    api_key = os.getenv(
+        "GEMINI_API_KEY"
+    )
+
+    intervention = ai_result.get(
+        "intervention",
+        {}
+    )
+
+    risk_analysis = ai_result.get(
+        "riskAnalysis",
+        {}
+    )
+
+    fallback_nudge = intervention.get(
         "nudge",
-        "ThinkTwice detected your spending pattern. Keep tracking your financial habits today."
+        "ThinkTwice checked this purchase before confirmation."
     )
 
     fallback_response = {
-        "llmEnabled": False,
-        "coachingMessage": fallback_nudge,
-        "dashboardInsight": "AI analysis completed using rule-based financial intelligence.",
-        "recommendedButtonText": "View Insight",
-        "llmStatus": "Using fallback coaching message."
+
+        "llmEnabled":
+        False,
+
+        "coachingMessage":
+        fallback_nudge,
+
+        "dashboardInsight":
+        (
+            "ThinkTwice AI coaching is running in stable mode."
+        ),
+
+        "recommendedButtonText":
+        intervention.get(
+            "ctaButtonText",
+            "View Insight"
+        ),
+
+        "emotionalMicrocopy":
+        (
+            "Small savings become stronger habits."
+        ),
+
+        "aiCoachTone":
+        "supportive",
+
+        "llmStatus":
+        "Stable rule-based fallback active."
     }
 
+    # =========================================================
+    # GEMINI DISABLED
+    # =========================================================
+
+    if not enable_gemini:
+
+        fallback_response["llmStatus"] = (
+            "Gemini disabled. Stable rule-based fallback active."
+        )
+
+        return fallback_response
+
+    # =========================================================
+    # NO API KEY
+    # =========================================================
+
     if not api_key:
-        fallback_response["llmStatus"] = "Missing Gemini API key. Using fallback nudge."
+
+        fallback_response["llmStatus"] = (
+            "Missing Gemini API key. Using fallback coaching."
+        )
+
         return fallback_response
 
     try:
-        genai.configure(api_key=api_key)
 
-        # Use latest available stable model from your free-tier list
-        model = genai.GenerativeModel("gemini-2.5-flash")
-
-        risk_level = ai_result.get("riskAnalysis", {}).get("riskLevel", "unknown")
-        reasons = ai_result.get("riskAnalysis", {}).get("reasons", [])
-        prediction = ai_result.get("spendingVelocityAnalysis", {}).get(
-            "overspendingPrediction", {}
-        ).get("prediction", "")
-
-        suggested_amount = ai_result.get("intervention", {}).get(
-            "suggestedSavingsAmount", 0
+        genai.configure(
+            api_key=api_key
         )
 
-        final_action = ai_result.get("intervention", {}).get("finalAction", "")
-        trigger_smart_radar = ai_result.get("intervention", {}).get(
-            "smartRadar", {}
-        ).get("triggerSmartRadar", False)
+        model = genai.GenerativeModel(
+            "gemini-2.5-flash"
+        )
 
-        safety_check = ai_result.get("intervention", {}).get("safetyCheck", {})
-        requires_consent = safety_check.get("requiresUserConsent", False)
+        risk_level = risk_analysis.get(
+            "riskLevel",
+            "unknown"
+        )
+
+        risk_label = risk_analysis.get(
+            "riskLabel",
+            "Budget Warning"
+        )
+
+        reasons = risk_analysis.get(
+            "reasons",
+            []
+        )
+
+        prediction = ai_result.get(
+            "spendingVelocityAnalysis",
+            {}
+        ).get(
+            "overspendingPrediction",
+            {}
+        ).get(
+            "prediction",
+            ""
+        )
+
+        suggested_amount = intervention.get(
+            "suggestedSavingsAmount",
+            0
+        )
+
+        final_action = intervention.get(
+            "finalAction",
+            ""
+        )
+
+        trigger_smart_radar = intervention.get(
+            "smartRadar",
+            {}
+        ).get(
+            "triggerSmartRadar",
+            False
+        )
+
+        safety_check = intervention.get(
+            "safetyCheck",
+            {}
+        )
+
+        requires_consent = safety_check.get(
+            "requiresUserConsent",
+            False
+        )
 
         prompt = f"""
-You are ThinkTwice, an AI financial behaviour coach for Malaysian youth.
+You are ThinkTwice, a warm and supportive AI financial behaviour coach for Malaysian university students and young adults.
 
-Generate a short JSON response for a mobile banking app.
+You are NOT a bank warning system.
+You are a proactive spending behaviour coach.
 
-Context:
+Generate a SHORT JSON response for a mobile banking app.
+
+CONTEXT:
 Risk level: {risk_level}
+Risk label: {risk_label}
 Risk reasons: {reasons}
 Prediction: {prediction}
 Suggested savings amount: RM{suggested_amount}
@@ -97,48 +181,125 @@ Final action: {final_action}
 Smart Radar triggered: {trigger_smart_radar}
 User consent required: {requires_consent}
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON in this EXACT format:
+
 {{
   "coachingMessage": "...",
   "dashboardInsight": "...",
-  "recommendedButtonText": "..."
+  "recommendedButtonText": "...",
+  "emotionalMicrocopy": "...",
+  "aiCoachTone": "..."
 }}
 
-Rules:
-- coachingMessage must be maximum 20 words.
-- dashboardInsight must be maximum 25 words.
-- recommendedButtonText must be maximum 4 words.
-- Be warm, concise, and non-judgmental.
-- If savings is involved, mention approval or consent.
-- If Smart Radar is involved, mention cheaper nearby options.
-- Do not say money is moved automatically.
-- Use RM naturally.
+STRICT RULES:
+- coachingMessage max 20 words
+- dashboardInsight max 25 words
+- recommendedButtonText max 4 words
+- emotionalMicrocopy max 12 words
+- Be supportive and non-judgmental
+- Sound like a modern fintech app
+- Avoid robotic banking language
+- Never scare the user
+- If Smart Radar is active, mention cheaper nearby options naturally
+- Never say money is moved automatically
+- Mention user approval naturally if savings is involved
+- Use RM naturally
+- Avoid emojis except 👏
 """
 
-        response = model.generate_content(prompt)
-        raw_text = response.text.strip()
+        gemini_response = model.generate_content(
+            prompt
+        )
 
-        # Clean possible markdown formatting from Gemini
-        raw_text = raw_text.replace("```json", "").replace("```", "").strip()
+        raw_text = gemini_response.text.strip()
 
-        parsed = json.loads(raw_text)
+        raw_text = raw_text.replace(
+            "```json",
+            ""
+        )
+
+        raw_text = raw_text.replace(
+            "```",
+            ""
+        )
+
+        raw_text = raw_text.strip()
+
+        parsed = json.loads(
+            raw_text
+        )
 
         return {
-            "llmEnabled": True,
-            "coachingMessage": parsed.get("coachingMessage", fallback_nudge),
-            "dashboardInsight": parsed.get(
-                "dashboardInsight",
-                "Gemini generated a personalised financial coaching insight."
+
+            "llmEnabled":
+            True,
+
+            "coachingMessage":
+            parsed.get(
+                "coachingMessage",
+                fallback_nudge
             ),
-            "recommendedButtonText": parsed.get("recommendedButtonText", "View Insight"),
-            "llmStatus": "Gemini coaching generated successfully."
+
+            "dashboardInsight":
+            parsed.get(
+                "dashboardInsight",
+                "ThinkTwice generated a personalised spending insight."
+            ),
+
+            "recommendedButtonText":
+            parsed.get(
+                "recommendedButtonText",
+                intervention.get(
+                    "ctaButtonText",
+                    "View Insight"
+                )
+            ),
+
+            "emotionalMicrocopy":
+            parsed.get(
+                "emotionalMicrocopy",
+                "Good choices build better habits."
+            ),
+
+            "aiCoachTone":
+            parsed.get(
+                "aiCoachTone",
+                "supportive"
+            ),
+
+            "llmStatus":
+            "Gemini coaching generated successfully."
         }
 
     except Exception as e:
+
         return {
-            "llmEnabled": False,
-            "coachingMessage": fallback_nudge,
-            "dashboardInsight": "Gemini fallback activated. Rule-based AI response is still available.",
-            "recommendedButtonText": "View Insight",
-            "llmStatus": f"Gemini failed. Using fallback. Error: {str(e)}"
+
+            "llmEnabled":
+            False,
+
+            "coachingMessage":
+            fallback_nudge,
+
+            "dashboardInsight":
+            (
+                "Gemini fallback activated. Stable AI coaching is still available."
+            ),
+
+            "recommendedButtonText":
+            intervention.get(
+                "ctaButtonText",
+                "View Insight"
+            ),
+
+            "emotionalMicrocopy":
+            (
+                "Small savings become stronger habits."
+            ),
+
+            "aiCoachTone":
+            "supportive",
+
+            "llmStatus":
+            f"Gemini failed. Using fallback. Error: {str(e)}"
         }

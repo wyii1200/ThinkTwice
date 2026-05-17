@@ -8,26 +8,40 @@ def suggest_savings(risk_level):
         0
     )
 
+    # =========================================================
+    # HIGH RISK
+    # =========================================================
+
     if risk_level == "high":
 
         savings_reason = (
-            f"Saving RM{suggested_amount} now could help reduce overspending tonight."
+            f"Saving RM{suggested_amount} now may help prevent overspending tonight."
         )
 
         savings_priority = "urgent"
 
         savings_strategy = (
-            "micro_save_and_reduce_spending"
+            "micro_save_before_confirmation"
         )
 
         encouragement_message = (
-            "Small savings today can become healthier financial habits later."
+            "Your future self will thank you for this small save 👏"
         )
+
+        savings_impact = (
+            "This small save could help protect your weekly food budget."
+        )
+
+        emotional_tone = "protective"
+
+    # =========================================================
+    # MEDIUM RISK
+    # =========================================================
 
     elif risk_level == "medium":
 
         savings_reason = (
-            f"A small RM{suggested_amount} save now may help protect your weekly budget."
+            f"A small RM{suggested_amount} save now may help keep your spending under control."
         )
 
         savings_priority = "important"
@@ -37,33 +51,65 @@ def suggest_savings(risk_level):
         )
 
         encouragement_message = (
-            "A small adjustment now can prevent larger spending later."
+            "Small savings become healthy financial habits."
         )
+
+        savings_impact = (
+            "A small adjustment now can prevent larger overspending later."
+        )
+
+        emotional_tone = "supportive"
+
+    # =========================================================
+    # LOW RISK
+    # =========================================================
 
     else:
 
         savings_reason = (
-            "Your spending looks healthy today."
+            "Your spending behaviour currently looks healthy."
         )
 
         savings_priority = "normal"
 
         savings_strategy = (
-            "maintain_savings_habit"
+            "maintain_healthy_habits"
         )
 
         encouragement_message = (
-            "Nice job staying within your budget today."
+            "Nice job staying within your budget today 👏"
         )
 
+        savings_impact = (
+            "Your current spending pattern remains manageable."
+        )
+
+        emotional_tone = "positive"
+
+    # =========================================================
+    # RETURN
+    # =========================================================
+
     return {
-        "suggestedAmount": suggested_amount,
 
-        "savingsReason": savings_reason,
+        "suggestedAmount":
+        suggested_amount,
 
-        "savingsPriority": savings_priority,
+        "savingsReason":
+        savings_reason,
 
-        "savingsStrategy": savings_strategy,
+        "savingsPriority":
+        savings_priority,
 
-        "encouragementMessage": encouragement_message
+        "savingsStrategy":
+        savings_strategy,
+
+        "encouragementMessage":
+        encouragement_message,
+
+        "savingsImpact":
+        savings_impact,
+
+        "emotionalTone":
+        emotional_tone
     }

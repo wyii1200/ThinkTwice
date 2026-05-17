@@ -10,6 +10,7 @@ def learning_feedback(
     - opened_smart_radar
     - saved_money
     - dismissed_notification
+    - continued_anyway
     """
 
     action_type = None
@@ -19,7 +20,6 @@ def learning_feedback(
         action_type = user_action.actionType
         feedback_source = "frontend_user_action"
 
-
     positive_actions = [
         "accepted",
         "opened_smart_radar",
@@ -28,9 +28,9 @@ def learning_feedback(
 
     negative_actions = [
         "ignored",
-        "dismissed_notification"
+        "dismissed_notification",
+        "continued_anyway"
     ]
-
 
     if action_type in positive_actions:
         accepted_nudge = True
@@ -41,35 +41,46 @@ def learning_feedback(
     else:
         accepted_nudge = risk_level != "high"
 
+    # =========================================================
+    # LEARNING RESPONSE
+    # =========================================================
 
     if action_type == "opened_smart_radar":
 
         learning_status = (
-            "User responds well to Smart Radar recommendations."
+            "User responded well to Smart Radar recommendations."
         )
 
         future_recommendation = (
-            "Prioritize Smart Radar suggestions for future risky spending situations."
+            "Prioritize cheaper nearby alternatives for similar future spending moments."
         )
 
-        next_best_intervention = "smart_radar"
+        next_best_intervention = "smart_radar_and_save_nudge"
+
+        learning_message = (
+            "ThinkTwice learned that Smart Radar is helpful for this user."
+        )
 
     elif action_type == "saved_money":
 
         learning_status = (
-            "User responds positively to micro-saving actions."
+            "User responded positively to micro-saving suggestions."
         )
 
         future_recommendation = (
-            "Continue recommending small user-approved savings actions."
+            "Continue recommending small user-approved saving actions."
         )
 
-        next_best_intervention = "auto_save"
+        next_best_intervention = "micro_save_recommendation"
+
+        learning_message = (
+            "ThinkTwice learned that small save suggestions work well for this user."
+        )
 
     elif action_type == "accepted":
 
         learning_status = (
-            "User responds positively to behavioural nudges."
+            "User responded positively to behavioural nudges."
         )
 
         future_recommendation = (
@@ -78,6 +89,26 @@ def learning_feedback(
 
         next_best_intervention = "personalised_nudge"
 
+        learning_message = (
+            "ThinkTwice learned that direct nudges are useful for this user."
+        )
+
+    elif action_type == "continued_anyway":
+
+        learning_status = (
+            "User continued despite the intervention."
+        )
+
+        future_recommendation = (
+            "Use softer explanations next time and make the savings benefit clearer."
+        )
+
+        next_best_intervention = "soft_explainable_nudge"
+
+        learning_message = (
+            "ThinkTwice learned to make future nudges clearer and less interruptive."
+        )
+
     elif action_type in negative_actions:
 
         learning_status = (
@@ -85,22 +116,30 @@ def learning_feedback(
         )
 
         future_recommendation = (
-            "Reduce notification frequency but improve explanation clarity."
+            "Reduce notification pressure but improve explanation clarity."
         )
 
         next_best_intervention = "soft_explainable_nudge"
 
+        learning_message = (
+            "ThinkTwice learned to use softer future interventions."
+        )
+
     elif risk_level == "high":
 
         learning_status = (
-            "High financial risk detected without strong positive intervention response."
+            "High financial risk detected without confirmed positive response."
         )
 
         future_recommendation = (
-            "Escalate intervention using Smart Radar and auto-save recommendations."
+            "Prioritize Smart Radar and user-approved saving suggestions in future risky situations."
         )
 
-        next_best_intervention = "smart_radar_and_auto_save"
+        next_best_intervention = "smart_radar_and_save_nudge"
+
+        learning_message = (
+            "ThinkTwice will prioritize smarter alternatives when similar risk appears again."
+        )
 
     else:
 
@@ -114,13 +153,19 @@ def learning_feedback(
 
         next_best_intervention = "positive_reinforcement"
 
+        learning_message = (
+            "ThinkTwice will continue encouraging healthy spending habits."
+        )
+
+    # =========================================================
+    # LEARNING IMPACT
+    # =========================================================
 
     if accepted_nudge:
         learning_impact_score = 10
 
     else:
         learning_impact_score = -8
-
 
     if learning_impact_score >= 10:
         reinforcement_strength = "strong"
@@ -131,30 +176,31 @@ def learning_feedback(
     else:
         reinforcement_strength = "weak"
 
+    # =========================================================
+    # DASHBOARD-FRIENDLY OUTPUT
+    # =========================================================
+
+    if accepted_nudge:
+        dashboard_learning_text = (
+            "Learning loop updated: this user responds well to helpful spending nudges."
+        )
+
+    else:
+        dashboard_learning_text = (
+            "Learning loop updated: future nudges will be softer and clearer."
+        )
 
     return {
         "acceptedNudge": accepted_nudge,
-
         "learningStatus": learning_status,
-
-        "futureRecommendation":
-        future_recommendation,
-
-        "nextBestIntervention":
-        next_best_intervention,
-
-        "learningImpactScore":
-        learning_impact_score,
-
-        "reinforcementStrength":
-        reinforcement_strength,
-
-        "trackedAction":
-        final_action,
-
-        "userActionType":
-        action_type,
-
-        "feedbackSource":
-        feedback_source
+        "futureRecommendation": future_recommendation,
+        "nextBestIntervention": next_best_intervention,
+        "learningImpactScore": learning_impact_score,
+        "reinforcementStrength": reinforcement_strength,
+        "learningMessage": learning_message,
+        "dashboardLearningText": dashboard_learning_text,
+        "trackedAction": final_action,
+        "userActionType": action_type,
+        "feedbackSource": feedback_source,
+        "learningLoopVisible": True
     }
