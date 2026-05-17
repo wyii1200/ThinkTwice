@@ -21,60 +21,64 @@ def analyse_spending_velocity(user):
         velocity = "slow"
 
     if velocity_score >= 150:
+
         prediction = (
-            "User may exceed weekly budget within 2 days."
+            "At this rate, your weekly budget may be exceeded within 2 days."
         )
 
         predicted_risk = "high"
 
         spending_trend = (
-            "Critical spending acceleration detected."
+            "Your spending is increasing very quickly."
         )
 
     elif velocity_score >= 100:
+
         prediction = (
-            "User may exceed weekly budget within 4 days."
+            "Your current spending trend may exceed your weekly budget within 4 days."
         )
 
         predicted_risk = "medium"
 
         spending_trend = (
-            "Spending pattern increasing rapidly."
+            "Your spending has been increasing faster than usual."
         )
 
     elif velocity_score >= 70:
+
         prediction = (
-            "User spending behaviour should be monitored closely."
+            "Your spending behaviour should be monitored closely."
         )
 
         predicted_risk = "moderate"
 
         spending_trend = (
-            "Moderate spending growth detected."
+            "Your spending is slowly increasing."
         )
 
     else:
+
         prediction = (
-            "Current spending behaviour remains manageable."
+            "Your spending currently looks manageable."
         )
 
         predicted_risk = "low"
 
         spending_trend = (
-            "Spending behaviour remains stable."
+            "Your spending behaviour remains stable."
         )
 
     if velocity_score >= 150:
-        velocity_label = "Extreme"
+        velocity_label = "🔥 High Overspending Risk"
 
     elif velocity_score >= 100:
-        velocity_label = "High"
+        velocity_label = "⚠️ Budget Risk Increasing"
 
     elif velocity_score >= 50:
-        velocity_label = "Moderate"
+        velocity_label = "👀 Spending Under Monitoring"
 
     else:
-        velocity_label = "Low"
+        velocity_label = "✅ Stable Spending"
 
     return {
         "spendingVelocity": velocity,

@@ -11,58 +11,74 @@ def calculate_risk(user):
     risk_score = spending_ratio * 100
     reasons = []
 
+    # 1. Budget usage risk
     if spending_ratio >= 1:
-        reasons.append("Daily budget exceeded.")
+        reasons.append("You have already passed today's safe spending limit.")
         risk_score += 20
 
     elif spending_ratio >= 0.75:
-        reasons.append("Close to daily budget limit.")
+        reasons.append("You are close to today's spending limit.")
         risk_score += 10
 
+    # 2. Category spending risk
     category_totals = {}
 
     for transaction in user.transactions:
         category = normalize_category(transaction.category)
-        category_totals[category] = category_totals.get(category, 0) + transaction.amount
+        category_totals[category] = (
+            category_totals.get(category, 0) + transaction.amount
+        )
 
     food_spending = category_totals.get("food", 0)
     shopping_spending = category_totals.get("shopping", 0)
     entertainment_spending = category_totals.get("entertainment", 0)
 
     if food_spending >= 30:
-        reasons.append("High food spending detected.")
+        reasons.append("Your food spending is higher than usual today.")
         risk_score += 15
 
     if shopping_spending >= 40:
-        reasons.append("High shopping spending detected.")
+        reasons.append("Your shopping spending is higher than usual today.")
         risk_score += 12
 
     if entertainment_spending >= 40:
-        reasons.append("High entertainment spending detected.")
+        reasons.append("Your entertainment spending is higher than usual today.")
         risk_score += 12
 
+    # 3. Frequency risk
     transaction_count = len(user.transactions)
 
     if transaction_count >= 5:
-        reasons.append("High transaction frequency detected.")
+        reasons.append("You have been spending more often than usual today.")
         risk_score += 10
 
     elif transaction_count >= 3:
-        reasons.append("Moderate transaction frequency detected.")
+        reasons.append("You made several purchases today.")
         risk_score += 5
 
+    # 4. Late-night impulse risk
     late_night = any(
         is_late_night_time(transaction.time)
         for transaction in user.transactions
     )
 
     if late_night:
-        reasons.append("Late-night spending behaviour detected.")
+        reasons.append("Late-night spending can increase impulse purchase risk.")
         risk_score += 10
 
-    if not reasons:
-        reasons.append("Current spending behaviour remains manageable.")
+    # 5. Pre-confirmation transaction intent
+    latest_transaction = user.transactions[0] if user.transactions else None
 
+    if latest_transaction:
+        status = getattr(latest_transaction, "status", None)
+
+        if status == "before_confirmation":
+            reasons.append("This purchase is being checked before payment confirmation.")
+
+    if not reasons:
+        reasons.append("Your current spending still looks manageable.")
+
+    # 6. Risk level classification
     if risk_score >= 120:
         risk_level = RISK_LEVELS["HIGH"]
 

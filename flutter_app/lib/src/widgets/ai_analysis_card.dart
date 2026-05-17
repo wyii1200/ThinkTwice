@@ -12,41 +12,45 @@ class AiAnalysisCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final demoDecision = aiResult['demoDecision'] ?? {};
     final risk = aiResult['riskAnalysis'] ?? {};
     final intervention = aiResult['intervention'] ?? {};
-    final velocity = aiResult['spendingVelocityAnalysis'] ?? {};
     final integrationPayload = aiResult['integrationPayload'] ?? {};
     final smartRadar = integrationPayload['smartRadar'] ?? {};
 
     final explanation = aiResult['aiExplanation'] as List<dynamic>? ?? [];
     final aiTimeline = aiResult['aiTimeline'] as List<dynamic>? ?? [];
 
-    final riskLevel = risk['riskLevel']?.toString().toUpperCase() ?? 'LOW';
+    final humanRiskLabel =
+        demoDecision['riskLabel']?.toString() ?? '✅ Safe Spending';
 
-    final confidence = intervention['interventionConfidence'] ??
+    final humanExplanation = demoDecision['humanExplanation']?.toString() ??
+        'ThinkTwice analysed this purchase.';
+
+    final futureImpact = demoDecision['futureImpact']?.toString() ??
+        'Your spending currently looks manageable.';
+
+    final recommendedAction = demoDecision['recommendedAction']?.toString() ??
+        'Keep tracking your spending.';
+
+    final estimatedSavings =
+        demoDecision['estimatedSavings']?.toString() ?? 'RM0';
+
+    final riskLevel = risk['riskLevel']?.toString().toLowerCase() ?? 'low';
+
+    final confidence = demoDecision['confidence'] ??
+        intervention['interventionConfidence'] ??
         aiResult['interventionConfidence'] ??
         0;
 
-    final severityScore = aiResult['behaviourSeverityScore'] ?? 0;
-
-    final prediction = velocity['overspendingPrediction']?['prediction'] ??
-        aiResult['aiVisibility']?['predictionText'] ??
-        'AI is monitoring your financial behaviour.';
-
-    final coaching = intervention['llmEnhancedNudge'] ??
-        intervention['nudge'] ??
-        aiResult['llmCoaching']?['coachingMessage'] ??
-        'Your spending behaviour is stable.';
-
-    final triggerRadar = smartRadar['triggerSmartRadar'] == true;
-
-    final radarCategory = smartRadar['radarCategory']?.toString() ?? '';
+    final triggerRadar = demoDecision['triggerSmartRadar'] == true ||
+        smartRadar['triggerSmartRadar'] == true;
 
     final riskTags = intervention['riskTags'] as List<dynamic>? ?? [];
 
     Color riskColor;
 
-    switch (riskLevel.toLowerCase()) {
+    switch (riskLevel) {
       case 'high':
         riskColor = const Color(0xFFFF6B6B);
         break;
@@ -94,7 +98,7 @@ class AiAnalysisCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'Real-time behavioural intelligence',
+                        'Checking if this purchase may affect your budget',
                         style: TextStyle(
                           fontSize: 12,
                           color: context.colors.mutedForeground,
@@ -113,7 +117,7 @@ class AiAnalysisCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           const Text(
-                            'LIVE AI ACTIVE',
+                            'AI CHECK IN PROGRESS',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w900,
@@ -126,28 +130,33 @@ class AiAnalysisCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: riskColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    riskLevel,
-                    style: TextStyle(
-                      color: riskColor,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
               ],
             ),
 
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
+
+            /// HUMAN RISK LABEL
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
+              decoration: BoxDecoration(
+                color: riskColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Text(
+                humanRiskLabel,
+                style: TextStyle(
+                  color: riskColor,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
 
             /// RISK TAGS
             if (riskTags.isNotEmpty) ...[
@@ -178,7 +187,7 @@ class AiAnalysisCard extends StatelessWidget {
               const SizedBox(height: 16),
             ],
 
-            /// PREDICTION BOX
+            /// FUTURE IMPACT BOX
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(14),
@@ -202,7 +211,7 @@ class AiAnalysisCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      prediction.toString(),
+                      futureImpact,
                       style: const TextStyle(
                         fontSize: 13,
                         height: 1.5,
@@ -234,7 +243,7 @@ class AiAnalysisCard extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Smart Savings Radar activated for $radarCategory spending.',
+                        'You could save $estimatedSavings today with a cheaper nearby option.',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
@@ -247,9 +256,41 @@ class AiAnalysisCard extends StatelessWidget {
               const SizedBox(height: 16),
             ],
 
+            /// HUMAN EXPLANATION BOX
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: riskColor.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.insights_rounded,
+                    color: riskColor,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      humanExplanation,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
             /// AI EXPLANATION
             const Text(
-              'AI detected:',
+              'Why ThinkTwice reacted:',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
@@ -258,7 +299,7 @@ class AiAnalysisCard extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            ...explanation.take(6).map(
+            ...explanation.take(5).map(
                   (item) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Row(
@@ -295,7 +336,7 @@ class AiAnalysisCard extends StatelessWidget {
 
             const SizedBox(height: 6),
 
-            /// AI COACHING
+            /// AI RECOMMENDATION
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(14),
@@ -313,7 +354,7 @@ class AiAnalysisCard extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      coaching.toString(),
+                      recommendedAction,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,
@@ -324,6 +365,31 @@ class AiAnalysisCard extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+
+            const SizedBox(height: 16),
+
+            /// INTERVENTION BUTTONS
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _buildActionButton(
+                  'Continue Anyway',
+                  Colors.grey.shade200,
+                  Colors.black87,
+                ),
+                _buildActionButton(
+                  'Save $estimatedSavings Instead',
+                  const Color(0xFF52C7A5),
+                  Colors.white,
+                ),
+                _buildActionButton(
+                  'Find Cheaper Nearby',
+                  const Color(0xFF6C63FF),
+                  Colors.white,
+                ),
+              ],
             ),
 
             const SizedBox(height: 16),
@@ -365,46 +431,6 @@ class AiAnalysisCard extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 14),
-
-            /// SEVERITY SCORE
-            Row(
-              children: [
-                const Text(
-                  'Behaviour Severity',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '$severityScore/100',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    color: riskColor,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: ((severityScore is num ? severityScore / 100 : 0)
-                        .clamp(0, 1))
-                    .toDouble(),
-                minHeight: 8,
-                backgroundColor: context.colors.muted,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  riskColor,
-                ),
-              ),
-            ),
-
             const SizedBox(height: 20),
 
             /// AI TIMELINE
@@ -419,27 +445,30 @@ class AiAnalysisCard extends StatelessWidget {
             const SizedBox(height: 12),
 
             if (aiTimeline.isNotEmpty)
-              ...aiTimeline.take(7).map((item) {
+              ...aiTimeline.take(6).map((item) {
                 final event = item['event']?.toString() ?? 'AI step completed';
-                final agent = item['agent']?.toString() ?? 'AI Agent';
 
                 return _buildTimelineItem(
-                  '$agent: $event',
+                  event,
                   Icons.auto_awesome_rounded,
                 );
               })
             else ...[
               _buildTimelineItem(
-                'Spending spike detected',
-                Icons.trending_up_rounded,
+                'Payment intent detected',
+                Icons.payment_rounded,
               ),
               _buildTimelineItem(
-                'Overspending risk increased',
+                'Spending behaviour analysed',
+                Icons.psychology_alt_rounded,
+              ),
+              _buildTimelineItem(
+                'Overspending risk predicted',
                 Icons.warning_amber_rounded,
               ),
               _buildTimelineItem(
-                'Behaviour intervention triggered',
-                Icons.psychology_alt_rounded,
+                'Intervention generated',
+                Icons.lightbulb_rounded,
               ),
               if (triggerRadar)
                 _buildTimelineItem(
@@ -469,6 +498,31 @@ class AiAnalysisCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(
+    String text,
+    Color backgroundColor,
+    Color textColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 14,
+        vertical: 10,
+      ),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
         ),
       ),
     );
@@ -554,7 +608,7 @@ class AiAnalysisCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 explainability['transparencyNote']?.toString() ??
-                    'ThinkTwice only recommends actions. Financial actions always require user approval.',
+                    'ThinkTwice only recommends actions. You always stay in control.',
                 style: const TextStyle(
                   fontSize: 12,
                   height: 1.4,

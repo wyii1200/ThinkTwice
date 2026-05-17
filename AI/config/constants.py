@@ -4,37 +4,40 @@ RISK_LEVELS = {
     "HIGH": "high"
 }
 
+
 FINAL_ACTIONS = {
-    "CONTINUE_TRACKING":
-    "continue_tracking",
+    "CONTINUE_TRACKING": "continue_tracking",
 
-    "SEND_WARNING_NUDGE":
-    "send_warning_nudge",
+    "SEND_WARNING_NUDGE": "send_warning_nudge",
 
-    "AUTO_SAVE":
-    "auto_save",
+    "AUTO_SAVE": "auto_save",
 
-    "SMART_RADAR_AND_AUTO_SAVE":
-    "smart_radar_and_auto_save"
+    "SMART_RADAR_AND_AUTO_SAVE": "smart_radar_and_auto_save",
+
+    # Final demo flow actions
+    "SMART_RADAR_AND_SAVE_NUDGE": "smart_radar_and_save_nudge",
+
+    "SAVE_RM8_INSTEAD": "save_rm8_instead",
+
+    "CONTINUE_WITH_WARNING": "continue_with_warning",
+
+    "SAFE_SPENDING_REWARD": "safe_spending_reward",
+
+    "MICRO_SAVE_RECOMMENDATION": "micro_save_recommendation"
 }
+
 
 CATEGORIES = {
     "FOOD": "food",
-
     "TRANSPORT": "transport",
-
     "SHOPPING": "shopping",
-
     "ENTERTAINMENT": "entertainment",
-
     "HEALTHCARE": "healthcare",
-
     "EDUCATION": "education",
-
     "BILLS": "bills",
-
     "OTHER": "other"
 }
+
 
 FINANCIAL_ACTIONS_REQUIRING_CONSENT = [
     "auto_save",
@@ -55,6 +58,13 @@ RISK_COLORS = {
     "high": "red",
     "medium": "orange",
     "low": "green"
+}
+
+
+HUMAN_RISK_LABELS = {
+    "high": "🔥 Impulse Purchase Detected",
+    "medium": "⚠️ Budget Warning",
+    "low": "✅ Safe Spending"
 }
 
 
@@ -84,17 +94,24 @@ NOTIFICATION_TYPES = {
 
 AI_TIMELINE_EVENTS = {
     "TRANSACTION_RECEIVED":
-    "Transaction received",
+    "Payment intent detected",
 
     "RISK_ANALYSED":
-    "Financial risk analysed",
+    "Spending behaviour analysed",
 
     "VELOCITY_ANALYSED":
-    "Spending velocity evaluated",
+    "Overspending risk predicted",
 
     "INTERVENTION_SELECTED":
-    "Best intervention selected",
+    "Smarter financial intervention selected",
 
     "NUDGE_GENERATED":
-    "Personalised intervention generated"
+    "Personalised recommendation generated"
 }
+
+
+DEMO_INTERVENTION_OPTIONS = [
+    "Continue Anyway",
+    "Save RM8 Instead",
+    "Find Cheaper Nearby"
+]

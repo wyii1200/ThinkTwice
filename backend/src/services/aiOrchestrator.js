@@ -43,43 +43,115 @@ async function analyzeTransaction(payload) {
 
     return {
       riskLevel: data.riskAnalysis?.riskLevel || 'low',
+        riskLabel:
+        data.demoDecision?.riskLabel ||
+        data.aiVisibility?.riskLabel ||
+        '✅ Safe Spending',
+
       reason: data.riskAnalysis?.reasons?.join(', ') || '',
+
+      humanExplanation:
+        data.demoDecision?.humanExplanation ||
+        data.aiVisibility?.summary ||
+        'ThinkTwice checked this purchase before confirmation.',
+
+      futureImpact:
+        data.demoDecision?.futureImpact ||
+        data.aiVisibility?.predictionText ||
+        'Your spending currently looks manageable.',
+
+      recommendedAction:
+        data.demoDecision?.recommendedAction ||
+        intervention?.humanRecommendedAction ||
+        intervention?.recommendedButtonText ||
+        null,
+
+      interventionOptions:
+        data.demoDecision?.interventionOptions || [
+        'Continue Anyway',
+        'Save RM8 Instead',
+        'Find Cheaper Nearby',
+      ],
+
       nudgeText: intervention?.nudge || null,
-      suggestedAction: integration?.finalAction || null,
+
+      suggestedAction:
+        data.demoDecision?.orchestratorDecision ||
+        integration?.finalAction ||
+        null,
+
       saveAmount: intervention?.suggestedSavingsAmount || 0,
+      estimatedSavings: data.demoDecision?.estimatedSavings || null,
+
       resilienceImpact: data.scoreAnalysis?.resilienceScore || 50,
+      moneyHabitScoreImpact: data.demoDecision?.moneyHabitScoreImpact || '+1',
+
       streakRisk: data.riskAnalysis?.riskLevel === 'high',
-      triggerSmartRadar: integration?.smartRadar?.triggerSmartRadar || false,
+
+      triggerSmartRadar:
+        data.demoDecision?.triggerSmartRadar ||
+        integration?.smartRadar?.triggerSmartRadar ||
+        false,
+
       radarCategory: integration?.smartRadar?.radarCategory || null,
       radarMessage: integration?.smartRadar?.radarMessage || null,
-      fcmPayload: integration?.fcmPayload || null,
-      aiExplanation: data.aiExplanation || [],
-      severityLevel: intervention?.severityLevel || 'low',
 
-      fullAiResult: data,
-      aiVisibility: data.aiVisibility,
+      fcmPayload: integration?.fcmPayload || null,
+
+      aiExplanation: data.aiExplanation || [],
       explainability: data.explainability,
-      aiTimeline: data.aiTimeline,
+
+      aiTimeline:
+        data.demoDecision?.aiTimelineSimple ||
+        data.aiTimeline ||
+        [],
+
+      aiVisibility: data.aiVisibility,
+      demoDecision: data.demoDecision,
+
+      severityLevel: intervention?.severityLevel || 'low',
+        confidence:
+          data.demoDecision?.confidence ||
+          data.interventionConfidence ||
+          90,
+
       firestorePayload: data.firestorePayload,
+      fullAiResult: data,
     };
 
   } catch (error) {
     console.error('AI service error:', error.message);
     return {
-      riskLevel: 'low',
-      reason: 'AI service unavailable',
-      nudgeText: null,
-      suggestedAction: null,
-      saveAmount: 0,
-      resilienceImpact: 0,
-      streakRisk: false,
-      triggerSmartRadar: false,
-      radarCategory: null,
-      radarMessage: null,
-      fcmPayload: null,
-      aiExplanation: [],
-      severityLevel: 'low',
-    };
+  riskLevel: 'low',
+  riskLabel: '✅ Safe Spending',
+  reason: 'AI service unavailable',
+  humanExplanation: 'ThinkTwice could not complete the AI check right now.',
+  futureImpact: 'Your spending could not be analysed at this moment.',
+  recommendedAction: 'Please try again later.',
+  interventionOptions: [
+    'Continue Anyway',
+    'Try Again',
+    'Review Budget',
+  ],
+  nudgeText: null,
+  suggestedAction: null,
+  saveAmount: 0,
+  estimatedSavings: 'RM0',
+  resilienceImpact: 50,
+  moneyHabitScoreImpact: '+0',
+  streakRisk: false,
+  triggerSmartRadar: false,
+  radarCategory: null,
+  radarMessage: null,
+  fcmPayload: null,
+  aiExplanation: [],
+  explainability: null,
+  aiTimeline: [],
+  aiVisibility: null,
+  demoDecision: null,
+  severityLevel: 'low',
+  confidence: 0,
+};
   }
 }
 
@@ -111,6 +183,8 @@ function buildTransactionHistory(userHistory, currentTransaction) {
       hour12: true,
     }),
     location: currentTransaction.merchant || null,
+    merchant: currentTransaction.merchant || null,
+    status: 'before_confirmation',
   };
 
   const history = (userHistory || []).slice(0, 9).map(t => ({

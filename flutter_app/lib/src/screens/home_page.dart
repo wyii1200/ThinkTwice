@@ -187,7 +187,8 @@ class _HomePageState extends State<HomePage> {
         demoSmartDecisionScore ?? widget.smartDecisionScore;
     final currentStreak = widget.currentStreak;
     final recentPoints = widget.recentPoints;
-    final transactionIds = _simulatedTransactions.map((item) => item.id).toSet();
+    final transactionIds =
+        _simulatedTransactions.map((item) => item.id).toSet();
     final transactions = [
       ..._simulatedTransactions,
       ...widget.transactions.where((item) => !transactionIds.contains(item.id)),
@@ -1321,7 +1322,8 @@ class _PaymentSimulationSheet extends StatefulWidget {
   final double savingsGoal;
 
   @override
-  State<_PaymentSimulationSheet> createState() => _PaymentSimulationSheetState();
+  State<_PaymentSimulationSheet> createState() =>
+      _PaymentSimulationSheetState();
 }
 
 class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
@@ -1419,6 +1421,8 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
           'category': normalizedCategory,
           'time': now,
           'location': _locationController.text.trim(),
+          'merchant': _merchantController.text.trim(),
+          'status': 'before_confirmation',
         }
       ],
       'user_action': {
@@ -1465,8 +1469,9 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
   Widget build(BuildContext context) {
     final amount = double.tryParse(_amountController.text.trim());
     final merchantText = _merchantController.text.trim();
-    final payeeLabel =
-        merchantText.isNotEmpty ? merchantText : (_selectedCategory ?? 'merchant');
+    final payeeLabel = merchantText.isNotEmpty
+        ? merchantText
+        : (_selectedCategory ?? 'merchant');
 
     return SafeArea(
       child: Container(
@@ -1554,7 +1559,8 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
                           ),
                           decoration: _inputDecoration('Enter payment amount'),
                           validator: (value) {
-                            final parsed = double.tryParse((value ?? '').trim());
+                            final parsed =
+                                double.tryParse((value ?? '').trim());
                             if (parsed == null || parsed <= 0) {
                               return 'Amount is required';
                             }
@@ -1567,7 +1573,8 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
                           value: _selectedCategory,
                           decoration: _inputDecoration('Choose a category'),
                           items: const [
-                            DropdownMenuItem(value: 'Food', child: Text('Food')),
+                            DropdownMenuItem(
+                                value: 'Food', child: Text('Food')),
                             DropdownMenuItem(
                               value: 'Transport',
                               child: Text('Transport'),
@@ -1580,12 +1587,14 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
                               value: 'Entertainment',
                               child: Text('Entertainment'),
                             ),
-                            DropdownMenuItem(value: 'Bills', child: Text('Bills')),
+                            DropdownMenuItem(
+                                value: 'Bills', child: Text('Bills')),
                             DropdownMenuItem(
                               value: 'Education',
                               child: Text('Education'),
                             ),
-                            DropdownMenuItem(value: 'Other', child: Text('Other')),
+                            DropdownMenuItem(
+                                value: 'Other', child: Text('Other')),
                           ],
                           onChanged: (value) =>
                               setState(() => _selectedCategory = value),
@@ -1596,7 +1605,8 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
                         _fieldLabel('Merchant'),
                         TextFormField(
                           controller: _merchantController,
-                          decoration: _inputDecoration('Optional merchant name'),
+                          decoration:
+                              _inputDecoration('Optional merchant name'),
                         ),
                         const SizedBox(height: 12),
                         _fieldLabel('Description'),
@@ -2015,20 +2025,32 @@ class _ThinkTwiceSimulationAlertDialogState
       'medium' => AvatarMood.neutral,
       _ => AvatarMood.happy,
     };
-    final title = visibility?['summary']?.toString() ??
-        'Impulse spending detected.';
-    final prediction = visibility?['predictionText']?.toString() ??
-        'Your weekly food budget may exceed in 2 days.';
-    final recommendedAction =
-        visibility?['recommendedActionText']?.toString() ?? 'Save RM8 Instead';
-    final riskLabel = visibility?['riskLabel']?.toString() ??
-        riskLevel.toUpperCase();
-    final riskScore =
-        _analysisResult?['riskAnalysis']?['riskScore']?.toString() ??
-            visibility?['severityScoreText']?.toString() ??
-            '0/100';
-    final confidence = visibility?['confidenceText']?.toString() ??
+    final demoDecision =
+        _analysisResult?['demoDecision'] as Map<String, dynamic>?;
+
+    final title = demoDecision?['riskLabel']?.toString() ??
+        visibility?['riskLabel']?.toString() ??
+        '🔥 Impulse purchase detected';
+
+    final prediction = demoDecision?['futureImpact']?.toString() ??
+        visibility?['predictionText']?.toString() ??
+        'At this rate, your food budget may be exceeded within 2 days.';
+
+    final recommendedAction = demoDecision?['recommendedAction']?.toString() ??
+        'Save RM8 or find a cheaper nearby option.';
+
+    final riskLabel = riskLevel == 'high'
+        ? 'High'
+        : riskLevel == 'medium'
+            ? 'Medium'
+            : 'Safe';
+
+    final confidence = demoDecision?['confidence']?.toString() ??
+        visibility?['confidenceText']?.toString() ??
         '${_analysisResult?['interventionConfidence'] ?? 0}%';
+
+    final estimatedSavings =
+        demoDecision?['estimatedSavings']?.toString() ?? 'RM8';
 
     return Material(
       color: Colors.transparent,
@@ -2060,45 +2082,45 @@ class _ThinkTwiceSimulationAlertDialogState
                     switchOutCurve: Curves.easeInCubic,
                     child: _loading
                         ? Padding(
-                          key: const ValueKey('loading'),
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              WalletGuardianPreview(
-                                breed: widget.breed,
-                                accessory: widget.accessory,
-                                effect: widget.effect,
-                                mood: AvatarMood.sad,
-                                size: 96,
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Analysing spending behaviour...',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w900,
+                            key: const ValueKey('loading'),
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                WalletGuardianPreview(
+                                  breed: widget.breed,
+                                  accessory: widget.accessory,
+                                  effect: widget.effect,
+                                  mood: AvatarMood.sad,
+                                  size: 96,
                                 ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                'ThinkTwice is interrupting this payment attempt in real time.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  height: 1.45,
-                                  color: context.colors.mutedForeground,
-                                  fontWeight: FontWeight.w600,
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'AI is analysing this payment in real time...',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w900,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 18),
-                              CircularProgressIndicator(
-                                color: context.colors.primary,
-                              ),
-                            ],
-                          ),
-                        )
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Detecting overspending risk, behaviour patterns, and safer alternatives.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    height: 1.45,
+                                    color: context.colors.mutedForeground,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                CircularProgressIndicator(
+                                  color: context.colors.primary,
+                                ),
+                              ],
+                            ),
+                          )
                         : SingleChildScrollView(
                             key: const ValueKey('alert'),
                             padding: const EdgeInsets.all(20),
@@ -2107,13 +2129,13 @@ class _ThinkTwiceSimulationAlertDialogState
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Center(
-                                child: WalletGuardianPreview(
-                                  breed: widget.breed,
-                                  accessory: widget.accessory,
-                                  effect: widget.effect,
-                                  mood: avatarMood,
-                                  size: 96,
-                                ),
+                                  child: WalletGuardianPreview(
+                                    breed: widget.breed,
+                                    accessory: widget.accessory,
+                                    effect: widget.effect,
+                                    mood: avatarMood,
+                                    size: 96,
+                                  ),
                                 ),
                                 const SizedBox(height: 12),
                                 Center(
@@ -2162,7 +2184,7 @@ class _ThinkTwiceSimulationAlertDialogState
                                   children: [
                                     Expanded(
                                       child: _AlertMetricTile(
-                                        label: 'Risk Level',
+                                        label: 'Budget Impact',
                                         value: riskLabel,
                                         tone: riskLevel,
                                       ),
@@ -2170,16 +2192,11 @@ class _ThinkTwiceSimulationAlertDialogState
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: _AlertMetricTile(
-                                        label: 'Risk Score',
-                                        value: riskScore,
-                                        tone: riskLevel,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: _AlertMetricTile(
-                                        label: 'Confidence',
-                                        value: confidence,
+                                        label: 'AI Confidence',
+                                        value:
+                                            confidence.toString().contains('%')
+                                                ? confidence.toString()
+                                                : '$confidence%',
                                         tone: riskLevel,
                                       ),
                                     ),
@@ -2191,18 +2208,19 @@ class _ThinkTwiceSimulationAlertDialogState
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
                                     gradient: context.colors.primaryGradient,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: context.colors.primary
-                                          .withOpacity(0.22),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 10),
-                                    ),
-                                  ],
-                                ),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: context.colors.primary
+                                            .withOpacity(0.22),
+                                        blurRadius: 18,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         'Recommended Action',
@@ -2244,7 +2262,7 @@ class _ThinkTwiceSimulationAlertDialogState
                                           CrossAxisAlignment.start,
                                       children: [
                                         const Text(
-                                          'Why ThinkTwice stepped in',
+                                          'Why this caught our attention',
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w800,
@@ -2301,18 +2319,18 @@ class _ThinkTwiceSimulationAlertDialogState
                                 const SizedBox(height: 14),
                                 SizedBox(
                                   width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed:
-                                      _submitting ? null : _resolveContinue,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: context.colors.foreground,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
+                                  child: ElevatedButton(
+                                    onPressed:
+                                        _submitting ? null : _resolveContinue,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          context.colors.foreground,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
                                       ),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(18),
+                                        borderRadius: BorderRadius.circular(18),
                                       ),
                                     ),
                                     child: const Text('Continue Anyway'),
@@ -2321,20 +2339,21 @@ class _ThinkTwiceSimulationAlertDialogState
                                 const SizedBox(height: 10),
                                 SizedBox(
                                   width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: _submitting ? null : _resolveSave,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: context.colors.primary,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
+                                  child: ElevatedButton(
+                                    onPressed:
+                                        _submitting ? null : _resolveSave,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: context.colors.primary,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
                                       ),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(18),
+                                        borderRadius: BorderRadius.circular(18),
                                       ),
                                     ),
-                                    child: const Text('Save RM8 Instead'),
+                                    child:
+                                        Text('Save $estimatedSavings Instead'),
                                   ),
                                 ),
                                 const SizedBox(height: 10),
@@ -2348,11 +2367,22 @@ class _ThinkTwiceSimulationAlertDialogState
                                         vertical: 14,
                                       ),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(18),
+                                        borderRadius: BorderRadius.circular(18),
                                       ),
                                     ),
                                     child: const Text('Find Cheaper Nearby'),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Center(
+                                  child: Text(
+                                    'Small savings today can become healthier habits tomorrow.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: context.colors.mutedForeground,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -2421,9 +2451,8 @@ class _AlertMetricTile extends StatelessWidget {
 Map<String, dynamic> _buildSimulationFallbackAiResult(
   _PaymentSimulationRequest request,
 ) {
-  final transaction =
-      (request.aiPayload['transactions'] as List<dynamic>).first
-          as Map<String, dynamic>;
+  final transaction = (request.aiPayload['transactions'] as List<dynamic>).first
+      as Map<String, dynamic>;
   final amount = (transaction['amount'] as num).toDouble();
   final category = transaction['category'].toString();
   final description = request.description.toLowerCase();
@@ -2532,6 +2561,7 @@ Map<String, dynamic> _buildSimulationFallbackAiResult(
     'transactionPayload': request.transactionPayload,
   };
 }
+
 class _SimulationTemplate {
   const _SimulationTemplate({
     required this.label,

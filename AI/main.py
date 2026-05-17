@@ -201,13 +201,24 @@ def analyze_risk(user: UserProfile):
 
     response["aiVisibility"] = {
         "title": "ThinkTwice AI Analysis",
-        "riskLabel": risk_level.upper(),
-        "riskColor": risk_color_map.get(
+        "riskLabel": (
+            "🔥 Impulse Purchase Detected"
+            if risk_level == "high"
+            else "⚠️ Budget Warning"
+            if risk_level == "medium"
+            else "✅ Safe Spending"
+            ),     
+            "riskColor": risk_color_map.get(
             risk_level,
             "grey"
         ),
-        "summary": f"{risk_level.upper()} financial risk detected.",
-        "bulletReasons": risk_result.get(
+        "summary": (
+            "Possible impulse spending detected."
+                if risk_level == "high"
+                else "Budget risk detected."
+                if risk_level == "medium"
+                else "Spending looks manageable."
+    ),        "bulletReasons": risk_result.get(
             "reasons",
             []
         ),
@@ -236,8 +247,8 @@ def analyze_risk(user: UserProfile):
             "normal"
         ),
         "isAiMonitoringLive": True,
-        "aiStatus": "LIVE AI MONITORING"
-    }
+        "aiStatus": "AI CHECKING PURCHASE IMPACT"    
+        }
 
     response["explainability"] = {
         "question": "Why am I seeing this?",
@@ -265,61 +276,34 @@ def analyze_risk(user: UserProfile):
     }
 
     response["aiTimeline"] = [
-        {
-            "step": 1,
-            "agent": "Transaction Processor",
-            "agentType": "transaction_ingestion",
-            "event": "Transaction received"
-        },
-        {
-            "step": 2,
-            "agent": "Behaviour Analysis Logic",
-            "agentType": "behaviour_analysis",
-            "event": behaviour_result.get(
-                "behaviourPattern",
-                "Behaviour pattern analysed"
-            )
-        },
-        {
-            "step": 3,
-            "agent": "Spending Risk Agent",
-            "agentType": "risk_detection",
-            "event": "Financial risk analysed"
-        },
-        {
-            "step": 4,
-            "agent": "Spending Velocity Agent",
-            "agentType": "velocity_prediction",
-            "event": velocity_result.get(
-                "spendingTrend",
-                "Spending velocity evaluated"
-            )
-        },
-        {
-            "step": 5,
-            "agent": "Financial Orchestrator Agent",
-            "agentType": "intervention_orchestration",
-            "event": orchestrator_result.get(
-                "interventionReason",
-                "Best intervention selected"
-            )
-        },
-        {
-            "step": 6,
-            "agent": "Nudge Agent",
-            "agentType": "nudge_generation",
-            "event": "Personalised intervention generated"
-        },
-        {
-            "step": 7,
-            "agent": "Learning Loop Agent",
-            "agentType": "adaptive_learning",
-            "event": learning_result.get(
-                "futureRecommendation",
-                "Future recommendation updated"
-            )
-        }
-    ]
+    {
+        "step": 1,
+        "event": "Payment intent detected"
+    },
+    {
+        "step": 2,
+        "event": "Spending behaviour analysed"
+    },
+    {
+        "step": 3,
+        "event": "Overspending risk predicted"
+    },
+    {
+        "step": 4,
+        "event": orchestrator_result.get(
+            "interventionReason",
+            "Smarter financial option generated"
+        )
+    },
+    {
+        "step": 5,
+        "event": "Smart recommendation prepared"
+    },
+    {
+        "step": 6,
+        "event": "Dashboard updated"
+    }
+]
 
     response["firestorePayload"] = {
         "collectionPath": f"users/{user.user_id}/ai/latest_ai_analysis",
@@ -384,5 +368,64 @@ def analyze_risk(user: UserProfile):
             "severityScore": response["behaviourSeverityScore"]
         }
     ]
+
+    response["demoDecision"] = {
+    "riskLabel": (
+        "🔥 Impulse Purchase Detected"
+        if risk_level == "high"
+        else "⚠️ Budget Warning"
+        if risk_level == "medium"
+        else "✅ Safe Spending"
+    ),
+
+    "humanExplanation": behaviour_result.get(
+        "userFriendlyInsight",
+        "ThinkTwice analysed this purchase before confirmation."
+    ),
+
+    "futureImpact": velocity_result.get(
+        "overspendingPrediction",
+        {}
+    ).get(
+        "prediction",
+        "Your spending currently looks manageable."
+    ),
+
+    "recommendedAction": orchestrator_result.get(
+        "humanRecommendedAction",
+        "Keep tracking your spending."
+    ),
+
+    "interventionOptions": [
+        "Continue Anyway",
+        f"Save RM{savings_amount} Instead",
+        "Find Cheaper Nearby"
+    ],
+
+    "estimatedSavings": f"RM{savings_amount}",
+
+    "triggerSmartRadar":
+    orchestrator_result["smartRadar"]["triggerSmartRadar"],
+
+    "orchestratorDecision":
+    orchestrator_result["finalAction"],
+
+    "moneyHabitScoreImpact": (
+        "+3"
+        if risk_level == "high"
+        else "+1"
+    ),
+
+    "confidence":
+    response["interventionConfidence"],
+
+    "aiTimelineSimple": [
+        "Payment intent detected",
+        "Spending behaviour analysed",
+        "Overspending risk predicted",
+        "Intervention generated",
+        "Smart Radar activated"
+    ]
+}
 
     return response

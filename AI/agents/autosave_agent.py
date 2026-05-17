@@ -11,7 +11,7 @@ def suggest_savings(risk_level):
     if risk_level == "high":
 
         savings_reason = (
-            "High financial risk detected. Small immediate savings may help reduce overspending impact."
+            f"Saving RM{suggested_amount} now could help reduce overspending tonight."
         )
 
         savings_priority = "urgent"
@@ -20,10 +20,14 @@ def suggest_savings(risk_level):
             "micro_save_and_reduce_spending"
         )
 
+        encouragement_message = (
+            "Small savings today can become healthier financial habits later."
+        )
+
     elif risk_level == "medium":
 
         savings_reason = (
-            "Preventive savings action recommended before spending risk increases."
+            f"A small RM{suggested_amount} save now may help protect your weekly budget."
         )
 
         savings_priority = "important"
@@ -32,16 +36,24 @@ def suggest_savings(risk_level):
             "preventive_micro_save"
         )
 
+        encouragement_message = (
+            "A small adjustment now can prevent larger spending later."
+        )
+
     else:
 
         savings_reason = (
-            "Maintain healthy savings consistency."
+            "Your spending looks healthy today."
         )
 
         savings_priority = "normal"
 
         savings_strategy = (
             "maintain_savings_habit"
+        )
+
+        encouragement_message = (
+            "Nice job staying within your budget today."
         )
 
     return {
@@ -51,5 +63,7 @@ def suggest_savings(risk_level):
 
         "savingsPriority": savings_priority,
 
-        "savingsStrategy": savings_strategy
+        "savingsStrategy": savings_strategy,
+
+        "encouragementMessage": encouragement_message
     }

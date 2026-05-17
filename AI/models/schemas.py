@@ -8,6 +8,8 @@ class Transaction(BaseModel):
     category: str
     time: str
     location: Optional[str] = None
+    merchant: Optional[str] = None
+    status: Optional[str] = "before_confirmation"
 
 
 class UserAction(BaseModel):
