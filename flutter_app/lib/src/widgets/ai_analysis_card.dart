@@ -20,23 +20,21 @@ class AiAnalysisCard extends StatelessWidget {
 
     final explanation = aiResult['aiExplanation'] as List<dynamic>? ?? [];
     final aiTimeline = aiResult['aiTimeline'] as List<dynamic>? ?? [];
+    final riskLevel = risk['riskLevel']?.toString().toLowerCase() ?? 'low';
 
-    final humanRiskLabel =
-        demoDecision['riskLabel']?.toString() ?? '✅ Safe Spending';
+    final humanRiskLabel = friendlyRiskTitle(riskLevel);
 
     final humanExplanation = demoDecision['humanExplanation']?.toString() ??
-        'ThinkTwice analysed this purchase.';
+        friendlyRiskSummary(riskLevel);
 
     final futureImpact = demoDecision['futureImpact']?.toString() ??
-        'Your spending currently looks manageable.';
+        friendlyRiskSummary(riskLevel);
 
     final recommendedAction = demoDecision['recommendedAction']?.toString() ??
         'Keep tracking your spending.';
 
     final estimatedSavings =
         demoDecision['estimatedSavings']?.toString() ?? 'RM0';
-
-    final riskLevel = risk['riskLevel']?.toString().toLowerCase() ?? 'low';
 
     final confidence = demoDecision['confidence'] ??
         intervention['interventionConfidence'] ??
@@ -90,7 +88,7 @@ class AiAnalysisCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'ThinkTwice AI Analysis',
+                        'ThinkTwice Check-In',
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
@@ -98,7 +96,7 @@ class AiAnalysisCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'Checking if this purchase may affect your budget',
+                        'A quick read on how this purchase fits today',
                         style: TextStyle(
                           fontSize: 12,
                           color: context.colors.mutedForeground,
@@ -117,7 +115,7 @@ class AiAnalysisCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           const Text(
-                            'AI CHECK IN PROGRESS',
+                            'CHECKING THIS PURCHASE',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w900,
@@ -290,7 +288,7 @@ class AiAnalysisCard extends StatelessWidget {
 
             /// AI EXPLANATION
             const Text(
-              'Why ThinkTwice reacted:',
+              'Why we flagged this:',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
@@ -398,7 +396,7 @@ class AiAnalysisCard extends StatelessWidget {
             Row(
               children: [
                 const Text(
-                  'AI Confidence',
+                  'Confidence',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -435,7 +433,7 @@ class AiAnalysisCard extends StatelessWidget {
 
             /// AI TIMELINE
             const Text(
-              'AI Timeline',
+              'What happened',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
@@ -446,7 +444,7 @@ class AiAnalysisCard extends StatelessWidget {
 
             if (aiTimeline.isNotEmpty)
               ...aiTimeline.take(6).map((item) {
-                final event = item['event']?.toString() ?? 'AI step completed';
+                final event = item['event']?.toString() ?? 'Check completed';
 
                 return _buildTimelineItem(
                   event,
@@ -459,11 +457,11 @@ class AiAnalysisCard extends StatelessWidget {
                 Icons.payment_rounded,
               ),
               _buildTimelineItem(
-                'Spending behaviour analysed',
+                'Spending pattern reviewed',
                 Icons.psychology_alt_rounded,
               ),
               _buildTimelineItem(
-                'Overspending risk predicted',
+                friendlyRiskSummary(riskLevel),
                 Icons.warning_amber_rounded,
               ),
               _buildTimelineItem(

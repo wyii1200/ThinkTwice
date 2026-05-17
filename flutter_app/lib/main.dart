@@ -526,13 +526,15 @@ class _AppRootState extends State<AppRoot> {
       unawaited(_persistAppState());
       _awardPoints('Protected your streak with a quick save', 40, Icons.savings_rounded);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('RM8 moved to savings. Your dashboard has been updated.')),
+      showContainedSnackBar(
+        context,
+        message: 'RM8 moved to savings. Your dashboard has been updated.',
+        accentColor: context.colors.success,
       );
       showCelebrationDialog(
         context,
-        title: 'Nice Save',
-        body: 'RM8 is tucked away and your streak just got stronger.',
+        title: 'Money tucked away',
+        body: 'RM8 is saved and your Smart Spending Streak just got stronger.',
         icon: Icons.savings_rounded,
         color: context.colors.success,
       );
@@ -557,8 +559,10 @@ class _AppRootState extends State<AppRoot> {
       unawaited(_persistAppState());
       _awardPoints('Protected your streak with a quick save', 40, Icons.savings_rounded);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('RM8 moved to savings. Your dashboard has been updated.')),
+      showContainedSnackBar(
+        context,
+        message: 'RM8 moved to savings. Your dashboard has been updated.',
+        accentColor: context.colors.success,
       );
     }
   }

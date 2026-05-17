@@ -234,7 +234,7 @@ class InsightsPage extends StatelessWidget {
           InsightCard(
             icon: Icons.track_changes_rounded,
             tone: 'primary',
-            title: 'Financial Resilience Score',
+            title: 'Money Habit Score',
             body: '$resilienceScore/100',
           ),
           const SizedBox(height: 14),
@@ -244,7 +244,7 @@ class InsightsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Spending Pattern',
+                  'Your Spending Habits',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -283,7 +283,7 @@ class InsightsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Weekly Spending Breakdown',
+                  'Where Your Money Went',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -318,7 +318,7 @@ class InsightsPage extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   aiResult != null
-                      ? 'This is where most of your money is going right now.'
+                      ? 'A quick look at where your spending showed up most this week.'
                       : plan.recommendations.last,
                   style: TextStyle(
                     fontSize: 12,
@@ -353,8 +353,8 @@ class InsightsPage extends StatelessWidget {
                 ),
                 Text(
                   suggestedSavings > 0
-                      ? 'Hover or tap a bar to inspect savings progress.'
-                      : 'A simple view of how your savings are building up.',
+                      ? 'Hover or tap a bar to check how your savings are growing.'
+                      : 'A simple view of how your savings are growing.',
                   style: TextStyle(
                     fontSize: 12,
                     color: context.colors.mutedForeground,
@@ -412,8 +412,8 @@ class InsightsPage extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   hasLiveInsights
-                      ? 'This updates as your recent choices, nudges, and savings progress come in.'
-                      : 'More personalised guidance will show up here as your activity builds.',
+                      ? 'This keeps up with your recent choices, nudges, and savings wins.'
+                      : 'More personalised support will show up here as your activity builds.',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.white.withOpacity(0.92),

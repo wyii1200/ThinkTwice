@@ -561,10 +561,10 @@ class OnboardingPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Build your cat avatar', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+        Text('Build your ${pocketBuddyName()}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
         Text(
-          'Choose a collectible breed, add a head accessory, and set the mood for the head-only companion that shows up everywhere in ThinkTwice.',
+          'Choose a breed, add an accessory, and set the mood for the friendly sidekick that shows up across ThinkTwice.',
           style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
         ),
         const SizedBox(height: 14),
@@ -736,10 +736,10 @@ class OnboardingPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Set your saving rhythm', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+        const Text('Set your money rhythm', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
         Text(
-          'Dial in your budget, savings target, and automation rules so your cat can react to real spending behaviour.',
+          'Set your budget, savings target, and automations so Pocket Buddy can react to your real spending habits.',
           style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
         ),
         const SizedBox(height: 12),
@@ -812,7 +812,7 @@ class OnboardingPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Estimated safe daily spending limit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+              const Text('Your comfy daily spending guide', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
               const SizedBox(height: 6),
               Text('RM ${formatRm(plan.dailyLimit)} / day', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white)),
               const SizedBox(height: 6),
@@ -826,7 +826,7 @@ class OnboardingPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Automation preferences', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+              const Text('Helpful automations', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
               const SizedBox(height: 10),
               Row(
                 children: [
@@ -902,10 +902,10 @@ class OnboardingPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Train your money coach', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+        const Text('Shape your money coach', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
         Text(
-          'These inputs shape your AI baseline, first resilience score, and the tone of the cat companion you will see after transactions stream in.',
+          'These choices shape your starting money habits, first score, and the vibe of Pocket Buddy once transactions start flowing in.',
           style: TextStyle(fontSize: 12, color: context.colors.mutedForeground),
         ),
         const SizedBox(height: 12),
@@ -918,7 +918,7 @@ class OnboardingPage extends StatelessWidget {
                 children: [
                   const Icon(Icons.psychology_alt_rounded, size: 18),
                   const SizedBox(width: 8),
-                  const Text('Adaptive recommendations', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                  const Text('Helpful guidance', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                   const Spacer(),
                   Text('${plan.adaptabilityScore}/100', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.primary)),
                 ],
@@ -947,15 +947,15 @@ class OnboardingPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Initial dashboard state', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+              const Text('Your starting dashboard', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
               const SizedBox(height: 10),
               Row(
                 children: [
-                  Expanded(child: progressStat(context, 'Resilience', '50')),
+                  Expanded(child: progressStat(context, 'Money Habit Score', '50')),
                   const SizedBox(width: 8),
-                  Expanded(child: progressStat(context, 'Streak', '0')),
+                  Expanded(child: progressStat(context, 'Smart Spending Streak', '0')),
                   const SizedBox(width: 8),
-                  Expanded(child: progressStat(context, 'Smart decisions', '0')),
+                  Expanded(child: progressStat(context, 'Smart Spending', '0')),
                 ],
               ),
             ],

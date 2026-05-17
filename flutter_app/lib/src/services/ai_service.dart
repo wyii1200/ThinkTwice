@@ -208,21 +208,21 @@ class AiService {
     Map<String, dynamic> aiResult,
   ) {
     return aiResult['demoDecision']?['riskLabel']?.toString() ??
-        '✅ Safe Spending';
+        'LOW RISK ✅ This purchase looks manageable';
   }
 
   static String extractHumanExplanation(
     Map<String, dynamic> aiResult,
   ) {
     return aiResult['demoDecision']?['humanExplanation']?.toString() ??
-        'ThinkTwice analysed this purchase.';
+        'This purchase looks manageable.';
   }
 
   static String extractFutureImpact(
     Map<String, dynamic> aiResult,
   ) {
     return aiResult['demoDecision']?['futureImpact']?.toString() ??
-        'Your spending currently looks manageable.';
+        'This purchase looks manageable.';
   }
 
   static String extractRecommendedAction(

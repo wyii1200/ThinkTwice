@@ -68,7 +68,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
 
     final coachingMessage = aiResult != null
         ? AiService.extractCoachingMessage(aiResult)
-        : 'Complete challenges to improve your resilience.';
+        : 'Complete challenges to keep your money habits strong.';
 
     final aiExplanations =
         aiResult != null ? AiService.extractInsightTexts(aiResult) : <String>[];
@@ -90,7 +90,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
       (quest) => quest.id == 'quest-savings-streak',
       orElse: () => const QuestProgress(
         id: 'fallback-streak',
-        title: 'Current Save Streak',
+        title: 'Smart Spending Streak',
         progress: 0,
         progressLabel: '0/7 days',
         rewardLabel: '+0 pts',
@@ -114,7 +114,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
           const Text('Challenges',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text('Streaks, collectibles, squad ranks, and breed unlocks',
+          Text('Streaks, rewards, squad ranks, and fresh Pocket Buddy looks',
               style: TextStyle(
                   fontSize: 14, color: context.colors.mutedForeground)),
           const SizedBox(height: 16),
@@ -149,7 +149,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
                               fontWeight: FontWeight.w900,
                               color: Colors.white,
                               letterSpacing: -0.6)),
-                      Text('Current Save Streak',
+                      Text('Smart Spending Streak',
                           style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -174,7 +174,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
                               fontWeight: FontWeight.w900,
                               color: Colors.white,
                               letterSpacing: -0.6)),
-                      Text('Current points',
+                      Text('Reward points',
                           style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -191,7 +191,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Streaks',
+                const Text('Your wins',
                     style:
                         TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 12),
@@ -199,12 +199,12 @@ class _ChallengesPageState extends State<ChallengesPage> {
                   children: [
                     Expanded(
                         child: progressStat(
-                            context, 'Risk avoidance', currentSaveStreak)),
+                            context, 'Smart Spending Streak', currentSaveStreak)),
                     const SizedBox(width: 10),
                     Expanded(
                       child: progressStat(
                         context,
-                        'AI resilience',
+                        'Money Habit Score',
                         '$resilienceScore%',
                       ),
                     ),
@@ -225,7 +225,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
                           ),
                           SizedBox(width: 8),
                           Text(
-                            'Live AI Challenge Status',
+                            'Today\'s money check-in',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
@@ -236,7 +236,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Risk Level: ${riskLevel.toUpperCase()}',
+                        friendlyRiskTitle(riskLevel),
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
@@ -310,7 +310,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text('$pointsToNextLevel pts to the next level',
+                    Text('$pointsToNextLevel pts to your next level',
                     style: TextStyle(
                         fontSize: 12, color: context.colors.mutedForeground)),
               ],
@@ -445,7 +445,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                      'Redeem points for accessories, breed unlocks, and soft avatar effects.',
+                      'Use points for accessories, breed unlocks, and fun ${pocketBuddyName()} upgrades.',
                       style: TextStyle(
                           fontSize: 12, color: context.colors.mutedForeground)),
                   const SizedBox(height: 14),
@@ -498,7 +498,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Avatar loadout',
+                      const Text('Pocket Buddy style',
                           style: TextStyle(
                               fontSize: 14, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 4),
@@ -598,7 +598,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
                 minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16))),
-            child: const Text('Open avatar creator'),
+            child: const Text('Style your Pocket Buddy'),
           ),
         ],
       ),
