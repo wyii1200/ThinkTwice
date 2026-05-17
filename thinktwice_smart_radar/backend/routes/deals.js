@@ -77,7 +77,7 @@ router.post("/", async (req, res) => {
 
       await file.save(buffer, { metadata: { contentType: "image/jpeg" } });
       await file.makePublic();
-      imageUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+      imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(filename)}?alt=media`;
     } else if (imageBase64 && !bucket) {
       console.warn("Image upload skipped — FIREBASE_STORAGE_BUCKET not configured yet");
     }
@@ -221,7 +221,7 @@ router.patch("/:id", async (req, res) => {
     const updates = { updatedAt: new Date().toISOString() };
     if (title) updates.title = title;
     if (price != null) updates.price = parseFloat(price);
-    if (description) updates.description = description;
+    if (description !== undefined) updates.description = description;
     
     // 2. Add the originalPrice update logic
     if (originalPrice != null) updates.originalPrice = parseFloat(originalPrice);

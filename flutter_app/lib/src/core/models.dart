@@ -98,6 +98,7 @@ class CommunityDeal {
     double? distanceKm,
     bool? postedByUser,
     String? submittedBy,
+    String? imageUrl,
 
   }) {
     return CommunityDeal(
@@ -117,7 +118,8 @@ class CommunityDeal {
       imageBytes: imageBytes ?? this.imageBytes,
       distanceKm: distanceKm ?? this.distanceKm,
       postedByUser: postedByUser ?? this.postedByUser,
-      submittedBy: submittedBy ?? this.submittedBy,    
+      submittedBy: submittedBy ?? this.submittedBy,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 }

@@ -643,28 +643,30 @@ class _RadarPageState extends State<RadarPage> {
 
   // ── UI components ───────────────────────────────────────────────────────────
   Widget _buildDealImage(CommunityDeal deal) {
-    // 1. If they just posted it, show the local bytes instantly
-    if (deal.imageBytes != null) {
-      return Image.memory(deal.imageBytes!, fit: BoxFit.cover);
-    }
+  if (deal.imageBytes != null) {
+    return Image.memory(deal.imageBytes!, fit: BoxFit.cover);
+  }
 
-    // 2. If it has a URL from the database, fetch and display it
-    if (deal.imageUrl != null && deal.imageUrl!.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: deal.imageUrl!,
-        fit: BoxFit.cover,
-        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-        errorWidget: (context, url, error) => const Icon(Icons.error),
-      );
-    }
-
-    // 3. Fallback if no image exists at all
-    return Icon(
-      Icons.storefront_rounded,
-      size: 28, color: Theme.of(context).colorScheme.secondary,
+  final url = deal.imageUrl ?? _dealImageUrls[deal.id];
+  if (url != null && url.isNotEmpty) {
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      headers: const {'Access-Control-Allow-Origin': '*'},
+      loadingBuilder: (ctx, child, progress) => progress == null
+          ? child
+          : const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      errorBuilder: (ctx, error, stack) {
+        debugPrint('Image load failed: $error');
+        return Icon(Icons.storefront_rounded,
+            size: 28, color: Theme.of(ctx).colorScheme.secondary);
+      },
     );
   }
 
+  return Icon(Icons.storefront_rounded,
+      size: 28, color: Theme.of(context).colorScheme.secondary);
+}
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   double _distanceTo(double lat, double lng) =>
@@ -679,14 +681,15 @@ class _RadarPageState extends State<RadarPage> {
       title: d.title,
       storeName: d.storeName,
       category: d.category,
-      description: '${d.category} deal at ${d.storeName}',
+      description: d.description ?? '${d.category} deal at ${d.storeName}',
+
       expiryDate: d.expiresAt != null
           ? DateTime.tryParse(d.expiresAt!) ??
               DateTime.now().add(const Duration(days: 7))
           : DateTime.now().add(const Duration(days: 7)),
       latitude: d.lat,
       longitude: d.lng,
-      originalPrice: d.price * 1.2,
+      originalPrice: d.originalPrice,
       dealPrice: d.price,
       discountLabel: 'Save RM ${_fmt(d.price * 0.2)}',
       upvotes: d.upvotes,
@@ -1423,13 +1426,16 @@ class _RadarPageState extends State<RadarPage> {
                     ]),
                     const SizedBox(height: 12),
 
-                    _routeStop(context,
+                   _routeStop(context,
                         label: 'A',
                         color: const Color(0xFF41B89B),
-                        store: selected.storeName,
-                        items: _groceryItems
-                            .take((_groceryItems.length / 2).ceil())
-                            .toList()),
+                        store: _routeResult!.orderedStops.isNotEmpty
+                            ? _routeResult!.orderedStops[0].storeName
+                            : selected.storeName,
+                        items: _routeResult!.orderedStops.isNotEmpty
+                            ? _routeResult!.orderedStops[0].items
+                            : _groceryItems.take((_groceryItems.length / 2).ceil()).toList(),
+                        source: _routeResult!.orderedStops.isNotEmpty ? 'ThinkTwice Community' : null),
                     _routeConnector(),
                     _routeStop(context,
                         label: 'B',

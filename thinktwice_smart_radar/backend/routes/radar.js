@@ -93,31 +93,58 @@ router.post("/route-optimize", async (req, res) => {
         })
         .slice(0, 3); // top 3 real deals as stops
 
+      // Replace the stops building logic with this:
       if (nearbyDeals.length > 0) {
-        // Split grocery list across stops intelligently
         const items = groceryList || [];
-        const itemsPerStop = Math.ceil(items.length / nearbyDeals.length) || 1;
+        
+        // Try to match each item to a relevant deal
+        const matchedStops = [];
+        const unmatchedItems = [];
 
-        stops = nearbyDeals.map((deal, i) => ({
-          storeName: deal.storeName,
-          address: deal.address || deal.storeName,
-          lat: deal.location._latitude,
-          lng: deal.location._longitude,
-          dealId: deal.dealId,
-          dealTitle: deal.title,
-          dealPrice: deal.price,
-          trustScore: deal.trustScore,
-          items: items.slice(i * itemsPerStop, (i + 1) * itemsPerStop),
-          source: 'ThinkTwice Community'
-        }));
-      } else {
-        // No real deals found — fallback to a generic nearby stop
-        stops = [{
-          storeName: "Nearby Store",
+        for (const item of items) {
+          const match = nearbyDeals.find(deal =>
+            deal.title.toLowerCase().includes(item.toLowerCase()) ||
+            deal.category.toLowerCase().includes(item.toLowerCase()) ||
+            item.toLowerCase().includes(deal.storeName.toLowerCase())
+          );
+          
+          if (match && !matchedStops.find(s => s.dealId === match.dealId)) {
+            matchedStops.push({
+              storeName: match.storeName,
+              lat: match.location._latitude,
+              lng: match.location._longitude,
+              dealId: match.dealId,
+              dealTitle: match.title,
+              dealPrice: match.price,
+              trustScore: match.trustScore,
+              items: items.filter(i =>
+                match.title.toLowerCase().includes(i.toLowerCase()) ||
+                match.category.toLowerCase().includes(i.toLowerCase())
+              ),
+              source: 'ThinkTwice Community',
+            });
+          } else {
+            unmatchedItems.push(item);
+          }
+        }
+
+        // If unmatched items exist, add a Google Places fallback stop
+        if (unmatchedItems.length > 0) {
+          matchedStops.push({
+            storeName: 'Nearby Grocery',
+            lat: parseFloat((oLat + 0.005).toFixed(6)),
+            lng: parseFloat((oLng + 0.005).toFixed(6)),
+            items: unmatchedItems,
+            source: 'Google Places',
+          });
+        }
+
+        stops = matchedStops.length > 0 ? matchedStops : [{
+          storeName: 'Nearby Grocery',
           lat: parseFloat((oLat + 0.005).toFixed(6)),
           lng: parseFloat((oLng + 0.005).toFixed(6)),
-          items: groceryList || [],
-          source: 'Google Places AI'
+          items,
+          source: 'Google Places',
         }];
       }
     }
@@ -324,7 +351,7 @@ router.get("/savings-summary", async (req, res) => {
     const records = snapshot.docs.map((d) => d.data());
     const summary = aggregateMonthlySavings(records);
 
-    res.json({ success: true, month: targetMonth, ...summary });
+    res.json({ success: true, month: targetMonth, ...summary,records: records  });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

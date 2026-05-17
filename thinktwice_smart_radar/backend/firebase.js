@@ -7,7 +7,8 @@ if (!admin.apps.length) {
   };
 
   if (process.env.FIREBASE_STORAGE_BUCKET) {
-    config.storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
+    // In firebase.js, temporarily hardcode to test:
+    config.storageBucket = process.env.FIREBASE_STORAGE_BUCKET || 'thinktwice-kamihack.firebasestorage.app';
   }
 
   admin.initializeApp(config);
@@ -15,8 +16,6 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// Storage only available once FIREBASE_STORAGE_BUCKET is set
-// (needed for deal image uploads — wait for Person 1 to share bucket name)
 const bucket = process.env.FIREBASE_STORAGE_BUCKET
   ? admin.storage().bucket()
   : null;
