@@ -198,24 +198,60 @@ def orchestrate_intervention(
 
         intervention_priority = "medium"
 
-        final_action = FINAL_ACTIONS.get(
+        if primary_category == "food":
+            final_action = FINAL_ACTIONS.get(
+            "SMART_RADAR_AND_SAVE_NUDGE",
+            "SMART_RADAR_AND_SAVE_NUDGE"
+        )
+
+            smart_radar = {
+            "triggerSmartRadar": True,
+            "radarCategory": primary_category,
+            "radarMessage": (
+                f"We found cheaper nearby {primary_category} options that could help you save RM{savings_amount}."
+            ),
+            "openMode": "auto_expand",
+            "recommendedRoute": "/smart-radar",
+            "estimatedSavings": f"RM{savings_amount}",
+            "aiReasoning": (
+                "ThinkTwice noticed food budget pressure and prepared a cheaper nearby option before payment confirmation."
+            )
+        }
+
+            notification.update({
+            "sendPushNotification": True,
+            "notificationTitle": "⚠️ Budget Warning",
+            "notificationBody": (
+                f"You could save RM{savings_amount} today with a cheaper nearby option."
+            ),
+            "notificationType": "smart_radar"
+        })
+
+            intervention_reason = (
+            "ThinkTwice noticed food budget pressure and recommended a cheaper nearby option before payment confirmation."
+        )
+
+            human_recommended_action = (
+            f"Want to save RM{savings_amount} or find a cheaper option nearby?"
+        )
+
+            emotional_feedback = (
+            "Small savings become big habits."
+        )
+
+        else:
+            final_action = FINAL_ACTIONS.get(
             "CONTINUE_WITH_WARNING",
             "CONTINUE_WITH_WARNING"
         )
 
         notification.update({
-
             "sendPushNotification": True,
-
-            "notificationTitle":
-            "⚠️ Budget Warning",
-
+            "notificationTitle": "⚠️ Budget Warning",
             "notificationBody": (
                 f"This purchase may slightly affect your {primary_category} budget."
             ),
-
-            "notificationType":
-            "budget_warning"
+            "notificationType": "budget_warning"
         })
 
         intervention_reason = (
@@ -223,7 +259,7 @@ def orchestrate_intervention(
         )
 
         human_recommended_action = (
-            "Review your spending before continuing."
+            f"Want to save RM{savings_amount} or find a cheaper option nearby?"
         )
 
         emotional_feedback = (

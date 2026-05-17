@@ -41,7 +41,7 @@ def generate_llm_coaching_message(ai_result: dict) -> dict:
 
     fallback_nudge = intervention.get(
         "nudge",
-        "ThinkTwice checked this purchase before confirmation."
+        "You’ve been spending more on food than usual tonight."
     )
 
     fallback_response = {

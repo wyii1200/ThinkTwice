@@ -108,7 +108,7 @@ def calculate_risk(user):
             "Your food spending is higher than usual today."
         )
 
-        risk_score += 15
+        risk_score += 20
 
     if shopping_spending >= 40:
 
@@ -194,7 +194,7 @@ def calculate_risk(user):
                 "This purchase may be an impulse spending decision."
             )
 
-            risk_score += 15
+            risk_score += 20
 
     # =========================================================
     # 6. PRE-CONFIRMATION AI INTERVENTION
@@ -214,7 +214,7 @@ def calculate_risk(user):
                 "ThinkTwice is checking this purchase before payment confirmation."
             )
 
-            risk_score += 5
+            risk_score += 15
 
     # =========================================================
     # 7. HIGH AMOUNT DETECTION
@@ -238,7 +238,7 @@ def calculate_risk(user):
                 "This purchase amount is slightly higher than normal."
             )
 
-            risk_score += 10
+            risk_score += 15
 
     # =========================================================
     # 8. FALLBACK

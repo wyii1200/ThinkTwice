@@ -46,7 +46,7 @@ FINANCIAL_ACTIONS_REQUIRING_CONSENT = [
 
 DEFAULT_SAVINGS_AMOUNT = {
     "high": 8,
-    "medium": 5,
+    "medium": 8,
     "low": 0
 }
 

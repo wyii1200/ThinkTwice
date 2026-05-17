@@ -68,7 +68,7 @@ def generate_nudge(
         return {
 
             "nudge": (
-                f"This {primary_category} purchase may slightly affect your daily budget."
+                f"Your {primary_category} spending is getting close to the limit. Want a cheaper option nearby?"
             ),
 
             "nudgeType":
