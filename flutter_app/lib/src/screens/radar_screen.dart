@@ -375,6 +375,7 @@ class _RadarPageState extends State<RadarPage> {
         address: result.address,
         userId: _userId,
         imageBytes: result.imageBytes,
+        description: result.description,
       );
 
       final communityDeal = _apiDealToCommunityDeal(apiDeal);
