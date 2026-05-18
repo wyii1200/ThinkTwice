@@ -77,10 +77,9 @@ class _HomePageState extends State<HomePage> {
   final List<TransactionRecord> _simulatedTransactions = <TransactionRecord>[];
 
   Future<void> _openPaymentSimulation() async {
-    final request = await showModalBottomSheet<_PaymentSimulationRequest>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final request = await showContainedBottomSheet<_PaymentSimulationRequest>(
+      context,
+      barrierLabel: 'Simulate Payment',
       builder: (context) => _PaymentSimulationSheet(
         userId: widget.userId.isNotEmpty ? widget.userId : 'demo_user_001',
         dailyBudget: widget.plan.dailyLimit > 0 ? widget.plan.dailyLimit : 30,
@@ -94,39 +93,19 @@ class _HomePageState extends State<HomePage> {
     await Future<void>.delayed(const Duration(milliseconds: 90));
     if (!mounted) return;
 
-    final result = await showGeneralDialog<_PaymentSimulationResolution>(
-      context: context,
+    final result = await showContainedDialog<_PaymentSimulationResolution>(
+      context,
       barrierDismissible: false,
       barrierLabel: 'ThinkTwice Alert',
       barrierColor: Colors.black.withOpacity(0.55),
       transitionDuration: const Duration(milliseconds: 320),
-      pageBuilder: (context, animation, secondaryAnimation) =>
+      builder: (context) =>
           _ThinkTwiceSimulationAlertDialog(
         request: request,
         breed: widget.breed,
         accessory: widget.accessory,
         effect: widget.effect,
       ),
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        final fade = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        );
-        final scale = Tween<double>(begin: 0.92, end: 1).animate(
-          CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
-        );
-        final slide = Tween<Offset>(
-          begin: const Offset(0, 0.06),
-          end: Offset.zero,
-        ).animate(fade);
-        return FadeTransition(
-          opacity: fade,
-          child: SlideTransition(
-            position: slide,
-            child: ScaleTransition(scale: scale, child: child),
-          ),
-        );
-      },
     );
 
     if (!mounted || result == null) return;
@@ -162,8 +141,15 @@ class _HomePageState extends State<HomePage> {
     if (result.savedInstead) {
       widget.onSaveAlert();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.bannerBody)),
+      showContainedSnackBar(
+        context,
+        message: result.bannerBody,
+        accentColor: result.bannerTone == 'warning'
+            ? context.colors.warning
+            : context.colors.primary,
+        icon: result.bannerTone == 'warning'
+            ? Icons.warning_amber_rounded
+            : Icons.info_rounded,
       );
     }
   }
@@ -187,7 +173,8 @@ class _HomePageState extends State<HomePage> {
         demoSmartDecisionScore ?? widget.smartDecisionScore;
     final currentStreak = widget.currentStreak;
     final recentPoints = widget.recentPoints;
-    final transactionIds = _simulatedTransactions.map((item) => item.id).toSet();
+    final transactionIds =
+        _simulatedTransactions.map((item) => item.id).toSet();
     final transactions = [
       ..._simulatedTransactions,
       ...widget.transactions.where((item) => !transactionIds.contains(item.id)),
@@ -450,7 +437,7 @@ class _HomePageState extends State<HomePage> {
                               Expanded(
                                 child: _heroMiniCard(
                                   icon: Icons.wallet_rounded,
-                                  label: 'Resilience',
+                                  label: 'Money Habit Score',
                                   value: '$resilienceScore',
                                   glowColor: const Color(0xFF92F0D5),
                                 ),
@@ -459,7 +446,7 @@ class _HomePageState extends State<HomePage> {
                               Expanded(
                                 child: _heroMiniCard(
                                   icon: Icons.local_fire_department_rounded,
-                                  label: 'Current streak',
+                                  label: 'Smart Spending Streak',
                                   value: streakLabel,
                                   glowColor: const Color(0xFFFFD58B),
                                 ),
@@ -472,7 +459,7 @@ class _HomePageState extends State<HomePage> {
                               Expanded(
                                 child: _heroMiniCard(
                                   icon: Icons.psychology_alt_rounded,
-                                  label: 'Smart score',
+                                  label: 'Smart Spending',
                                   value: '$smartDecisionScore',
                                   glowColor: const Color(0xFFC7F7E9),
                                 ),
@@ -481,7 +468,7 @@ class _HomePageState extends State<HomePage> {
                               Expanded(
                                 child: _heroMiniCard(
                                   icon: Icons.savings_rounded,
-                                  label: 'Savings goal',
+                                  label: 'Savings Goal',
                                   value: '${formatRm(goalProgress * 100)}%',
                                   glowColor: const Color(0xFFFFE8AF),
                                 ),
@@ -509,15 +496,15 @@ class _HomePageState extends State<HomePage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Cat Companion',
+                                Text(pocketBuddyName(),
                                     style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w800,
                                         color:
                                             context.colors.accentForeground)),
                                 const SizedBox(height: 4),
-                                const Text(
-                                    'Your collectible cat is watching your spending vibe.',
+                                Text(
+                                    '${pocketBuddyName()} is keeping a gentle eye on your spending vibe.',
                                     style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.w900,
@@ -648,7 +635,7 @@ class _HomePageState extends State<HomePage> {
                                           Text(
                                             leveledUp
                                                 ? 'Epic mood sparkle'
-                                                : 'Gentle idle loop',
+                                                : 'Chill check-in mode',
                                             style: const TextStyle(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w800,
@@ -660,10 +647,10 @@ class _HomePageState extends State<HomePage> {
                                     const SizedBox(height: 12),
                                     Text(
                                       leveledUp
-                                          ? 'It is glowing because your saving habits just leveled up.'
+                                          ? '${pocketBuddyName()} is glowing because your money habits just leveled up.'
                                           : overspendingRisk
-                                              ? 'Its face is warning you softly before the streak breaks.'
-                                              : 'It is calm, alert, and ready to celebrate your next good call.',
+                                              ? '${pocketBuddyName()} is giving you a soft heads-up before the streak slips.'
+                                              : '${pocketBuddyName()} is calm, alert, and ready to hype your next good call.',
                                       style: TextStyle(
                                           fontSize: 12,
                                           height: 1.5,
@@ -680,12 +667,12 @@ class _HomePageState extends State<HomePage> {
                                             context,
                                             Icons.favorite_rounded,
                                             savingsWin
-                                                ? 'Comforted'
-                                                : 'Observing'),
+                                                ? 'Feeling good'
+                                                : 'Keeping watch'),
                                         _guardianChip(
                                             context,
                                             Icons.inventory_2_rounded,
-                                            '${nextLevelPoints - pointsIntoLevel} pts to next unlock'),
+                                            '${nextLevelPoints - pointsIntoLevel} pts to next look'),
                                         _guardianChip(
                                             context,
                                             Icons.local_fire_department_rounded,
@@ -704,11 +691,11 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           Expanded(
                             child: progressStat(
-                                context, 'Total points', '$totalPoints pts'),
+                                context, 'Reward points', '$totalPoints pts'),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: progressStat(context, 'Next level',
+                            child: progressStat(context, 'Next unlock',
                                 '${nextLevelPoints - pointsIntoLevel} pts left'),
                           ),
                         ],
@@ -844,7 +831,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 20),
-              sectionHeader(context, 'AI Insights',
+              sectionHeader(context, 'Money check-ins',
                   action: 'See all', onTap: () => onNavigate(3)),
               const SizedBox(height: 8),
               ...insights.asMap().entries.map((entry) => StaggeredReveal(
@@ -1321,7 +1308,8 @@ class _PaymentSimulationSheet extends StatefulWidget {
   final double savingsGoal;
 
   @override
-  State<_PaymentSimulationSheet> createState() => _PaymentSimulationSheetState();
+  State<_PaymentSimulationSheet> createState() =>
+      _PaymentSimulationSheetState();
 }
 
 class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
@@ -1419,6 +1407,8 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
           'category': normalizedCategory,
           'time': now,
           'location': _locationController.text.trim(),
+          'merchant': _merchantController.text.trim(),
+          'status': 'before_confirmation',
         }
       ],
       'user_action': {
@@ -1463,89 +1453,128 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context).size;
+    final appWidth = thinkTwiceAppWidth(context);
+    final compact = appWidth < 390;
     final amount = double.tryParse(_amountController.text.trim());
     final merchantText = _merchantController.text.trim();
-    final payeeLabel =
-        merchantText.isNotEmpty ? merchantText : (_selectedCategory ?? 'merchant');
+    final payeeLabel = merchantText.isNotEmpty
+        ? merchantText
+        : (_selectedCategory ?? 'merchant');
 
     return SafeArea(
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.95,
-        decoration: BoxDecoration(
-          color: context.colors.background,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 56,
-              height: 5,
-              margin: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(
-                color: context.colors.muted,
-                borderRadius: BorderRadius.circular(999),
-              ),
+      child: Center(
+        child: Padding(
+          padding: thinkTwiceSurfacePadding(context),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: kThinkTwiceAppMaxWidth - 24,
+              maxHeight: media.height * 0.84,
             ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Simulate Payment',
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w800,
-                                  ),
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: context.colors.background,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.18),
+                    blurRadius: 26,
+                    offset: const Offset(0, 16),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 5,
+                    margin: const EdgeInsets.only(top: 12),
+                    decoration: BoxDecoration(
+                      color: context.colors.muted,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      compact ? 16 : 18,
+                      14,
+                      compact ? 8 : 12,
+                      0,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Simulate Payment',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'A clean payment flow before ThinkTwice jumps in.',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: context.colors.mutedForeground,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _StepStrip(stage: _stage),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _quickTemplates
-                            .map(
-                              (template) => ActionChip(
-                                avatar: const Icon(
-                                  Icons.flash_on_rounded,
-                                  size: 16,
-                                ),
-                                label: Text(template.label),
-                                onPressed: () => _applyTemplate(template),
                               ),
-                            )
-                            .toList(),
+                              const SizedBox(height: 4),
+                              Text(
+                                'A clean payment flow before ThinkTwice jumps in.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: context.colors.mutedForeground,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      compact ? 16 : 18,
+                      14,
+                      compact ? 16 : 18,
+                      12,
+                    ),
+                    child: _StepStrip(stage: _stage),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.fromLTRB(
+                        compact ? 16 : 18,
+                        4,
+                        compact ? 16 : 18,
+                        compact ? 18 : 24,
                       ),
-                      const SizedBox(height: 16),
-                      if (_stage == _SimulationStage.entry) ...[
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _quickTemplates
+                                  .map(
+                                    (template) => ActionChip(
+                                      avatar: const Icon(
+                                        Icons.flash_on_rounded,
+                                        size: 16,
+                                      ),
+                                      label: Text(template.label),
+                                      onPressed: () => _applyTemplate(template),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                            const SizedBox(height: 16),
+                            if (_stage == _SimulationStage.entry) ...[
                         _fieldLabel('Amount (RM)'),
                         TextFormField(
                           controller: _amountController,
@@ -1554,7 +1583,8 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
                           ),
                           decoration: _inputDecoration('Enter payment amount'),
                           validator: (value) {
-                            final parsed = double.tryParse((value ?? '').trim());
+                            final parsed =
+                                double.tryParse((value ?? '').trim());
                             if (parsed == null || parsed <= 0) {
                               return 'Amount is required';
                             }
@@ -1567,7 +1597,8 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
                           value: _selectedCategory,
                           decoration: _inputDecoration('Choose a category'),
                           items: const [
-                            DropdownMenuItem(value: 'Food', child: Text('Food')),
+                            DropdownMenuItem(
+                                value: 'Food', child: Text('Food')),
                             DropdownMenuItem(
                               value: 'Transport',
                               child: Text('Transport'),
@@ -1580,12 +1611,14 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
                               value: 'Entertainment',
                               child: Text('Entertainment'),
                             ),
-                            DropdownMenuItem(value: 'Bills', child: Text('Bills')),
+                            DropdownMenuItem(
+                                value: 'Bills', child: Text('Bills')),
                             DropdownMenuItem(
                               value: 'Education',
                               child: Text('Education'),
                             ),
-                            DropdownMenuItem(value: 'Other', child: Text('Other')),
+                            DropdownMenuItem(
+                                value: 'Other', child: Text('Other')),
                           ],
                           onChanged: (value) =>
                               setState(() => _selectedCategory = value),
@@ -1596,7 +1629,8 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
                         _fieldLabel('Merchant'),
                         TextFormField(
                           controller: _merchantController,
-                          decoration: _inputDecoration('Optional merchant name'),
+                          decoration:
+                              _inputDecoration('Optional merchant name'),
                         ),
                         const SizedBox(height: 12),
                         _fieldLabel('Description'),
@@ -1628,8 +1662,8 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
                             child: const Text('Preview Payment'),
                           ),
                         ),
-                      ],
-                      if (_stage == _SimulationStage.preview) ...[
+                            ],
+                            if (_stage == _SimulationStage.preview) ...[
                         _PreviewCard(
                           amountLabel: amount != null
                               ? 'RM ${amount.toStringAsFixed(2)}'
@@ -1670,13 +1704,16 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
                             child: const Text('Cancel'),
                           ),
                         ),
-                      ],
-                    ],
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1729,40 +1766,107 @@ class _StepStrip extends StatelessWidget {
     };
 
     const labels = [
-      '1. Enter payment',
-      '2. Preview payment',
-      '3. AI intervention',
+      'Enter payment',
+      'Preview payment',
+      'AI intervention',
     ];
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: List.generate(labels.length, (index) {
-        final active = index <= activeIndex;
+        final isCompleted = index < activeIndex;
+        final isCurrent = index == activeIndex;
+        final isActive = index <= activeIndex;
+
         return Expanded(
-          child: Container(
-            margin: EdgeInsets.only(right: index == labels.length - 1 ? 0 : 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            decoration: BoxDecoration(
-              color: active
-                  ? context.colors.primary.withOpacity(0.14)
-                  : context.colors.card,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: active
-                    ? context.colors.primary.withOpacity(0.35)
-                    : Theme.of(context).dividerColor,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        gradient: isActive ? context.colors.primaryGradient : null,
+                        color: isActive ? null : const Color(0xFFF1EBDD),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isCurrent
+                              ? context.colors.primary.withOpacity(0.16)
+                              : Colors.transparent,
+                          width: 2.5,
+                        ),
+                        boxShadow: isCurrent
+                            ? [
+                                BoxShadow(
+                                  color: context.colors.primary.withOpacity(0.18),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      alignment: Alignment.center,
+                      child: isCompleted
+                          ? const Icon(
+                              Icons.check_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            )
+                          : Text(
+                              '${index + 1}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                                color: isActive
+                                    ? Colors.white
+                                    : context.colors.mutedForeground,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      labels[index],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        height: 1.3,
+                        fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w700,
+                        color: isActive
+                            ? context.colors.foreground
+                            : context.colors.mutedForeground,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            child: Text(
-              labels[index],
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: active
-                    ? context.colors.primary
-                    : context.colors.mutedForeground,
-              ),
-            ),
+              if (index < labels.length - 1)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 15),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      height: 3,
+                      margin: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        gradient: index < activeIndex
+                            ? context.colors.primaryGradient
+                            : null,
+                        color: index < activeIndex
+                            ? null
+                            : const Color(0xFFEDE6D8),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         );
       }),
@@ -2000,7 +2104,9 @@ class _ThinkTwiceSimulationAlertDialogState
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context).size;
-    final maxDialogHeight = media.height * 0.78;
+    final appWidth = thinkTwiceAppWidth(context);
+    final compact = appWidth < 390;
+    final maxDialogHeight = media.height * 0.82;
     final visibility =
         _analysisResult?['aiVisibility'] as Map<String, dynamic>?;
     final reasons = (visibility?['bulletReasons'] as List<dynamic>? ??
@@ -2015,53 +2121,60 @@ class _ThinkTwiceSimulationAlertDialogState
       'medium' => AvatarMood.neutral,
       _ => AvatarMood.happy,
     };
-    final title = visibility?['summary']?.toString() ??
-        'Impulse spending detected.';
-    final prediction = visibility?['predictionText']?.toString() ??
-        'Your weekly food budget may exceed in 2 days.';
-    final recommendedAction =
-        visibility?['recommendedActionText']?.toString() ?? 'Save RM8 Instead';
-    final riskLabel = visibility?['riskLabel']?.toString() ??
-        riskLevel.toUpperCase();
-    final riskScore =
-        _analysisResult?['riskAnalysis']?['riskScore']?.toString() ??
-            visibility?['severityScoreText']?.toString() ??
-            '0/100';
-    final confidence = visibility?['confidenceText']?.toString() ??
+    final demoDecision =
+        _analysisResult?['demoDecision'] as Map<String, dynamic>?;
+
+    final title = friendlyRiskTitle(riskLevel);
+
+    final prediction = demoDecision?['futureImpact']?.toString() ??
+        visibility?['predictionText']?.toString() ??
+        friendlyRiskSummary(riskLevel);
+
+    final recommendedAction = demoDecision?['recommendedAction']?.toString() ??
+        'Save RM8 or find a cheaper nearby option.';
+
+    final riskLabel = friendlyRiskBadge(riskLevel);
+
+    final confidence = demoDecision?['confidence']?.toString() ??
+        visibility?['confidenceText']?.toString() ??
         '${_analysisResult?['interventionConfidence'] ?? 0}%';
+
+    final estimatedSavings =
+        demoDecision?['estimatedSavings']?.toString() ?? 'RM8';
 
     return Material(
       color: Colors.transparent,
       child: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: maxDialogHeight,
+          child: Padding(
+            padding: thinkTwiceSurfacePadding(context),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: kThinkTwiceAppMaxWidth - 24,
+                maxHeight: maxDialogHeight,
+              ),
+              child: Container(
+                width: double.infinity,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: context.colors.card,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.22),
+                      blurRadius: 30,
+                      offset: const Offset(0, 18),
+                    ),
+                  ],
                 ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: context.colors.card,
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.22),
-                        blurRadius: 30,
-                        offset: const Offset(0, 18),
-                      ),
-                    ],
-                  ),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 260),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    child: _loading
-                        ? Padding(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 260),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: _loading
+                      ? Padding(
                           key: const ValueKey('loading'),
-                          padding: const EdgeInsets.all(24),
+                          padding: EdgeInsets.all(compact ? 18 : 24),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -2070,11 +2183,11 @@ class _ThinkTwiceSimulationAlertDialogState
                                 accessory: widget.accessory,
                                 effect: widget.effect,
                                 mood: AvatarMood.sad,
-                                size: 96,
+                                size: compact ? 84 : 96,
                               ),
                               const SizedBox(height: 16),
                               const Text(
-                                'Analysing spending behaviour...',
+                                'Checking this purchase for you...',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 20,
@@ -2083,7 +2196,7 @@ class _ThinkTwiceSimulationAlertDialogState
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                'ThinkTwice is interrupting this payment attempt in real time.',
+                                'Looking for budget pressure, impulse spending, and smarter nearby options.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 13,
@@ -2099,98 +2212,93 @@ class _ThinkTwiceSimulationAlertDialogState
                             ],
                           ),
                         )
-                        : SingleChildScrollView(
-                            key: const ValueKey('alert'),
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Center(
+                      : SingleChildScrollView(
+                          key: const ValueKey('alert'),
+                          padding: EdgeInsets.all(compact ? 16 : 20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Center(
                                 child: WalletGuardianPreview(
                                   breed: widget.breed,
                                   accessory: widget.accessory,
                                   effect: widget.effect,
                                   mood: avatarMood,
-                                  size: 96,
+                                  size: compact ? 84 : 96,
                                 ),
-                                ),
-                                const SizedBox(height: 12),
-                                Center(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 7,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: context.colors.primary
-                                          .withOpacity(0.10),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: Text(
-                                      'ThinkTwice AI Intervention',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.6,
-                                        color: context.colors.primary,
-                                      ),
-                                    ),
+                              ),
+                              const SizedBox(height: 12),
+                              Center(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
                                   ),
-                                ),
-                                const SizedBox(height: 14),
-                                Text(
-                                  title,
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w900,
-                                    height: 1.08,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  prediction,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.4,
-                                    color: context.colors.foreground,
-                                  ),
-                                ),
-                                const SizedBox(height: 14),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _AlertMetricTile(
-                                        label: 'Risk Level',
-                                        value: riskLabel,
-                                        tone: riskLevel,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: _AlertMetricTile(
-                                        label: 'Risk Score',
-                                        value: riskScore,
-                                        tone: riskLevel,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: _AlertMetricTile(
-                                        label: 'Confidence',
-                                        value: confidence,
-                                        tone: riskLevel,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    gradient: context.colors.primaryGradient,
+                                    color:
+                                        context.colors.primary.withOpacity(0.10),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    'ThinkTwice Support',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.6,
+                                      color: context.colors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Text(
+                                title,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  height: 1.08,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                prediction,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.4,
+                                  color: context.colors.foreground,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _AlertMetricTile(
+                                      label: 'Budget Impact',
+                                      value: riskLabel,
+                                      tone: riskLevel,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _AlertMetricTile(
+                                      label: 'Confidence',
+                                      value:
+                                          confidence.toString().contains('%')
+                                              ? confidence.toString()
+                                              : '$confidence%',
+                                      tone: riskLevel,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  gradient: context.colors.primaryGradient,
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
@@ -2201,106 +2309,105 @@ class _ThinkTwiceSimulationAlertDialogState
                                     ),
                                   ],
                                 ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Recommended Action',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      recommendedAction,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                        height: 1.1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              if (reasons.isNotEmpty)
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: context.colors.background,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Theme.of(context)
+                                          .dividerColor
+                                          .withOpacity(0.7),
+                                    ),
+                                  ),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       const Text(
-                                        'Recommended Action',
+                                        'Why this caught our attention',
                                         style: TextStyle(
-                                          fontSize: 11,
+                                          fontSize: 12,
                                           fontWeight: FontWeight.w800,
-                                          color: Colors.white,
                                         ),
                                       ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        recommendedAction,
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w900,
-                                          color: Colors.white,
-                                          height: 1.1,
-                                        ),
-                                      ),
+                                      const SizedBox(height: 8),
+                                      ...reasons.take(3).map(
+                                            (reason) => Padding(
+                                              padding: const EdgeInsets.only(
+                                                bottom: 8,
+                                              ),
+                                              child: Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Icon(
+                                                    Icons.circle,
+                                                    size: 8,
+                                                    color:
+                                                        context.colors.primary,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      reason,
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        height: 1.4,
+                                                        color: context.colors
+                                                            .mutedForeground,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                if (reasons.isNotEmpty)
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(14),
-                                    decoration: BoxDecoration(
-                                      color: context.colors.background,
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: Theme.of(context)
-                                            .dividerColor
-                                            .withOpacity(0.7),
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Why ThinkTwice stepped in',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        ...reasons.take(3).map(
-                                              (reason) => Padding(
-                                                padding: const EdgeInsets.only(
-                                                  bottom: 8,
-                                                ),
-                                                child: Row(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Icon(
-                                                      Icons.circle,
-                                                      size: 8,
-                                                      color: context
-                                                          .colors.primary,
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Expanded(
-                                                      child: Text(
-                                                        reason,
-                                                        style: TextStyle(
-                                                          fontSize: 12,
-                                                          height: 1.4,
-                                                          color: context.colors
-                                                              .mutedForeground,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                      ],
-                                    ),
+                              if (_statusMessage != null) ...[
+                                const SizedBox(height: 10),
+                                Text(
+                                  _statusMessage!,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.colors.mutedForeground,
                                   ),
-                                if (_statusMessage != null) ...[
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    _statusMessage!,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: context.colors.mutedForeground,
-                                    ),
-                                  ),
-                                ],
-                                const SizedBox(height: 14),
-                                SizedBox(
-                                  width: double.infinity,
+                                ),
+                              ],
+                              const SizedBox(height: 14),
+                              SizedBox(
+                                width: double.infinity,
                                 child: ElevatedButton(
                                   onPressed:
                                       _submitting ? null : _resolveContinue,
@@ -2309,56 +2416,66 @@ class _ThinkTwiceSimulationAlertDialogState
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 14,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(18),
-                                      ),
                                     ),
-                                    child: const Text('Continue Anyway'),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
                                   ),
+                                  child: const Text('Continue Anyway'),
                                 ),
-                                const SizedBox(height: 10),
-                                SizedBox(
-                                  width: double.infinity,
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: _submitting ? null : _resolveSave,
+                                  onPressed:
+                                      _submitting ? null : _resolveSave,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: context.colors.primary,
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 14,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(18),
-                                      ),
                                     ),
-                                    child: const Text('Save RM8 Instead'),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                  ),
+                                  child:
+                                      Text('Save $estimatedSavings Instead'),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton(
+                                  onPressed:
+                                      _submitting ? null : _resolveRadar,
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                  ),
+                                  child: const Text('Find Cheaper Nearby'),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Center(
+                                child: Text(
+                                  'Small savings today can become healthier habits tomorrow.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.colors.mutedForeground,
                                   ),
                                 ),
-                                const SizedBox(height: 10),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton(
-                                    onPressed:
-                                        _submitting ? null : _resolveRadar,
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(18),
-                                      ),
-                                    ),
-                                    child: const Text('Find Cheaper Nearby'),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                  ),
+                        ),
                 ),
               ),
             ),
@@ -2421,9 +2538,8 @@ class _AlertMetricTile extends StatelessWidget {
 Map<String, dynamic> _buildSimulationFallbackAiResult(
   _PaymentSimulationRequest request,
 ) {
-  final transaction =
-      (request.aiPayload['transactions'] as List<dynamic>).first
-          as Map<String, dynamic>;
+  final transaction = (request.aiPayload['transactions'] as List<dynamic>).first
+      as Map<String, dynamic>;
   final amount = (transaction['amount'] as num).toDouble();
   final category = transaction['category'].toString();
   final description = request.description.toLowerCase();
@@ -2469,8 +2585,10 @@ Map<String, dynamic> _buildSimulationFallbackAiResult(
           ? 78
           : 68;
   final prediction = currentDaily + amount > dailyBudget
-      ? 'Impulse spending detected. Your weekly ${category.toLowerCase()} budget may exceed in 2 days.'
-      : 'Impulse spending detected. This purchase could weaken your saving rhythm tonight.';
+      ? 'Your spending is slightly higher than usual.'
+      : riskLevel == 'high'
+          ? 'Possible impulse spending detected.'
+          : 'This purchase looks manageable.';
   final recommendedAction = riskLevel == 'low'
       ? 'Continue with awareness'
       : category == 'transport'
@@ -2517,12 +2635,12 @@ Map<String, dynamic> _buildSimulationFallbackAiResult(
     'interventionConfidence': confidence,
     'behaviourSeverityScore': riskScore.round(),
     'aiVisibility': {
-      'riskLabel': riskLevel.toUpperCase(),
+      'riskLabel': friendlyRiskTitle(riskLevel),
       'summary': riskLevel == 'high'
-          ? 'Impulse spending detected.'
+          ? 'Possible impulse spending detected.'
           : riskLevel == 'medium'
-              ? 'ThinkTwice spotted budget pressure.'
-              : 'Low pre-payment risk detected.',
+              ? 'Your spending is slightly higher than usual.'
+              : 'This purchase looks manageable.',
       'bulletReasons': reasons,
       'predictionText': prediction,
       'recommendedActionText': recommendedAction,
@@ -2532,6 +2650,7 @@ Map<String, dynamic> _buildSimulationFallbackAiResult(
     'transactionPayload': request.transactionPayload,
   };
 }
+
 class _SimulationTemplate {
   const _SimulationTemplate({
     required this.label,

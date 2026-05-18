@@ -1,30 +1,45 @@
-// Mock GXBank API — replace with real API calls when available
+// Mock GXBank service.
+// Replace these functions with real GXBank APIs when available.
 
 async function getBalance(userId) {
   return {
+    success: true,
     userId,
-    balance: 1240.50,
+    balance: 1240.5,
     currency: 'MYR',
+    source: 'gxbank_mock',
   };
 }
 
 async function getSavingsPocket(userId) {
   return {
+    success: true,
     userId,
-    savingsPocket: 85.00,
+    savingsPocket: 85,
+    moneySavedThisWeek: 18,
     currency: 'MYR',
+    source: 'gxbank_mock',
   };
 }
 
 async function transferToSavings(userId, amount) {
-  // In production: call real GXBank API
-  console.log(`[GXBank Mock] Transferring RM${amount} to savings for ${userId}`);
+  const saveAmount = Number(amount || 0);
+
+  console.log(
+    `[GXBank Mock] User-approved transfer: RM${saveAmount} to savings for ${userId}`
+  );
+
   return {
     success: true,
     userId,
-    amountTransferred: amount,
+    amountTransferred: saveAmount,
     currency: 'MYR',
-    transactionId: `mock-${Date.now()}`,
+    transactionId: `gx-mock-save-${Date.now()}`,
+    status: 'completed',
+    requiresUserConsent: true,
+    consentStatus: 'user_approved',
+    message: `RM${saveAmount} saved successfully.`,
+    source: 'gxbank_mock',
   };
 }
 

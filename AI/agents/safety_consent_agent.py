@@ -12,17 +12,20 @@ def check_safety_and_consent(
         ""
     )
 
+    final_action_lower = str(
+        final_action
+    ).lower()
+
     requires_consent = any(
-        action in final_action
+        action.lower() in final_action_lower
         for action in FINANCIAL_ACTIONS_REQUIRING_CONSENT
     )
 
-    if requires_consent:
-        safety_level = "financial_action"
-
-    else:
-        safety_level = "informational"
-
+    safety_level = (
+        "financial_action"
+        if requires_consent
+        else "informational"
+    )
 
     can_execute = not requires_consent
 
@@ -33,37 +36,39 @@ def check_safety_and_consent(
         )
 
         consent_reason = (
-            "This intervention may move user money or modify financial behaviour settings, so explicit user approval is required before execution."
+            "This recommendation may involve saving money or changing a financial action, so it needs user approval first."
         )
 
         user_control_message = (
-            "The user remains fully in control of financial actions."
+            "You stay in control. ThinkTwice will never move money without your approval."
+        )
+
+        consent_cta = (
+            "Approve Action"
         )
 
     else:
 
-        consent_status = "not_required"
+        consent_status = (
+            "not_required"
+        )
 
         consent_reason = (
-            "This intervention only provides guidance, tracking, or behavioural recommendations."
+            "This recommendation only provides guidance, reminders, or spending insights."
         )
 
         user_control_message = (
-            "No financial action will be executed automatically."
+            "No money will be moved automatically."
         )
 
-    responsible_ai_flags = {
-        "transparentDecisionMaking": True,
-        "requiresExplicitConsent":
-        requires_consent,
-
-        "financialSafetyEnabled": True,
-
-        "userControlProtected": True
-    }
+        consent_cta = (
+            "Got it"
+        )
 
     ai_decision["safetyCheck"] = {
-        "safetyLevel": safety_level,
+
+        "safetyLevel":
+        safety_level,
 
         "requiresUserConsent":
         requires_consent,
@@ -77,11 +82,29 @@ def check_safety_and_consent(
         "userControlMessage":
         user_control_message,
 
+        "consentCta":
+        consent_cta,
+
         "canExecuteAction":
         can_execute,
 
-        "responsibleAI":
-        responsible_ai_flags
+        "responsibleAI": {
+
+            "transparentDecisionMaking":
+            True,
+
+            "requiresExplicitConsent":
+            requires_consent,
+
+            "financialSafetyEnabled":
+            True,
+
+            "userControlProtected":
+            True,
+
+            "preConfirmationOnly":
+            True
+        }
     }
 
     return ai_decision

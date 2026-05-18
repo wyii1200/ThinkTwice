@@ -56,7 +56,7 @@ class ProfilePage extends StatelessWidget {
 
     final coachingMessage = aiResult != null
         ? AiService.extractCoachingMessage(aiResult)
-        : 'Run Live AI Analysis to generate your personalised financial profile.';
+        : 'Run Live AI Analysis to unlock your latest money habit update.';
 
     final liveTotalPoints = totalPoints + smartScore;
     final level = 1 + (liveTotalPoints ~/ 300);
@@ -84,7 +84,7 @@ class ProfilePage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: const Text(
-                        'Collectible Cat',
+                        'Pocket Buddy',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
@@ -115,7 +115,7 @@ class ProfilePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'ThinkTwice Avatar',
+                  'Your Pocket Buddy',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
@@ -124,7 +124,7 @@ class ProfilePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'A head-only collectible cat companion with breed unlocks, mood-driven facial changes, and soft reward effects.',
+                  'Your friendly money sidekick with unlocks, moods, and little reward moments along the way.',
                   style: TextStyle(
                     fontSize: 13,
                     height: 1.45,
@@ -192,7 +192,7 @@ class ProfilePage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Avatar loadout',
+                        'Pocket Buddy style',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -201,7 +201,7 @@ class ProfilePage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${catBreedLabel(breed)} with ${formatAccessoryLabel(accessory)} and ${formatEffectLabel(effect)} creates your collectible fintech companion.',
+                        '${catBreedLabel(breed)} with ${formatAccessoryLabel(accessory)} and ${formatEffectLabel(effect)} gives ${pocketBuddyName()} its current look.',
                         style: TextStyle(
                           fontSize: 12,
                           height: 1.45,
@@ -229,7 +229,7 @@ class ProfilePage extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     const Text(
-                      'AI Financial Profile',
+                      'Your Spending Habits',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
@@ -243,15 +243,15 @@ class ProfilePage extends StatelessWidget {
                     Expanded(
                       child: progressStat(
                         context,
-                        'Risk level',
-                        riskLevel.toUpperCase(),
+                        'Spending status',
+                        friendlyRiskBadge(riskLevel),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: progressStat(
                         context,
-                        'Resilience',
+                        'Money Habit Score',
                         '$resilienceScore',
                       ),
                     ),
@@ -263,7 +263,7 @@ class ProfilePage extends StatelessWidget {
                     Expanded(
                       child: progressStat(
                         context,
-                        'Smart score',
+                        'Smart Spending',
                         '$smartScore',
                       ),
                     ),
@@ -297,7 +297,7 @@ class ProfilePage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Recent transactions',
+                  'Where Your Money Went',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),
@@ -797,9 +797,7 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: GradientButton(
-                        text: 'Save avatar',
-                        icon: Icons.check_rounded,
+                      child: FilledButton.icon(
                         onPressed: () {
                           Navigator.of(context).pop(
                             AvatarCustomizationResult(
@@ -810,6 +808,20 @@ class _AvatarCustomizationSheetState extends State<AvatarCustomizationSheet> {
                             ),
                           );
                         },
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                          backgroundColor: context.colors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: const Icon(Icons.check_rounded, size: 18),
+                        label: const Text(
+                          'Save avatar',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
                       ),
                     ),
                   ],

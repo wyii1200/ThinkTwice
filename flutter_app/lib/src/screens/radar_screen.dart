@@ -176,10 +176,9 @@ class _RadarPageState extends State<RadarPage> {
   Future<void> _openGroceryInputSheet() async {
     if (_selectedDeal == null) return;
 
-    final items = await showModalBottomSheet<List<String>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final items = await showContainedBottomSheet<List<String>>(
+      context,
+      barrierLabel: 'Grocery Input',
       builder: (ctx) => _GroceryInputSheet(
         storeName: _selectedDeal!.storeName,
         initialItems: _groceryItems,
@@ -284,25 +283,29 @@ class _RadarPageState extends State<RadarPage> {
       await _loadDeals(); // sync Firestore → UI
       if (!mounted) return;
       final switched = result['switched'] == true;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(switched
-            ? 'Switched to upvote — trust score updated.'
-            : 'Upvoted! Trust score updated.'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF41B89B),
-      ));
+      showContainedSnackBar(
+        context,
+        message: switched
+            ? 'Switched to upvote. Trust score updated.'
+            : 'Upvoted! Trust score updated.',
+        accentColor: context.colors.success,
+      );
     } on AlreadyVotedException {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('You already upvoted this deal.'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      showContainedSnackBar(
+        context,
+        message: 'You already upvoted this deal.',
+        accentColor: context.colors.warning,
+        icon: Icons.info_rounded,
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Could not upvote: $e'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      showContainedSnackBar(
+        context,
+        message: 'Could not upvote: $e',
+        accentColor: context.colors.warning,
+        icon: Icons.error_outline_rounded,
+      );
     }
   }
 
@@ -318,38 +321,43 @@ class _RadarPageState extends State<RadarPage> {
       await _loadDeals(); // sync Firestore data back to UI
       if (!mounted) return;
       final switched = result['switched'] == true;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(switched
-            ? 'Switched to downvote — trust score updated.'
-            : 'Downvoted — trust score reduced.'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      showContainedSnackBar(
+        context,
+        message: switched
+            ? 'Switched to downvote. Trust score updated.'
+            : 'Downvoted. Trust score reduced.',
+        accentColor: context.colors.warning,
+        icon: Icons.thumb_down_alt_rounded,
+      );
     } on AlreadyVotedException catch (e) {
       if (!mounted) return;
       // "Already downvoted" or "own deal" — show clean message
       final msg = e.message.contains('own deal')
           ? 'You cannot downvote your own deal.'
           : 'You already downvoted this deal.';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(msg),
-        behavior: SnackBarBehavior.floating,
-      ));
+      showContainedSnackBar(
+        context,
+        message: msg,
+        accentColor: context.colors.warning,
+        icon: Icons.info_rounded,
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Could not downvote: $e'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      showContainedSnackBar(
+        context,
+        message: 'Could not downvote: $e',
+        accentColor: context.colors.warning,
+        icon: Icons.error_outline_rounded,
+      );
     }
   }
 
   // ── Post deal ──────────────────────────────────────────────────────────────
 
   Future<void> _openPostDealSheet() async {
-    final result = await showModalBottomSheet<_PostDealResult>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final result = await showContainedBottomSheet<_PostDealResult>(
+      context,
+      barrierLabel: 'Post Community Deal',
       builder: (context) => PostDealSheet(userLocation: widget.userLocation),
     );
 
@@ -385,19 +393,19 @@ class _RadarPageState extends State<RadarPage> {
           CameraUpdate.newLatLng(LatLng(apiDeal.lat, apiDeal.lng)));
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content:
-            Text('Deal posted! You earned points for helping others save.'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Color(0xFF41B89B),
-      ));
+      showContainedSnackBar(
+        context,
+        message: 'Deal posted! You earned points for helping others save.',
+        accentColor: context.colors.success,
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Failed to post deal: $e'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.red,
-      ));
+      showContainedSnackBar(
+        context,
+        message: 'Failed to post deal: $e',
+        accentColor: context.colors.destructive,
+        icon: Icons.error_outline_rounded,
+      );
     }
   }
 // 1. The Claim Logic
@@ -413,23 +421,20 @@ class _RadarPageState extends State<RadarPage> {
             await _loadMonthlySummary();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.celebration, color: Colors.white),
-              const SizedBox(width: 12),
-              Text('Awesome! Added RM ${(deal.originalPrice - deal.dealPrice).toStringAsFixed(2)} to your savings.'),
-            ],
-          ),
-          backgroundColor: const Color(0xFF41B89B),
-          behavior: SnackBarBehavior.floating,
-        ),
+      showContainedSnackBar(
+        context,
+        message:
+            'Awesome! Added RM ${(deal.originalPrice - deal.dealPrice).toStringAsFixed(2)} to your savings.',
+        accentColor: context.colors.success,
+        icon: Icons.celebration_rounded,
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to claim deal: $e')),
+      showContainedSnackBar(
+        context,
+        message: 'Failed to claim deal: $e',
+        accentColor: context.colors.destructive,
+        icon: Icons.error_outline_rounded,
       );
     }
   }
@@ -438,13 +443,9 @@ class _RadarPageState extends State<RadarPage> {
   void _showDealDetailsSheet(CommunityDeal deal) {
     final isOwner = deal.submittedBy == _userId;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    showContainedBottomSheet(
+      context,
+      barrierLabel: 'Deal Details',
       builder: (ctx) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
         child: Column(
@@ -534,8 +535,8 @@ class _RadarPageState extends State<RadarPage> {
                         final descCtrl = TextEditingController(text: deal.description);
                         final origPriceCtrl = TextEditingController(text: deal.originalPrice.toString());
 
-                        await showDialog(
-                          context: context,
+                        await showContainedDialog(
+                          context,
                           builder: (context) => AlertDialog(
                             title: const Text('Edit Deal'),
                             content: Column(
@@ -561,7 +562,11 @@ class _RadarPageState extends State<RadarPage> {
                                   );
                                   Navigator.pop(context);
                                   _loadDeals(); // Refresh the screen!
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deal updated!')));
+                                  showContainedSnackBar(
+                                    context,
+                                    message: 'Deal updated!',
+                                    accentColor: context.colors.success,
+                                  );
                                 },
                                 child: const Text('Save'),
                               )
@@ -581,9 +586,18 @@ class _RadarPageState extends State<RadarPage> {
                           await RadarApiService.deleteDeal(dealId: deal.id, userId: _userId);
                           Navigator.pop(ctx);
                           _loadDeals(); // Refresh list
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deal deleted')));
+                          showContainedSnackBar(
+                            context,
+                            message: 'Deal deleted',
+                            accentColor: context.colors.success,
+                          );
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+                          showContainedSnackBar(
+                            context,
+                            message: 'Delete failed: $e',
+                            accentColor: context.colors.destructive,
+                            icon: Icons.error_outline_rounded,
+                          );
                         }
                       },
                       style: OutlinedButton.styleFrom(
@@ -636,8 +650,11 @@ class _RadarPageState extends State<RadarPage> {
       return;
     }
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Could not open Google Maps.')),
+    showContainedSnackBar(
+      context,
+      message: 'Could not open Google Maps.',
+      accentColor: context.colors.warning,
+      icon: Icons.info_rounded,
     );
   }
 
@@ -1744,10 +1761,9 @@ class _RadarPageState extends State<RadarPage> {
 
 
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    showContainedBottomSheet(
+      context,
+      barrierLabel: 'Savings Records',
       builder: (ctx) => Container(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
         decoration: BoxDecoration(
@@ -2194,8 +2210,12 @@ class _PostDealSheetState extends State<PostDealSheet> {
     if (_titleController.text.trim().isEmpty ||
         _storeController.text.trim().isEmpty ||
         price <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Please fill in title, store name, and price.')));
+      showContainedSnackBar(
+        context,
+        message: 'Please fill in title, store name, and price.',
+        accentColor: context.colors.warning,
+        icon: Icons.info_rounded,
+      );
       return;
     }
     setState(() => _submitting = true);

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
@@ -9,6 +10,96 @@ import '../services/backend_api_service.dart';
 
 export '../../widgets/cat_head_avatar.dart'
     show AvatarMood, avatarMoodFromId, avatarMoodId, catBreedConfigs, catBreedLabel, moodLabel;
+
+const double kThinkTwiceAppMaxWidth = 430;
+
+double thinkTwiceAppWidth(BuildContext context) {
+  final width = MediaQuery.of(context).size.width;
+  return math.min(width, kThinkTwiceAppMaxWidth);
+}
+
+EdgeInsets thinkTwiceSurfacePadding(BuildContext context) {
+  final appWidth = thinkTwiceAppWidth(context);
+  final horizontal = appWidth < 380 ? 12.0 : 16.0;
+  return EdgeInsets.fromLTRB(horizontal, 12, horizontal, 16);
+}
+
+Future<T?> showContainedDialog<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  bool barrierDismissible = true,
+  String barrierLabel = 'dialog',
+  Color barrierColor = const Color(0x66000000),
+  Duration transitionDuration = const Duration(milliseconds: 280),
+}) {
+  return showGeneralDialog<T>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    barrierLabel: barrierLabel,
+    barrierColor: Colors.transparent,
+    transitionDuration: transitionDuration,
+    pageBuilder: (dialogContext, _, __) => _ContainedPopupRouteLayout(
+      barrierColor: barrierColor,
+      barrierDismissible: barrierDismissible,
+      onBarrierTap: () => Navigator.of(dialogContext).maybePop(),
+      child: Builder(builder: builder),
+    ),
+    transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
+      final fade =
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      final scale = Tween<double>(begin: 0.94, end: 1).animate(
+        CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+      );
+      final slide = Tween<Offset>(
+        begin: const Offset(0, 0.03),
+        end: Offset.zero,
+      ).animate(fade);
+      return FadeTransition(
+        opacity: fade,
+        child: SlideTransition(
+          position: slide,
+          child: ScaleTransition(scale: scale, child: child),
+        ),
+      );
+    },
+  );
+}
+
+Future<T?> showContainedBottomSheet<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  bool isDismissible = true,
+  String barrierLabel = 'bottom sheet',
+  Color barrierColor = const Color(0x59000000),
+  Duration transitionDuration = const Duration(milliseconds: 280),
+}) {
+  return showGeneralDialog<T>(
+    context: context,
+    barrierDismissible: isDismissible,
+    barrierLabel: barrierLabel,
+    barrierColor: Colors.transparent,
+    transitionDuration: transitionDuration,
+    pageBuilder: (dialogContext, _, __) => _ContainedPopupRouteLayout(
+      barrierColor: barrierColor,
+      barrierDismissible: isDismissible,
+      onBarrierTap: () => Navigator.of(dialogContext).maybePop(),
+      alignment: Alignment.bottomCenter,
+      child: Builder(builder: builder),
+    ),
+    transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
+      final fade =
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      final slide = Tween<Offset>(
+        begin: const Offset(0, 0.08),
+        end: Offset.zero,
+      ).animate(fade);
+      return FadeTransition(
+        opacity: fade,
+        child: SlideTransition(position: slide, child: child),
+      );
+    },
+  );
+}
 
 class PointsChip extends StatelessWidget {
   const PointsChip({super.key, required this.totalPoints});
@@ -114,6 +205,122 @@ String formatEffectLabel(String effect) {
     default:
       return 'Effect';
   }
+}
+
+String friendlyRiskTitle(String riskLevel) {
+  switch (riskLevel.toLowerCase()) {
+    case 'high':
+      return 'HIGH RISK - Possible impulse spending detected';
+    case 'medium':
+      return 'MEDIUM RISK - Your spending is slightly higher than usual';
+    default:
+      return 'LOW RISK - This purchase looks manageable';
+  }
+}
+
+String friendlyRiskBadge(String riskLevel) {
+  switch (riskLevel.toLowerCase()) {
+    case 'high':
+      return 'Impulse Purchase Detected';
+    case 'medium':
+      return 'Spending Limit Approaching';
+    default:
+      return 'Safe Spending';
+  }
+}
+
+String friendlyRiskSummary(String riskLevel) {
+  switch (riskLevel.toLowerCase()) {
+    case 'high':
+      return 'Possible impulse spending detected';
+    case 'medium':
+      return 'Your spending is slightly higher than usual';
+    default:
+      return 'This purchase looks manageable';
+  }
+}
+
+String pocketBuddyName() => 'Pocket Buddy';
+
+void showContainedSnackBar(
+  BuildContext context, {
+  required String message,
+  Color? accentColor,
+  IconData icon = Icons.check_circle_rounded,
+}) {
+  final media = MediaQuery.of(context).size;
+  final appWidth = thinkTwiceAppWidth(context);
+  final highlight = accentColor ?? context.colors.primary;
+
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        width: math.max(0, appWidth - 24),
+        margin: EdgeInsets.only(
+          bottom: media.height < 760 ? 16 : 20,
+        ),
+        padding: EdgeInsets.zero,
+        content: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF173B34).withOpacity(0.96),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: highlight.withOpacity(0.22)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.16),
+                    blurRadius: 18,
+                    offset: const Offset(0, 10),
+                  ),
+                  BoxShadow(
+                    color: highlight.withOpacity(0.10),
+                    blurRadius: 20,
+                    spreadRadius: -8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: highlight.withOpacity(0.18),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(icon, size: 18, color: highlight),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      message,
+                      softWrap: true,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
 }
 
 IconData accessoryIcon(String accessory) {
@@ -308,108 +515,125 @@ class AIInterventionModal extends StatelessWidget {
     final saveText = 'Save RM${saveAmount.toStringAsFixed(0)}';
     
     // Determine the main message
-    final mainMessage = nudge?.nudgeText ?? 'Your cat noticed a spend spiral starting.';
+    final mainMessage =
+        nudge?.nudgeText ?? 'Your spending is picking up faster than usual.';
         
     // Determine the action message
     final nudgeText = nudge?.suggestedAction ?? 
-        'Move RM${saveAmount.toStringAsFixed(0)} into savings now to protect your streak, calm the avatar, and stay under today\'s safe limit.';
+        'Move RM${saveAmount.toStringAsFixed(0)} into savings now to stay comfortably within today\'s budget.';
     return Material(
       color: Colors.black.withOpacity(0.5),
       child: SafeArea(
         child: Align(
           alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 430),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: context.colors.card,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-                border: Border.all(
-                  color: context.colors.accent.withOpacity(0.2),
-                  width: 1,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 560;
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  compact ? 12 : 16,
+                  12,
+                  compact ? 12 : 16,
+                  compact ? 12 : 16,
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      WalletGuardianPreview(
-                        breed: 'siamese',
-                        accessory: 'sleeping_cap',
-                        effect: 'none',
-                        mood: AvatarMood.sad,
-                        size: 68,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'GENTLE MONEY NUDGE',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.2,
-                                color: context.colors.accent,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Smart Radar Detected Risk',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: context.colors.foreground,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: onIgnore,
-                        icon: Icon(Icons.close, color: context.colors.foreground.withOpacity(0.5)),
-                      ),
-                    ],
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: 640,
+                    maxHeight: constraints.maxHeight * 0.88,
                   ),
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(16),
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(compact ? 16 : 20),
                     decoration: BoxDecoration(
-                      color: context.colors.accent.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(20),
+                      color: context.colors.card,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                       border: Border.all(
-                        color: context.colors.accent.withOpacity(0.1),
+                        color: context.colors.accent.withOpacity(0.2),
                         width: 1,
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          mainMessage,
-                          style: const TextStyle(fontSize: 14, height: 1.45, fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          nudgeText,
-                          style: TextStyle(fontSize: 13, height: 1.45, color: context.colors.foreground.withOpacity(0.8)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
+                    clipBehavior: Clip.antiAlias,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              WalletGuardianPreview(
+                                breed: 'siamese',
+                                accessory: 'sleeping_cap',
+                                effect: 'none',
+                                mood: AvatarMood.sad,
+                                size: compact ? 60 : 68,
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'GENTLE MONEY NUDGE',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 1.2,
+                                        color: context.colors.accent,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Spending Check-In',
+                                      style: TextStyle(
+                                        fontSize: compact ? 17 : 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: context.colors.foreground,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: onIgnore,
+                                icon: Icon(Icons.close, color: context.colors.foreground.withOpacity(0.5)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: context.colors.accent.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: context.colors.accent.withOpacity(0.1),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  mainMessage,
+                                  style: const TextStyle(fontSize: 14, height: 1.45, fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  nudgeText,
+                                  style: TextStyle(fontSize: 13, height: 1.45, color: context.colors.foreground.withOpacity(0.8)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
                     children: [
                       Expanded(
                         child: GradientButton(
@@ -434,21 +658,25 @@ class AIInterventionModal extends StatelessWidget {
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: onIgnore,
-                    child: Text(
-                      'I\'ll take the risk, thanks',
-                      style: TextStyle(
-                        color: context.colors.foreground.withOpacity(0.5),
-                        fontSize: 13,
+                          ),
+                          const SizedBox(height: 12),
+                          TextButton(
+                            onPressed: onIgnore,
+                            child: Text(
+                              'I\'ll take the risk, thanks',
+                              style: TextStyle(
+                                color: context.colors.foreground.withOpacity(0.5),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -1196,55 +1424,109 @@ Future<void> showCelebrationDialog(
   required IconData icon,
   required Color color,
 }) {
-  return showGeneralDialog<void>(
-    context: context,
-    barrierDismissible: true,
+  return showContainedDialog<void>(
+    context,
     barrierLabel: 'celebration',
     barrierColor: Colors.black.withOpacity(0.35),
     transitionDuration: const Duration(milliseconds: 300),
-    pageBuilder: (context, _, __) => const SizedBox.shrink(),
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutBack);
-      return FadeTransition(
-        opacity: animation,
-        child: Transform.scale(
-          scale: curved.value,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
+    builder: (dialogContext) {
+      final media = MediaQuery.of(dialogContext).size;
+      return Padding(
+        padding: thinkTwiceSurfacePadding(dialogContext).copyWith(top: 24),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: kThinkTwiceAppMaxWidth - 24,
+            maxHeight: media.height * 0.85,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 360),
+                width: double.infinity,
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
-                  gradient: context.colors.softMintGradient,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFFFFFCF5).withOpacity(0.96),
+                      const Color(0xFFF4FFF9).withOpacity(0.96),
+                      const Color(0xFFE8F8F1).withOpacity(0.94),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(30),
-                  boxShadow: context.colors.softShadow,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _CelebrationBurst(color: color),
-                    const SizedBox(height: 10),
-                    Container(
-                      width: 58,
-                      height: 58,
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.14),
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(icon, color: color, size: 28),
+                  border: Border.all(color: color.withOpacity(0.16)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.12),
+                      blurRadius: 28,
+                      offset: const Offset(0, 18),
                     ),
-                    const SizedBox(height: 14),
-                    Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 8),
-                    Text(body, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, height: 1.45, color: context.colors.mutedForeground)),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Nice'),
+                    BoxShadow(
+                      color: color.withOpacity(0.12),
+                      blurRadius: 26,
+                      spreadRadius: -10,
+                      offset: const Offset(0, 10),
                     ),
                   ],
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _CelebrationBurst(color: color),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 58,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.14),
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(icon, color: color, size: 28),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: color,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        body,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.5,
+                          color: dialogContext.colors.foreground.withOpacity(
+                            0.76,
+                          ),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      FilledButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: color,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(0, 44),
+                          padding: const EdgeInsets.symmetric(horizontal: 22),
+                        ),
+                        child: const Text(
+                          'Nice',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1310,6 +1592,60 @@ class _CelebrationBurstState extends State<_CelebrationBurst> with SingleTickerP
             }),
           );
         },
+      ),
+    );
+  }
+}
+
+class _ContainedPopupRouteLayout extends StatelessWidget {
+  const _ContainedPopupRouteLayout({
+    required this.child,
+    required this.barrierColor,
+    required this.barrierDismissible,
+    required this.onBarrierTap,
+    this.alignment = Alignment.center,
+  });
+
+  final Widget child;
+  final Color barrierColor;
+  final bool barrierDismissible;
+  final VoidCallback onBarrierTap;
+  final Alignment alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final appWidth = math.min(
+              constraints.maxWidth,
+              kThinkTwiceAppMaxWidth,
+            );
+            return Center(
+              child: SizedBox(
+                width: appWidth,
+                height: constraints.maxHeight,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: barrierDismissible ? onBarrierTap : null,
+                        child: ColoredBox(color: barrierColor),
+                      ),
+                    ),
+                    Align(
+                      alignment: alignment,
+                      child: child,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

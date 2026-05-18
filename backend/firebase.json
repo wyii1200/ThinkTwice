@@ -7,7 +7,8 @@
       ".git",
       "firebase-debug.log",
       "*.local",
-      "test/**"
+      "test/**",
+      "functions/**"
     ]
   },
   "firestore": {
@@ -18,13 +19,5 @@
   },
   "storage": {
     "rules": "storage.rules"
-  },
-  "auth": {
-    "providers": {
-      "googleSignIn": {
-        "oAuthBrandDisplayName": "My App",
-        "supportEmail": "support@undefined.firebaseapp.com"
-      }
-    }
   }
 }

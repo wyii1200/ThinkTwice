@@ -5,13 +5,13 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 // Import your radar service to access RouteResult for the analyzeRouteWorth method
-import '../services/radar_api_service.dart'; 
+import '../services/radar_api_service.dart';
 
 class AiService {
   static String get baseUrl {
     // Force the app to use your live AI orchestrator so it works anywhere
     return 'https://thinktwice-guq9.onrender.com';
-    
+
     // TIP: If you need to test locally again, uncomment this block:
     /*
     if (kIsWeb) return 'http://127.0.0.1:8000';
@@ -20,12 +20,11 @@ class AiService {
     */
   }
 
-
   /// Analyzes a generated route and returns a 1-sentence verdict
   static Future<String> analyzeRouteWorth(RouteResult route) async {
     try {
       final url = Uri.parse('$baseUrl/analyze-route');
-      
+
       final payload = {
         'distanceKm': route.totalDistanceKm,
         'travelCostRM': route.savings.travelCostRM,
@@ -33,15 +32,17 @@ class AiService {
         'netSavingRM': route.savings.netSavingRM,
       };
 
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(payload),
-      ).timeout(const Duration(seconds: 10)); 
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        return body['verdict'] ?? 'AI recommends this route!'; 
+        return body['verdict'] ?? 'AI recommends this route!';
       }
       return 'Smart Route ready. Net savings: RM ${route.savings.netSavingRM.toStringAsFixed(2)}';
     } catch (e) {
@@ -49,7 +50,6 @@ class AiService {
       return 'Smart Route ready. Net savings: RM ${route.savings.netSavingRM.toStringAsFixed(2)}';
     }
   }
-
 
   static Future<Map<String, dynamic>> analyzeRisk() async {
     return analyzeRiskWithPayload(highRiskDemoPayload());
@@ -80,7 +80,7 @@ class AiService {
       );
     }
   }
-  
+
   // ─── Demo Payloads ──────────────────────────────────────────────────────
 
   static Map<String, dynamic> highRiskDemoPayload() {
@@ -92,38 +92,48 @@ class AiService {
       "transactions": [
         {
           "transaction_id": "txn_high_001",
-          "amount": 12,
+          "amount": 18,
           "category": "food",
           "time": "10:45 PM",
-          "location": "Mid Valley"
+          "location": "Bubble Tea Shop",
+          "merchant": "Tealive",
+          "status": "before_confirmation"
         },
         {
           "transaction_id": "txn_high_002",
           "amount": 18,
           "category": "food",
           "time": "8:30 PM",
-          "location": "Cafe"
+          "location": "Cafe",
+          "merchant": "Cafe",
+          "status": "completed"
         },
         {
           "transaction_id": "txn_high_003",
           "amount": 20,
           "category": "food",
           "time": "7:15 PM",
-          "location": "Restaurant"
+          "location": "Restaurant",
+          "merchant": "Restaurant",
+          "status": "completed"
         },
         {
           "transaction_id": "txn_high_004",
           "amount": 10,
           "category": "transport",
           "time": "3:00 PM",
-          "location": "LRT"
+          "location": "LRT",
+          "merchant": "RapidKL",
+          "status": "completed"
         },
         {
           "transaction_id": "txn_high_005",
           "amount": 20,
           "category": "shopping",
           "time": "10:30 PM",
-          "location": "Mall"
+          "location": "Mall",
+          "merchant": "Uniqlo",
+          "status": "completed"
         }
       ],
       "user_action": {
@@ -186,5 +196,61 @@ class AiService {
     return aiResult['integrationPayload']?['smartRadar']?['radarCategory']
             ?.toString() ??
         '';
+  }
+
+  static Map<String, dynamic> extractDemoDecision(
+    Map<String, dynamic> aiResult,
+  ) {
+    return aiResult['demoDecision'] ?? {};
+  }
+
+  static String extractRiskLabel(
+    Map<String, dynamic> aiResult,
+  ) {
+    return aiResult['demoDecision']?['riskLabel']?.toString() ??
+        'LOW RISK ✅ This purchase looks manageable';
+  }
+
+  static String extractHumanExplanation(
+    Map<String, dynamic> aiResult,
+  ) {
+    return aiResult['demoDecision']?['humanExplanation']?.toString() ??
+        'This purchase looks manageable.';
+  }
+
+  static String extractFutureImpact(
+    Map<String, dynamic> aiResult,
+  ) {
+    return aiResult['demoDecision']?['futureImpact']?.toString() ??
+        'This purchase looks manageable.';
+  }
+
+  static String extractRecommendedAction(
+    Map<String, dynamic> aiResult,
+  ) {
+    return aiResult['demoDecision']?['recommendedAction']?.toString() ??
+        'Keep tracking your spending.';
+  }
+
+  static List<String> extractInterventionOptions(
+    Map<String, dynamic> aiResult,
+  ) {
+    final options = aiResult['demoDecision']?['interventionOptions'];
+
+    if (options is List) {
+      return options.map((e) => e.toString()).toList();
+    }
+
+    return [
+      'Continue Anyway',
+      'Save RM8 Instead',
+      'Find Cheaper Nearby',
+    ];
+  }
+
+  static String extractEstimatedSavings(
+    Map<String, dynamic> aiResult,
+  ) {
+    return aiResult['demoDecision']?['estimatedSavings']?.toString() ?? 'RM0';
   }
 }

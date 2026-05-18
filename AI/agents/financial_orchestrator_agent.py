@@ -1,5 +1,9 @@
 from agents.safety_consent_agent import check_safety_and_consent
-from config.constants import FINAL_ACTIONS, RISK_LEVELS
+
+from config.constants import (
+    FINAL_ACTIONS,
+    RISK_LEVELS
+)
 
 
 def orchestrate_intervention(
@@ -25,14 +29,32 @@ def orchestrate_intervention(
         50
     )
 
-    final_action = FINAL_ACTIONS["CONTINUE_TRACKING"]
+    risk_score = risk_result.get(
+        "riskScore",
+        0
+    )
+
+    reasons = risk_result.get(
+        "reasons",
+        []
+    )
+
+    # =========================================================
+    # DEFAULT STATE
+    # =========================================================
+
+    final_action = FINAL_ACTIONS[
+        "CONTINUE_TRACKING"
+    ]
 
     smart_radar = {
         "triggerSmartRadar": False,
         "radarCategory": None,
         "radarMessage": None,
         "openMode": "none",
-        "recommendedRoute": None
+        "recommendedRoute": None,
+        "estimatedSavings": f"RM{savings_amount}",
+        "aiReasoning": None
     }
 
     notification = {
@@ -43,96 +65,250 @@ def orchestrate_intervention(
     }
 
     intervention_reason = (
-        "User behaviour is currently manageable, so the system continues monitoring."
+        "ThinkTwice analysed this purchase and found no major budget concerns."
     )
 
+    human_recommended_action = (
+        "You can continue safely."
+    )
+
+    emotional_feedback = (
+        "Nice choice 👏"
+    )
+
+    intervention_priority = "low"
+
+    # =========================================================
+    # HIGH RISK INTERVENTION
+    # =========================================================
+
     if risk_level == RISK_LEVELS["HIGH"]:
+
+        intervention_priority = "critical"
 
         notification["sendPushNotification"] = True
 
         should_trigger_radar = (
             late_night_spending
-            or primary_category in ["food", "shopping"]
-            or risk_result.get("riskScore", 0) >= 150
+            or primary_category in [
+                "food",
+                "shopping",
+                "entertainment"
+            ]
+            or risk_score >= 85
         )
+
+        # -----------------------------------------------------
+        # SMART RADAR FLOW
+        # -----------------------------------------------------
 
         if should_trigger_radar:
 
-            final_action = FINAL_ACTIONS["SMART_RADAR_AND_AUTO_SAVE"]
+            final_action = FINAL_ACTIONS.get(
+                "SMART_RADAR_AND_SAVE_NUDGE",
+                "SMART_RADAR_AND_SAVE_NUDGE"
+            )
+
+            smart_radar = {
+                "triggerSmartRadar": True,
+
+                "radarCategory": primary_category,
+
+                "radarMessage": (
+                    f"We found cheaper nearby {primary_category} options that could help you save RM{savings_amount}."
+                ),
+
+                "openMode": "auto_expand",
+
+                "recommendedRoute": "/smart-radar",
+
+                "estimatedSavings": f"RM{savings_amount}",
+
+                "aiReasoning": (
+                    f"ThinkTwice detected possible {primary_category} overspending behaviour and found a smarter nearby alternative."
+                )
+            }
+
+            notification.update({
+
+                "notificationTitle":
+                "🔥 Impulse Spending Detected",
+
+                "notificationBody": (
+                    f"You could save RM{savings_amount} today with a smarter nearby option."
+                ),
+
+                "notificationType":
+                "smart_radar"
+            })
+
+            intervention_reason = (
+                "ThinkTwice predicted that this purchase may affect your weekly budget, so it recommended a cheaper nearby option before payment confirmation."
+            )
+
+            human_recommended_action = (
+                f"Want to save RM{savings_amount} or find a cheaper option nearby?"
+            )
+
+            emotional_feedback = (
+                "Your future self will thank you."
+            )
+
+        # -----------------------------------------------------
+        # SAVE INSTEAD FLOW
+        # -----------------------------------------------------
+
+        else:
+
+            final_action = FINAL_ACTIONS.get(
+                "MICRO_SAVE_RECOMMENDATION",
+                "MICRO_SAVE_RECOMMENDATION"
+            )
+
+            notification.update({
+
+                "notificationTitle":
+                "⚠️ Budget Warning",
+
+                "notificationBody": (
+                    f"Saving RM{savings_amount} now may help protect your weekly budget."
+                ),
+
+                "notificationType":
+                "micro_save"
+            })
+
+            intervention_reason = (
+                "ThinkTwice detected increased financial risk and recommended a small saving action before continuing."
+            )
+
+            human_recommended_action = (
+                f"Save RM{savings_amount} instead."
+            )
+
+            emotional_feedback = (
+                "Small savings become big habits."
+            )
+
+    # =========================================================
+    # MEDIUM RISK INTERVENTION
+    # =========================================================
+
+    elif risk_level == RISK_LEVELS["MEDIUM"]:
+
+        intervention_priority = "medium"
+
+        if primary_category == "food":
+            final_action = FINAL_ACTIONS.get(
+                "SMART_RADAR_AND_SAVE_NUDGE",
+                "SMART_RADAR_AND_SAVE_NUDGE"
+            )
 
             smart_radar = {
                 "triggerSmartRadar": True,
                 "radarCategory": primary_category,
                 "radarMessage": (
-                    f"AI detected risky {primary_category} spending behaviour. "
-                    "Find cheaper nearby alternatives and reduce overspending?"
+                    f"We found cheaper nearby {primary_category} options that could help you save RM{savings_amount}."
                 ),
-                "openMode": "category_filter",
-                "recommendedRoute": "/smart-radar"
+                "openMode": "auto_expand",
+                "recommendedRoute": "/smart-radar",
+                "estimatedSavings": f"RM{savings_amount}",
+                "aiReasoning": (
+                    "ThinkTwice noticed food budget pressure and prepared a cheaper nearby option before payment confirmation."
+                )
             }
 
             notification.update({
-                "notificationTitle": "Smart Savings Radar Activated",
+                "sendPushNotification": True,
+                "notificationTitle": "⚠️ Budget Warning",
                 "notificationBody": (
-                    f"ThinkTwice detected risky {primary_category} spending. "
-                    f"Save RM{savings_amount} and explore cheaper nearby options."
+                    f"You could save RM{savings_amount} today with a cheaper nearby option."
                 ),
                 "notificationType": "smart_radar"
             })
 
             intervention_reason = (
-                "High risk detected, so Smart Radar and auto-save suggestion are triggered."
+                "ThinkTwice noticed food budget pressure and recommended a cheaper nearby option before payment confirmation."
+            )
+
+            human_recommended_action = (
+                f"Want to save RM{savings_amount} or find a cheaper option nearby?"
+            )
+
+            emotional_feedback = (
+                "Small savings become big habits."
             )
 
         else:
-
-            final_action = FINAL_ACTIONS["AUTO_SAVE"]
+            final_action = FINAL_ACTIONS.get(
+                "CONTINUE_WITH_WARNING",
+                "CONTINUE_WITH_WARNING"
+            )
 
             notification.update({
-                "notificationTitle": "Auto-Save Recommendation",
+                "sendPushNotification": True,
+                "notificationTitle": "⚠️ Budget Warning",
                 "notificationBody": (
-                    f"AI recommends saving RM{savings_amount} to protect your savings goal."
+                    f"This purchase may slightly affect your {primary_category} budget."
                 ),
-                "notificationType": "auto_save"
+                "notificationType": "budget_warning"
             })
 
             intervention_reason = (
-                "High risk detected, so the system recommends a user-approved micro-saving action."
+                "ThinkTwice noticed you are approaching your spending limit and generated a gentle warning before confirmation."
             )
 
-    elif risk_level == RISK_LEVELS["MEDIUM"]:
+            human_recommended_action = (
+                f"Want to save RM{savings_amount} or find a cheaper option nearby?"
+            )
 
-        final_action = FINAL_ACTIONS["SEND_WARNING_NUDGE"]
+            emotional_feedback = (
+                "You’re still in control of your spending."
+            )
 
-        notification.update({
-            "sendPushNotification": True,
-            "notificationTitle": "Budget Warning",
-            "notificationBody": (
-                f"You are close to exceeding today's budget for {primary_category}."
-            ),
-            "notificationType": "budget_warning"
-        })
-
-        intervention_reason = (
-            "Medium risk detected, so the system sends a warning nudge before overspending happens."
-        )
+    # =========================================================
+    # LOW RISK INTERVENTION
+    # =========================================================
 
     else:
 
-        final_action = FINAL_ACTIONS["CONTINUE_TRACKING"]
+        intervention_priority = "safe"
+
+        final_action = FINAL_ACTIONS.get(
+            "SAFE_SPENDING_REWARD",
+            "SAFE_SPENDING_REWARD"
+        )
 
         notification.update({
+
             "sendPushNotification": False,
-            "notificationTitle": "Healthy Spending",
+
+            "notificationTitle":
+            "✅ Safe Spending",
+
             "notificationBody": (
-                "Your spending behaviour looks manageable. Keep maintaining your savings habits."
+                "This purchase looks manageable based on your current spending behaviour."
             ),
-            "notificationType": "positive_reinforcement"
+
+            "notificationType":
+            "positive_reinforcement"
         })
 
         intervention_reason = (
-            "Low risk detected, so the system continues tracking and reinforces healthy behaviour."
+            "ThinkTwice analysed this purchase and found that it fits your current spending behaviour."
         )
+
+        human_recommended_action = (
+            "You can continue safely."
+        )
+
+        emotional_feedback = (
+            "Good choice today 👏"
+        )
+
+    # =========================================================
+    # REWARD ENGINE
+    # =========================================================
 
     reward_action = (
         "streak_bonus"
@@ -140,13 +316,97 @@ def orchestrate_intervention(
         else "no_reward"
     )
 
+    orchestrator_confidence = (
+        95 if risk_level == RISK_LEVELS["HIGH"]
+        else 82 if risk_level == RISK_LEVELS["MEDIUM"]
+        else 70
+    )
+    # =========================================================
+    # FINAL DECISION OBJECT
+    # =========================================================
+
     final_decision = {
+
+        "uiPriority": intervention_priority,
+
+        "requiresUserDecision": risk_level != RISK_LEVELS["LOW"],
+
+        "recommendedPrimaryAction": "smart_radar"
+            if smart_radar["triggerSmartRadar"]
+                else "save_instead"
+            if risk_level != RISK_LEVELS["LOW"]
+                else "continue",
+
         "finalAction": final_action,
+
         "interventionReason": intervention_reason,
-        "smartRadar": smart_radar,
-        "notification": notification,
-        "rewardAction": reward_action
+
+        "humanRecommendedAction":
+        human_recommended_action,
+
+        "emotionalFeedback":
+        emotional_feedback,
+
+        "interventionPriority":
+        intervention_priority,
+
+        "orchestratorConfidence":
+        orchestrator_confidence,
+
+        "availableUserActions": [
+            "continue_anyway",
+            "save_instead",
+            "smart_radar"
+        ],
+
+        "smartRadar":
+        {
+            **smart_radar,
+
+            "frontendReason": (
+                f"ThinkTwice found nearby alternatives that could help save RM{savings_amount}."
+                if smart_radar["triggerSmartRadar"]
+                else "No smarter nearby alternatives needed."
+            )
+        },
+
+        "notification":
+        notification,
+
+        "rewardAction":
+        reward_action,
+
+        "orchestratorMetadata": {
+
+            "riskLevel":
+            risk_level,
+
+            "riskScore":
+            risk_score,
+
+            "primaryCategory":
+            primary_category,
+
+            "lateNightSpending":
+            late_night_spending,
+
+            "reasonCount":
+            len(reasons),
+
+            "aiDecisionEngine":
+            "ThinkTwice Financial Orchestrator",
+
+            "decisionMode":
+            "pre_confirmation_intervention",
+
+            "aiMode":
+            "PROACTIVE_BEFORE_PAYMENT_INTERVENTION"
+        }
     }
+
+    # =========================================================
+    # SAFETY CHECK
+    # =========================================================
 
     final_decision = check_safety_and_consent(
         final_decision

@@ -107,7 +107,8 @@ class _AppRootState extends State<AppRoot> {
   List<QuestProgress> _quests = seedQuests();
   List<RewardShopItem> _rewardShopItems = seedRewardShopItems();
   List<TransactionRecord> _transactions = seedTransactions();
-  final List<PointsEvent> _recentPoints = <PointsEvent>[
+  List<LeaderboardItem> _leaderboard = <LeaderboardItem>[];
+  List<PointsEvent> _recentPoints = <PointsEvent>[
     const PointsEvent(label: 'Saved under daily limit', points: 120, icon: Icons.savings_outlined),
     const PointsEvent(label: 'Quest completed', points: 80, icon: Icons.emoji_events_rounded),
     const PointsEvent(label: 'Used a smart nudge', points: 35, icon: Icons.auto_awesome_rounded),
@@ -180,6 +181,9 @@ class _AppRootState extends State<AppRoot> {
       final rawTransactions = await BackendApiService.getTransactions(_userId);
       final nudgeHistory = await BackendApiService.getNudgeHistory(_userId);
 
+      // Fetch dynamic gamification data
+      final gamification = await BackendApiService.getGamificationData(_userId);
+
       final liveTransactions = rawTransactions.map((t) {
         final category = t['category'] as String? ?? 'General';
         final amount = (t['amount'] as num?)?.toDouble() ?? 0;
@@ -212,6 +216,26 @@ class _AppRootState extends State<AppRoot> {
           effect: profile.effect,
         );
         _isAuthed = true; // User exists, skip login/onboarding
+
+        // Sync gamification state
+        _totalPoints = gamification.totalPoints;
+        _leaderboard = gamification.leaderboard;
+        if (gamification.recentPointsEvents.isNotEmpty) {
+          _recentPoints = gamification.recentPointsEvents;
+        }
+
+        if (gamification.quests.isNotEmpty) {
+          _quests = gamification.quests;
+        }
+
+        final unlocked = gamification.unlockedAvatars;
+        _rewardShopItems = _rewardShopItems.map((item) {
+          final isOwned = unlocked.contains(item.id) ||
+              unlocked.contains(item.value) ||
+              unlocked.contains('avatar_${item.value}') ||
+              item.price == 0;
+          return item.copyWith(owned: isOwned);
+        }).toList();
       });
       unawaited(_persistAppState());
       return true;
@@ -375,6 +399,13 @@ class _AppRootState extends State<AppRoot> {
       if (_recentPoints.length > 5) _recentPoints.removeLast();
     });
     unawaited(_persistAppState());
+    if (_userId.isNotEmpty) {
+      BackendApiService.awardPoints(_userId, points, label).then((_) {
+        unawaited(_refreshFromBackend());
+      }).catchError((e) {
+        debugPrint('Backend award points failed: $e');
+      });
+    }
   }
 
   void _updateRadarLocation(LatLng location) {
@@ -408,45 +439,59 @@ class _AppRootState extends State<AppRoot> {
     _awardPoints('Verified a community deal', 20, Icons.verified_rounded);
   }
 
-  void _claimQuestReward(BuildContext context, String questId) {
+  void _claimQuestReward(BuildContext context, String questId) async {
     final questIndex = _quests.indexWhere((quest) => quest.id == questId);
     if (questIndex == -1) return;
     final quest = _quests[questIndex];
     if (quest.isClaimed) return;
 
     if (!quest.isCompleted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Complete the challenge first to claim this reward')),
+      showContainedSnackBar(
+        context,
+        message: 'Complete the challenge first to claim this reward',
+        accentColor: context.colors.warning,
+        icon: Icons.info_rounded,
       );
       return;
     }
 
-    setState(() {
-      _quests[questIndex] = quest.copyWith(isClaimed: true);
-    });
-    unawaited(_persistAppState());
-    _awardPoints('${quest.title} reward claimed', quest.rewardPoints, Icons.emoji_events_rounded);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Reward claimed! +${quest.rewardPoints} pts added 🎁')),
-    );
-    showCelebrationDialog(
-      context,
-      title: 'Reward Claimed',
-      body: '+${quest.rewardPoints} pts added to your total. Your streak reward is safely collected.',
-      icon: Icons.emoji_events_rounded,
-      color: context.colors.accentForeground,
-    );
+    try {
+      await BackendApiService.claimQuest(_userId, questId);
+      await _refreshFromBackend();
+
+      showContainedSnackBar(
+        context,
+        message: 'Reward claimed! +${quest.rewardPoints} pts added',
+        accentColor: context.colors.success,
+        icon: Icons.celebration_rounded,
+      );
+      showCelebrationDialog(
+        context,
+        title: 'Reward Claimed',
+        body: '+${quest.rewardPoints} pts added to your total. Your streak reward is safely collected.',
+        icon: Icons.emoji_events_rounded,
+        color: context.colors.accentForeground,
+      );
+    } catch (e) {
+      debugPrint('Claim quest failed: $e');
+      showContainedSnackBar(
+        context,
+        message: 'Failed to claim reward: $e',
+        accentColor: context.colors.warning,
+        icon: Icons.error_outline_rounded,
+      );
+    }
   }
 
-  void _redeemRewardShopItem(BuildContext context, String itemId) {
+  void _redeemRewardShopItem(BuildContext context, String itemId) async {
     final itemIndex = _rewardShopItems.indexWhere((item) => item.id == itemId);
     if (itemIndex == -1) return;
     final item = _rewardShopItems[itemIndex];
     if (item.owned) return;
 
     if (_totalPoints < item.price) {
-      showDialog<void>(
-        context: context,
+      showContainedDialog<void>(
+        context,
         builder: (dialogContext) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('Reward Shop'),
@@ -462,37 +507,63 @@ class _AppRootState extends State<AppRoot> {
       return;
     }
 
-    setState(() {
-      _totalPoints -= item.price;
-      _rewardShopItems[itemIndex] = item.copyWith(owned: true);
-      switch (item.category) {
-        case 'accessories':
-          _avatarProfile = _avatarProfile.copyWith(accessory: item.value);
-          break;
-        case 'breeds':
-          _avatarProfile = _avatarProfile.copyWith(breed: item.value);
-          break;
-        case 'effects':
-          _avatarProfile = _avatarProfile.copyWith(effect: item.value);
-          break;
-      }
-    });
-    unawaited(_persistAppState());
+    try {
+      await BackendApiService.awardPoints(_userId, -item.price, 'redeem_item:$itemId');
 
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Reward Shop'),
-        content: const Text('Redeemed and equipped successfully!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+      final prefs = await SharedPreferences.getInstance();
+      final ownedIds = prefs.getStringList(_ownedRewardIdsKey) ?? <String>[];
+      final updatedOwnedIds = [...ownedIds, itemId];
+      await prefs.setStringList(_ownedRewardIdsKey, updatedOwnedIds);
+
+      setState(() {
+        _totalPoints -= item.price;
+        _rewardShopItems[itemIndex] = item.copyWith(owned: true);
+        switch (item.category) {
+          case 'accessories':
+            _avatarProfile = _avatarProfile.copyWith(accessory: item.value);
+            break;
+          case 'breeds':
+            _avatarProfile = _avatarProfile.copyWith(breed: item.value);
+            break;
+          case 'effects':
+            _avatarProfile = _avatarProfile.copyWith(effect: item.value);
+            break;
+        }
+      });
+      unawaited(_persistAppState());
+
+      await BackendApiService.updateUserProfile(_userId, {
+        'breed': _avatarProfile.breed,
+        'accessory': _avatarProfile.accessory,
+        'effect': _avatarProfile.effect,
+        'unlockedAvatars': updatedOwnedIds,
+      });
+
+      await _refreshFromBackend();
+
+      showContainedDialog<void>(
+        context,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Reward Shop'),
+          content: const Text('Redeemed and equipped successfully!'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      debugPrint('Redeem item failed: $e');
+      showContainedSnackBar(
+        context,
+        message: 'Redemption failed: $e',
+        accentColor: context.colors.warning,
+        icon: Icons.error_outline_rounded,
+      );
+    }
   }
 
   // UPDATED — calls backend, shows AI nudge modal if risk detected
@@ -526,13 +597,15 @@ class _AppRootState extends State<AppRoot> {
       unawaited(_persistAppState());
       _awardPoints('Protected your streak with a quick save', 40, Icons.savings_rounded);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('RM8 moved to savings. Your dashboard has been updated.')),
+      showContainedSnackBar(
+        context,
+        message: 'RM8 moved to savings. Your dashboard has been updated.',
+        accentColor: context.colors.success,
       );
       showCelebrationDialog(
         context,
-        title: 'Nice Save',
-        body: 'RM8 is tucked away and your streak just got stronger.',
+        title: 'Money tucked away',
+        body: 'RM8 is saved and your Smart Spending Streak just got stronger.',
         icon: Icons.savings_rounded,
         color: context.colors.success,
       );
@@ -557,8 +630,10 @@ class _AppRootState extends State<AppRoot> {
       unawaited(_persistAppState());
       _awardPoints('Protected your streak with a quick save', 40, Icons.savings_rounded);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('RM8 moved to savings. Your dashboard has been updated.')),
+      showContainedSnackBar(
+        context,
+        message: 'RM8 moved to savings. Your dashboard has been updated.',
+        accentColor: context.colors.success,
       );
     }
   }
@@ -584,10 +659,9 @@ class _AppRootState extends State<AppRoot> {
   }
 
   Future<void> _openAvatarCustomization(BuildContext context) async {
-    final result = await showModalBottomSheet<AvatarCustomizationResult>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final result = await showContainedBottomSheet<AvatarCustomizationResult>(
+      context,
+      barrierLabel: 'Avatar Customization',
       builder: (context) => AvatarCustomizationSheet(
         totalPoints: _totalPoints,
         rewardShopItems: _rewardShopItems,
@@ -600,53 +674,100 @@ class _AppRootState extends State<AppRoot> {
     if (result == null) return;
 
     final purchasedItems = _rewardShopItems.where((item) => result.purchasedItemIds.contains(item.id)).toList();
-    final totalCost = purchasedItems.fold<int>(0, (sum, item) => sum + (item.owned ? 0 : item.price));
+    final newlyPurchased = purchasedItems.where((item) => !item.owned).toList();
+    final totalCost = newlyPurchased.fold<int>(0, (sum, item) => sum + item.price);
+
     if (_totalPoints < totalCost) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Points changed before saving. Please try again.')),
+      showContainedSnackBar(
+        context,
+        message: 'Points changed before saving. Please try again.',
+        accentColor: context.colors.warning,
+        icon: Icons.info_rounded,
       );
       return;
     }
 
-    setState(() {
-      _totalPoints -= totalCost;
-      _rewardShopItems = _rewardShopItems
-          .map((item) => result.purchasedItemIds.contains(item.id) ? item.copyWith(owned: true) : item)
-          .toList();
-      _avatarProfile = _avatarProfile.copyWith(
-        breed: result.breed,
-        accessory: result.accessory,
-        effect: result.effect,
-      );
-    });
-    unawaited(_persistAppState());
-    
-    // Sync with backend
-    unawaited(BackendApiService.updateUserProfile(_userId, {
-      'breed': result.breed,
-      'accessory': result.accessory,
-      'effect': result.effect,
-    }));
+    try {
+      if (newlyPurchased.isNotEmpty) {
+        await BackendApiService.awardPoints(
+          _userId, 
+          -totalCost, 
+          'redeem_items:${newlyPurchased.map((e) => e.id).join(',')}'
+        );
+      }
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Avatar updated!')),
-    );
+      final prefs = await SharedPreferences.getInstance();
+      final ownedIds = prefs.getStringList(_ownedRewardIdsKey) ?? <String>[];
+      final updatedOwnedIds = {...ownedIds, ...result.purchasedItemIds}.toList();
+      await prefs.setStringList(_ownedRewardIdsKey, updatedOwnedIds);
+
+      setState(() {
+        _totalPoints -= totalCost;
+        _rewardShopItems = _rewardShopItems
+            .map((item) => result.purchasedItemIds.contains(item.id) || item.owned ? item.copyWith(owned: true) : item)
+            .toList();
+        _avatarProfile = _avatarProfile.copyWith(
+          breed: result.breed,
+          accessory: result.accessory,
+          effect: result.effect,
+        );
+      });
+      unawaited(_persistAppState());
+
+      await BackendApiService.updateUserProfile(_userId, {
+        'breed': result.breed,
+        'accessory': result.accessory,
+        'effect': result.effect,
+        'unlockedAvatars': updatedOwnedIds,
+      });
+
+      await _refreshFromBackend();
+
+      if (!mounted) return;
+      showContainedSnackBar(
+        context,
+        message: 'Avatar updated!',
+        accentColor: context.colors.success,
+        icon: Icons.check_circle_rounded,
+      );
+    } catch (e) {
+      debugPrint('Avatar customisation update failed: $e');
+      if (!mounted) return;
+      showContainedSnackBar(
+        context,
+        message: 'Failed to update avatar: $e',
+        accentColor: context.colors.warning,
+        icon: Icons.error_outline_rounded,
+      );
+    }
   }
 
   // UPDATED — setup user in backend + fetch live scores
   Future<void> _completeOnboarding() async {
     try {
+      final plan = buildBudgetPlan(
+        monthlyBudget: _budget,
+        savingsGoal: _goal,
+        categoryPercents: _categoryPercents,
+        yesAnswers: _yesAnswers,
+        colors: context.colors,
+      );
+
       await BackendApiService.setupUser(
         userId: _userId,
-        dailyBudget: _budget / 30,
+        dailyBudget: plan.dailyLimit,
         savingsGoal: _goal,
         displayName: _userName,
         breed: _avatarProfile.breed,
         expression: _avatarProfile.expression,
         accessory: _avatarProfile.accessory,
         effect: _avatarProfile.effect,
+        categoryPercents: _categoryPercents,
+        yesAnswers: _yesAnswers.toList(),
+        adaptabilityScore: plan.adaptabilityScore,
+        savingsRate: plan.savingsRate,
+        flexibleSpend: plan.flexibleSpend,
       );
       final profile = await BackendApiService.getUserProfile(_userId);
       setState(() {
@@ -829,6 +950,7 @@ class _AppRootState extends State<AppRoot> {
             onClaimReward: (questId) => _claimQuestReward(context, questId),
             onRedeemItem: (itemId) => _redeemRewardShopItem(context, itemId),
             onCustomizeAvatar: () => _openAvatarCustomization(context),
+            leaderboard: _leaderboard,
           ),
           InsightsPage(
             plan: plan,

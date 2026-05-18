@@ -6,138 +6,150 @@ def generate_explanation(
 ):
 
     explanations = []
-
     explainability_reasons = []
-
-    for reason in risk_result.get("reasons", []):
-        explanations.append(reason)
-        explainability_reasons.append(reason)
-
-    if behaviour_result.get("lateNightSpending"):
-
-        explanations.append(
-            "Late-night spending behaviour increases impulsive spending risk."
-        )
-
-        explainability_reasons.append(
-            "This transaction happened during a late-night high-risk period."
-        )
 
     primary_category = behaviour_result.get(
         "primaryCategory",
         "spending"
     )
 
-    if behaviour_result.get("riskyCategoryDetected"):
+    def add_reason(reason):
+        if reason and reason not in explanations:
+            explanations.append(reason)
 
-        explanations.append(
-            f"Repeated {primary_category} spending increases category-level financial risk."
+        if reason and reason not in explainability_reasons:
+            explainability_reasons.append(reason)
+
+    for reason in risk_result.get("reasons", []):
+        add_reason(reason)
+
+    user_friendly_insight = behaviour_result.get(
+        "userFriendlyInsight"
+    )
+
+    if user_friendly_insight:
+        add_reason(user_friendly_insight)
+
+    if behaviour_result.get("lateNightSpending"):
+        add_reason(
+            "This happened at a time when impulse spending risk is usually higher."
         )
 
-        explainability_reasons.append(
-            f"{primary_category.capitalize()} is currently your most active spending category."
+    if behaviour_result.get("riskyCategoryDetected"):
+        add_reason(
+            f"{primary_category.capitalize()} is your most active spending category today."
         )
 
     if velocity_result:
-
-        velocity = velocity_result.get(
-            "spendingVelocity",
-            "normal"
+        add_reason(
+            velocity_result.get(
+                "spendingTrend",
+                "Your spending behaviour looks stable."
+            )
         )
 
-        spending_trend = velocity_result.get(
-            "spendingTrend",
-            "Spending behaviour remains stable."
-        )
-
-        explanations.append(
-            f"Spending velocity is classified as {velocity}."
-        )
-
-        explanations.append(
-            spending_trend
-        )
-
-        explainability_reasons.append(
-            f"Your spending speed is currently classified as {velocity}."
+        add_reason(
+            velocity_result.get(
+                "overspendingPrediction",
+                {}
+            ).get(
+                "prediction",
+                "Your spending currently looks manageable."
+            )
         )
 
     final_action = orchestrator_result.get(
-        "finalAction"
+        "finalAction",
+        ""
     )
 
-    if final_action == "auto_save":
+    if final_action in [
+        "auto_save",
+        "micro_save_recommendation",
+        "save_rm8_instead"
+    ]:
+        recommended_explanation = (
+            "ThinkTwice suggests a small save before you continue, so this purchase has less impact on your weekly budget."
+        )
 
-        explanations.append(
-            "AI recommends micro-saving to reduce overspending risk."
+        recommendation_type = "Micro Save"
+
+    elif final_action in [
+        "smart_radar_and_auto_save",
+        "smart_radar_and_save_nudge",
+        "SMART_RADAR_AND_SAVE_NUDGE"
+    ]:
+        add_reason(
+            "Smart Radar found a cheaper nearby option that may help you save money today."
         )
 
         recommended_explanation = (
-            "A small user-approved saving action can reduce the impact of overspending."
+            "Smart Radar helps you compare nearby alternatives before confirming payment."
         )
 
-    elif final_action == "smart_radar_and_auto_save":
+        recommendation_type = "Smart Radar"
 
-        explanations.append(
-            "AI recommends cheaper nearby alternatives and micro-saving action."
-        )
-
+    elif final_action in [
+        "send_warning_nudge",
+        "continue_with_warning",
+        "CONTINUE_WITH_WARNING"
+    ]:
         recommended_explanation = (
-            "Smart Radar can help find cheaper alternatives while micro-saving protects the savings streak."
+            "A gentle warning is enough because the risk is still manageable."
         )
 
-    elif final_action == "send_warning_nudge":
-
-        explanations.append(
-            "AI detected moderate financial risk and triggered a warning nudge."
-        )
-
-        recommended_explanation = (
-            "A warning nudge is enough because the risk is still manageable."
-        )
+        recommendation_type = "Budget Warning"
 
     else:
-
-        explanations.append(
-            "AI detected stable behaviour and continued passive financial monitoring."
-        )
-
         recommended_explanation = (
-            "No strong intervention is needed because spending behaviour is currently manageable."
+            "No strong intervention is needed right now."
         )
+
+        recommendation_type = "Safe Spending"
 
     safety = orchestrator_result.get(
         "safetyCheck",
         {}
     )
 
-    if safety.get("requiresUserConsent"):
-
-        explanations.append(
-            "Financial actions require user approval before execution."
+    if safety.get("requiresUserConsent", True):
+        add_reason(
+            "You stay in control. ThinkTwice will not move money without your approval."
         )
 
-        explainability_reasons.append(
-            "ThinkTwice will not move money without your approval."
-        )
+    main_reason = (
+        explanations[0]
+        if explanations
+        else "ThinkTwice checked this purchase before payment confirmation."
+    )
 
     return {
         "aiExplanation": explanations,
 
         "explainabilitySummary": {
-            "mainReason":
-            explanations[0] if explanations else "Spending behaviour was analysed.",
+            "explainabilityLevel": "high",
 
-            "whyThisMatters":
-            "This helps prevent small spending habits from becoming larger financial problems.",
+            "mainReason": main_reason,
 
-            "recommendedExplanation":
-            recommended_explanation,
+            "whyThisMatters": (
+                "This helps you notice risky spending before it becomes a bigger money problem."
+            ),
 
-            "userControlNote":
-            "ThinkTwice provides recommendations only. The user stays in control of financial actions.",
+            "recommendedExplanation": recommended_explanation,
 
-            "popupReasons":
-            explainability_reasons
+            "recommendationType": recommendation_type,
+
+            "userControlNote": (
+                "ThinkTwice only recommends actions. You always stay in control."
+            ),
+
+            "popupReasons": explainability_reasons,
+
+            "simpleFlow": [
+                "Payment intent detected before confirmation",
+                "Spending pattern checked",
+                "Budget impact predicted",
+                "Best intervention selected"
+            ]
         }
     }

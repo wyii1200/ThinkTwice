@@ -62,6 +62,7 @@ backend/firestore.indexes.json
 backend/skills-lock.json
 backend/.agents/
 backend/.runtimeconfig.json
+flutter_app/.firebase/
 
 # OS specific
 .DS_Store
