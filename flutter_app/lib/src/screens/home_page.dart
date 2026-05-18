@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../core/app_theme.dart';
@@ -6,7 +7,6 @@ import '../core/seed_data.dart';
 import '../widgets/shared.dart';
 import '../services/backend_api_service.dart';
 import '../services/ai_service.dart';
-import '../widgets/ai_analysis_card.dart';
 import '../services/ai_state.dart';
 
 class HomePage extends StatefulWidget {
@@ -797,11 +797,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              if (aiResult != null) ...[
-                const SizedBox(height: 12),
-                AiAnalysisCard(aiResult: aiResult!),
-              ],
               const SizedBox(height: 16),
               StaggeredReveal(
                 index: 3,
@@ -2141,6 +2136,43 @@ class _ThinkTwiceSimulationAlertDialogState
 
     final estimatedSavings =
         demoDecision?['estimatedSavings']?.toString() ?? 'RM8';
+    final confidenceText = confidence.toString().contains('%')
+        ? confidence.toString()
+        : '$confidence%';
+    final displayConfidence = confidenceText.toLowerCase().contains('confident')
+        ? confidenceText
+        : '$confidenceText confident';
+    final displayTitle = riskLevel == 'high'
+        ? '🔥 Possible Impulse Purchase Detected'
+        : riskLevel == 'medium'
+            ? 'Possible Spending Spike Detected'
+            : title;
+    final displayPrediction = riskLevel == 'low'
+        ? prediction
+        : 'Your spending is slightly higher than usual tonight.';
+    final displayRiskBadge = '${riskLevel.toUpperCase()} RISK ⚠️';
+    final displayBudgetImpact = riskLevel == 'low'
+        ? 'Within today\'s budget'
+        : 'May affect today\'s budget';
+    final displayRecommendedAction =
+        'Save $estimatedSavings now or check cheaper nearby options.';
+    final displayReasons = reasons.take(3).map((reason) {
+      final normalized = reason.toLowerCase();
+      if (normalized.contains('push today') ||
+          normalized.contains('safe daily budget')) {
+        return 'It may push today\'s spending above your safe limit.';
+      }
+      if (normalized.contains('amount is above') ||
+          normalized.contains('low-risk micro-spend')) {
+        return 'This amount is higher than your usual small spends.';
+      }
+      if (normalized.contains('impulse') || normalized.contains('late-night')) {
+        return 'The timing and category look a bit more impulsive than usual.';
+      }
+      return reason;
+    }).toList();
+    final showFallbackMessage = kDebugMode && _statusMessage != null;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
 
     return Material(
       color: Colors.transparent,
@@ -2212,269 +2244,347 @@ class _ThinkTwiceSimulationAlertDialogState
                             ],
                           ),
                         )
-                      : SingleChildScrollView(
+                      : Column(
                           key: const ValueKey('alert'),
-                          padding: EdgeInsets.all(compact ? 16 : 20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Center(
-                                child: WalletGuardianPreview(
-                                  breed: widget.breed,
-                                  accessory: widget.accessory,
-                                  effect: widget.effect,
-                                  mood: avatarMood,
-                                  size: compact ? 84 : 96,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: SingleChildScrollView(
+                                padding: EdgeInsets.fromLTRB(
+                                  compact ? 16 : 20,
+                                  compact ? 16 : 20,
+                                  compact ? 16 : 20,
+                                  16,
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              Center(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 7,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        context.colors.primary.withOpacity(0.10),
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Text(
-                                    'ThinkTwice Support',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 0.6,
-                                      color: context.colors.primary,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Center(
+                                      child: WalletGuardianPreview(
+                                        breed: widget.breed,
+                                        accessory: widget.accessory,
+                                        effect: widget.effect,
+                                        mood: avatarMood,
+                                        size: compact ? 98 : 112,
+                                      ),
                                     ),
+                                    const SizedBox(height: 12),
+                                    Center(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: context.colors.primary
+                                              .withOpacity(0.08),
+                                          border: Border.all(
+                                            color: context.colors.primary
+                                                .withOpacity(0.10),
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(999),
+                                        ),
+                                        child: Text(
+                                          'ThinkTwice Support',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.3,
+                                            color: context.colors.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Center(
+                                      child: Text(
+                                        'Your Pocket Buddy noticed something 👀',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color:
+                                              context.colors.mutedForeground,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    if (riskLevel != 'low') ...[
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: context.colors.warning
+                                              .withOpacity(0.12),
+                                          borderRadius:
+                                              BorderRadius.circular(999),
+                                        ),
+                                        child: Text(
+                                          displayRiskBadge,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: context.colors.warning,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 10),
+                                    ],
+                                    Text(
+                                      displayTitle,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w900,
+                                        height: 1.08,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      displayPrediction,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.4,
+                                        color: context.colors.foreground,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _AlertMetricTile(
+                                            label: 'Budget Impact',
+                                            value: displayBudgetImpact,
+                                            tone: riskLevel,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: _AlertMetricTile(
+                                            label: 'Confidence',
+                                            value: displayConfidence,
+                                            tone: riskLevel,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        gradient:
+                                            context.colors.primaryGradient,
+                                        borderRadius:
+                                            BorderRadius.circular(22),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: context.colors.primary
+                                                .withOpacity(0.20),
+                                            blurRadius: 18,
+                                            offset: const Offset(0, 10),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'Recommended Action',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w800,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            displayRecommendedAction,
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w900,
+                                              color: Colors.white,
+                                              height: 1.15,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          const Text(
+                                            'A small choice now helps protect your weekly budget.',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                              height: 1.35,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    if (displayReasons.isNotEmpty)
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(14),
+                                        decoration: BoxDecoration(
+                                          color: context.colors.background,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: Theme.of(context)
+                                                .dividerColor
+                                                .withOpacity(0.7),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Why we’re giving this heads-up',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            ...displayReasons.map(
+                                              (reason) => Padding(
+                                                padding:
+                                                    const EdgeInsets.only(
+                                                  bottom: 8,
+                                                ),
+                                                child: Row(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.circle,
+                                                      size: 8,
+                                                      color:
+                                                          context.colors.primary,
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        reason,
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          height: 1.4,
+                                                          color: context.colors
+                                                              .mutedForeground,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    if (showFallbackMessage) ...[
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        _statusMessage!,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: context.colors.mutedForeground,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.fromLTRB(
+                                compact ? 16 : 20,
+                                12,
+                                compact ? 16 : 20,
+                                12 + safeBottom.clamp(0.0, 12.0),
+                              ),
+                              decoration: BoxDecoration(
+                                color: context.colors.card,
+                                border: Border(
+                                  top: BorderSide(
+                                    color: Theme.of(context)
+                                        .dividerColor
+                                        .withOpacity(0.55),
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 14),
-                              Text(
-                                title,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w900,
-                                  height: 1.08,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                prediction,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.4,
-                                  color: context.colors.foreground,
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              Row(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Expanded(
-                                    child: _AlertMetricTile(
-                                      label: 'Budget Impact',
-                                      value: riskLabel,
-                                      tone: riskLevel,
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed:
+                                          _submitting ? null : _resolveRadar,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            context.colors.primary,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 14,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(18),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'Find Cheaper Option',
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: _AlertMetricTile(
-                                      label: 'Confidence',
-                                      value:
-                                          confidence.toString().contains('%')
-                                              ? confidence.toString()
-                                              : '$confidence%',
-                                      tone: riskLevel,
+                                  const SizedBox(height: 10),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton(
+                                      onPressed:
+                                          _submitting ? null : _resolveSave,
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor:
+                                            context.colors.primary,
+                                        backgroundColor:
+                                            context.colors.primary
+                                                .withOpacity(0.06),
+                                        side: BorderSide(
+                                          color: context.colors.primary
+                                              .withOpacity(0.20),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 14,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(18),
+                                        ),
+                                      ),
+                                      child: Text('Save $estimatedSavings'),
                                     ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  TextButton(
+                                    onPressed:
+                                        _submitting ? null : _resolveContinue,
+                                    child: const Text('Continue Anyway'),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 12),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  gradient: context.colors.primaryGradient,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: context.colors.primary
-                                          .withOpacity(0.22),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 10),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Recommended Action',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      recommendedAction,
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
-                                        height: 1.1,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              if (reasons.isNotEmpty)
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: context.colors.background,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: Theme.of(context)
-                                          .dividerColor
-                                          .withOpacity(0.7),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Why this caught our attention',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      ...reasons.take(3).map(
-                                            (reason) => Padding(
-                                              padding: const EdgeInsets.only(
-                                                bottom: 8,
-                                              ),
-                                              child: Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Icon(
-                                                    Icons.circle,
-                                                    size: 8,
-                                                    color:
-                                                        context.colors.primary,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Text(
-                                                      reason,
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        height: 1.4,
-                                                        color: context.colors
-                                                            .mutedForeground,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                    ],
-                                  ),
-                                ),
-                              if (_statusMessage != null) ...[
-                                const SizedBox(height: 10),
-                                Text(
-                                  _statusMessage!,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: context.colors.mutedForeground,
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: 14),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed:
-                                      _submitting ? null : _resolveContinue,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: context.colors.foreground,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                  ),
-                                  child: const Text('Continue Anyway'),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed:
-                                      _submitting ? null : _resolveSave,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: context.colors.primary,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                  ),
-                                  child:
-                                      Text('Save $estimatedSavings Instead'),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton(
-                                  onPressed:
-                                      _submitting ? null : _resolveRadar,
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                  ),
-                                  child: const Text('Find Cheaper Nearby'),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Center(
-                                child: Text(
-                                  'Small savings today can become healthier habits tomorrow.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: context.colors.mutedForeground,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                 ),
               ),
@@ -2505,13 +2615,16 @@ class _AlertMetricTile extends StatelessWidget {
       _ => context.colors.primary,
     };
     return Container(
-      padding: const EdgeInsets.all(12),
+      constraints: const BoxConstraints(minHeight: 92),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(18),
+        color: context.colors.background,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
@@ -2521,12 +2634,13 @@ class _AlertMetricTile extends StatelessWidget {
               color: color,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w900,
+              height: 1.2,
             ),
           ),
         ],
