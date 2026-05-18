@@ -26,6 +26,7 @@ List<CommunityDeal> seedDeals() {
       upvotes: 42,
       verifications: 9,
       submittedBy: 'user_123',
+      address: '123 Main Street', 
     ),
     CommunityDeal(
       id: 'deal-2',
@@ -41,7 +42,8 @@ List<CommunityDeal> seedDeals() {
       discountLabel: 'Save RM3',
       upvotes: 28,
       verifications: 6,
-      submittedBy: 'user_123',  
+      submittedBy: 'user_123',
+      address: '123 Main Street',
     ),
     CommunityDeal(
       id: 'deal-3',
@@ -58,6 +60,7 @@ List<CommunityDeal> seedDeals() {
       upvotes: 19,
       verifications: 4,
       submittedBy: 'user_123',
+      address: '456 Market Road',
     ),
   ];
 }

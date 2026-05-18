@@ -60,7 +60,7 @@ router.get("/:id", async (req, res) => {
 // Body: { title, storeName, category, price, lat, lng, address, imageBase64, submittedBy }
 router.post("/", async (req, res) => {
   try {
-    const { title, storeName, category, price, originalPrice , lat, lng, address, imageBase64, submittedBy } = req.body;
+    const { title, storeName, category, price, originalPrice , lat, lng, address, imageBase64, submittedBy,description } = req.body;
 
     if (!title || !storeName || !category || !price || !lat || !lng || !submittedBy) {
       return res.status(400).json({ success: false, error: "Missing required fields: title, storeName, category, price, lat, lng, submittedBy" });

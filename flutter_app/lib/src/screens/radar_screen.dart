@@ -555,56 +555,93 @@ class _RadarPageState extends State<RadarPage> {
                               color: colors.success.withOpacity(0.14),
                             ),
                           ),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Deal Price',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: colors.mutedForeground,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                              // 1. The Prices Row
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Deal Price',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: colors.mutedForeground,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'RM ${deal.dealPrice.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: 24,
+                                            color: colors.success,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'RM ${deal.dealPrice.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        color: colors.success,
-                                        fontWeight: FontWeight.w800,
-                                      ),
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          'Usually',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: colors.mutedForeground,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'RM ${deal.originalPrice.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            decoration: TextDecoration.lineThrough,
+                                            color: colors.mutedForeground,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
+                                ],
+                              ),
+                              
+                              // 2. A subtle divider
+                              const SizedBox(height: 16),
+                              Divider(color: colors.primary.withOpacity(0.08), height: 1),
+                              const SizedBox(height: 12),
+
+                              // 3. The Location Block
+                              const Text(
+                                'Location',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      'Usually',
+                              const SizedBox(height: 8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(Icons.location_on_rounded, size: 18, color: colors.primary),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      deal.address.isNotEmpty ? deal.address : 'Near ${deal.storeName}',
                                       style: TextStyle(
-                                        fontSize: 12,
-                                        color: colors.mutedForeground,
-                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14, 
+                                        color: colors.foreground.withOpacity(0.82), 
+                                        height: 1.4
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'RM ${deal.originalPrice.toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        decoration: TextDecoration.lineThrough,
-                                        color: colors.mutedForeground,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -906,6 +943,7 @@ class _RadarPageState extends State<RadarPage> {
       distanceKm: distKm,
       submittedBy: d.submittedBy,
       imageUrl: d.imageUrl,
+      address: d.address,
     );
   }
 

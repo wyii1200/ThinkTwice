@@ -55,10 +55,11 @@ class CommunityDeal {
     this.imageBytes,
     this.distanceKm,
     this.postedByUser = false,
-    
+    required this.address,
   });
 
   final double? distanceKm;
+  final String address;
   final String id;
   final String title;
   final String storeName;
@@ -76,7 +77,7 @@ class CommunityDeal {
   final bool postedByUser;
   final String submittedBy;
   final String? imageUrl;
-
+  
   double get estimatedSavings => math.max(0, originalPrice - dealPrice);
 
   CommunityDeal copyWith({
@@ -99,7 +100,7 @@ class CommunityDeal {
     bool? postedByUser,
     String? submittedBy,
     String? imageUrl,
-
+    String? address,
   }) {
     return CommunityDeal(
       id: id ?? this.id,
@@ -120,6 +121,7 @@ class CommunityDeal {
       postedByUser: postedByUser ?? this.postedByUser,
       submittedBy: submittedBy ?? this.submittedBy,
       imageUrl: imageUrl ?? this.imageUrl,
+      address: address ?? this.address,
     );
   }
 }
