@@ -238,6 +238,36 @@ class BackendApiService {
     );
   }
 
+  static Future<double> confirmTransaction({
+    required String userId,
+    required double amount,
+    required String category,
+    required String merchant,
+    String? description,
+  }) async {
+    final uri = Uri.parse('$_backendUrl/webhook/transaction/confirm');
+    final res = await _client
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'userId': userId,
+            'amount': amount,
+            'category': category,
+            'merchant': merchant,
+            if (description != null) 'description': description,
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
+
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (body['success'] != true) {
+      throw Exception(body['error'] ?? 'Confirm transaction failed');
+    }
+    
+    return (body['newBalance'] as num).toDouble();
+  }
+
   static Future<List<Map<String, dynamic>>> getTransactions(
     String userId, {
     int limit = 20,

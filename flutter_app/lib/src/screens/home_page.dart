@@ -1406,11 +1406,7 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
           'status': 'before_confirmation',
         }
       ],
-      'user_action': {
-        'actionType': 'confirm_payment',
-        'timestamp': now,
-        'interactionSource': 'simulation',
-      },
+      'user_action': 'confirm_payment',
     };
 
     Navigator.of(context).pop(
@@ -2021,7 +2017,7 @@ class _ThinkTwiceSimulationAlertDialogState
 
     double? newBalance;
     try {
-      final result = await BackendApiService.postTransaction(
+      newBalance = await BackendApiService.confirmTransaction(
         userId: widget.request.userId,
         amount: widget.request.amount,
         category: widget.request.normalizedCategory,
@@ -2032,7 +2028,6 @@ class _ThinkTwiceSimulationAlertDialogState
             ? null
             : widget.request.description,
       );
-      newBalance = result.newBalance;
     } catch (_) {
       newBalance = null;
     }
