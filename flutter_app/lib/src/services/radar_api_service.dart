@@ -29,6 +29,7 @@ class ApiDeal {
   final bool hidden;
   final String createdAt;
   final String? expiresAt;
+  final String? description;
   
 
 
@@ -51,6 +52,7 @@ class ApiDeal {
     required this.hidden,
     required this.createdAt,
     this.expiresAt,
+    this.description,
   });
 
   factory ApiDeal.fromJson(Map<String, dynamic> json) {
@@ -74,6 +76,7 @@ class ApiDeal {
       hidden: json['hidden'] as bool? ?? false,
       createdAt: json['createdAt'] as String? ?? '',
       expiresAt: json['expiresAt'] as String?,
+      description: json['description'] as String?,
     );
   }
 }
@@ -149,14 +152,16 @@ class RouteStop {
   final String storeName;
   final String address;
   final List<String> items;
+  final String? source; 
 
   const RouteStop(
-      {required this.storeName, required this.address, required this.items});
+      {required this.storeName, required this.address, required this.items , this.source});
 
   factory RouteStop.fromJson(Map<String, dynamic> json) => RouteStop(
         storeName: json['storeName'] as String? ?? '',
         address: json['address'] as String? ?? '',
         items: List<String>.from(json['items'] as List<dynamic>? ?? []),
+        source: json['source'] as String?,
       );
 }
 
@@ -269,7 +274,7 @@ class RadarApiService {
         'userId': userId,
         'title': title,
         'price': price,
-        'description': description,
+        if (description != null && description.isNotEmpty) 'description': description,
         'originalPrice': originalPrice,
       }),
     );

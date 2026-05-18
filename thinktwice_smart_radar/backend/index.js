@@ -1,4 +1,5 @@
 require("dotenv").config();
+console.log("BUCKET:", process.env.FIREBASE_STORAGE_BUCKET);
 
 const express = require("express");
 const cors = require("cors");

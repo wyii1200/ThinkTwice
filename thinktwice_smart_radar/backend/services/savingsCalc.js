@@ -39,7 +39,7 @@ function aggregateMonthlySavings(savingsProofRecords) {
 }
  
 // Record a savings event to Firestore
-async function recordSavingsProof(db, userId, { type, amountSaved, category, dealId = null, routeId = null }) {
+async function recordSavingsProof(db, userId, { type, amountSaved, category, dealId = null, routeId = null ,dealTitle = ''}) {
   const now = new Date();
   const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
  
@@ -54,6 +54,7 @@ async function recordSavingsProof(db, userId, { type, amountSaved, category, dea
     routeId,
     month,
     createdAt: new Date().toISOString(),
+    dealTitle: dealTitle || '',
   });
  
   return proofRef.id;
