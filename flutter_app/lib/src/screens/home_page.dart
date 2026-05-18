@@ -77,10 +77,9 @@ class _HomePageState extends State<HomePage> {
   final List<TransactionRecord> _simulatedTransactions = <TransactionRecord>[];
 
   Future<void> _openPaymentSimulation() async {
-    final request = await showModalBottomSheet<_PaymentSimulationRequest>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final request = await showContainedBottomSheet<_PaymentSimulationRequest>(
+      context,
+      barrierLabel: 'Simulate Payment',
       builder: (context) => _PaymentSimulationSheet(
         userId: widget.userId.isNotEmpty ? widget.userId : 'demo_user_001',
         dailyBudget: widget.plan.dailyLimit > 0 ? widget.plan.dailyLimit : 30,
@@ -94,39 +93,19 @@ class _HomePageState extends State<HomePage> {
     await Future<void>.delayed(const Duration(milliseconds: 90));
     if (!mounted) return;
 
-    final result = await showGeneralDialog<_PaymentSimulationResolution>(
-      context: context,
+    final result = await showContainedDialog<_PaymentSimulationResolution>(
+      context,
       barrierDismissible: false,
       barrierLabel: 'ThinkTwice Alert',
       barrierColor: Colors.black.withOpacity(0.55),
       transitionDuration: const Duration(milliseconds: 320),
-      pageBuilder: (context, animation, secondaryAnimation) =>
+      builder: (context) =>
           _ThinkTwiceSimulationAlertDialog(
         request: request,
         breed: widget.breed,
         accessory: widget.accessory,
         effect: widget.effect,
       ),
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        final fade = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        );
-        final scale = Tween<double>(begin: 0.92, end: 1).animate(
-          CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
-        );
-        final slide = Tween<Offset>(
-          begin: const Offset(0, 0.06),
-          end: Offset.zero,
-        ).animate(fade);
-        return FadeTransition(
-          opacity: fade,
-          child: SlideTransition(
-            position: slide,
-            child: ScaleTransition(scale: scale, child: child),
-          ),
-        );
-      },
     );
 
     if (!mounted || result == null) return;
@@ -1475,6 +1454,8 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context).size;
+    final appWidth = thinkTwiceAppWidth(context);
+    final compact = appWidth < 390;
     final amount = double.tryParse(_amountController.text.trim());
     final merchantText = _merchantController.text.trim();
     final payeeLabel = merchantText.isNotEmpty
@@ -1484,16 +1465,11 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
     return SafeArea(
       child: Center(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            media.width < 560 ? 12 : 20,
-            12,
-            media.width < 560 ? 12 : 20,
-            16,
-          ),
+          padding: thinkTwiceSurfacePadding(context),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: 640,
-              maxHeight: media.height * 0.88,
+              maxWidth: kThinkTwiceAppMaxWidth - 24,
+              maxHeight: media.height * 0.84,
             ),
             child: Container(
               width: double.infinity,
@@ -1522,9 +1498,9 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
                   ),
                   Padding(
                     padding: EdgeInsets.fromLTRB(
-                      media.width < 560 ? 16 : 20,
+                      compact ? 16 : 18,
                       14,
-                      media.width < 560 ? 8 : 12,
+                      compact ? 8 : 12,
                       0,
                     ),
                     child: Row(
@@ -1561,9 +1537,9 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
                   ),
                   Padding(
                     padding: EdgeInsets.fromLTRB(
-                      media.width < 560 ? 16 : 20,
+                      compact ? 16 : 18,
                       14,
-                      media.width < 560 ? 16 : 20,
+                      compact ? 16 : 18,
                       12,
                     ),
                     child: _StepStrip(stage: _stage),
@@ -1571,10 +1547,10 @@ class _PaymentSimulationSheetState extends State<_PaymentSimulationSheet> {
                   Expanded(
                     child: SingleChildScrollView(
                       padding: EdgeInsets.fromLTRB(
-                        media.width < 560 ? 16 : 20,
+                        compact ? 16 : 18,
                         4,
-                        media.width < 560 ? 16 : 20,
-                        media.width < 560 ? 20 : 28,
+                        compact ? 16 : 18,
+                        compact ? 18 : 24,
                       ),
                       child: Form(
                         key: _formKey,
@@ -2128,8 +2104,9 @@ class _ThinkTwiceSimulationAlertDialogState
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context).size;
-    final compact = media.width < 560;
-    final maxDialogHeight = media.height * 0.85;
+    final appWidth = thinkTwiceAppWidth(context);
+    final compact = appWidth < 390;
+    final maxDialogHeight = media.height * 0.82;
     final visibility =
         _analysisResult?['aiVisibility'] as Map<String, dynamic>?;
     final reasons = (visibility?['bulletReasons'] as List<dynamic>? ??
@@ -2170,15 +2147,10 @@ class _ThinkTwiceSimulationAlertDialogState
       child: SafeArea(
         child: Center(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              compact ? 12 : 20,
-              12,
-              compact ? 12 : 20,
-              compact ? 12 : 16,
-            ),
+            padding: thinkTwiceSurfacePadding(context),
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: 640,
+                maxWidth: kThinkTwiceAppMaxWidth - 24,
                 maxHeight: maxDialogHeight,
               ),
               child: Container(

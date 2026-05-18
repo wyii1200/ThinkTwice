@@ -1,0 +1,93 @@
+[debug] [2026-05-17T17:42:10.302Z] ----------------------------------------------------------------------
+[debug] [2026-05-17T17:42:10.307Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\ASUS\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting --debug
+[debug] [2026-05-17T17:42:10.307Z] CLI Version:   15.15.0
+[debug] [2026-05-17T17:42:10.307Z] Platform:      win32
+[debug] [2026-05-17T17:42:10.308Z] Node Version:  v24.11.1
+[debug] [2026-05-17T17:42:10.308Z] Time:          Mon May 18 2026 01:42:10 GMT+0800 (Malaysia Time)
+[debug] [2026-05-17T17:42:10.308Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-05-17T17:42:14.068Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-05-17T17:42:14.070Z] > authorizing via signed-in user (enxix226@gmail.com)
+[debug] [2026-05-17T17:42:14.071Z] [iam] checking project thinktwice-kamihack for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-05-17T17:42:14.074Z] Checked if tokens are valid: true, expires at: 1779041921538
+[debug] [2026-05-17T17:42:14.074Z] Checked if tokens are valid: true, expires at: 1779041921538
+[debug] [2026-05-17T17:42:14.076Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/thinktwice-kamihack:testIamPermissions [none]
+[debug] [2026-05-17T17:42:14.076Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/thinktwice-kamihack:testIamPermissions  x-goog-user-project=thinktwice-kamihack
+[debug] [2026-05-17T17:42:14.077Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/thinktwice-kamihack:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-05-17T17:42:15.217Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/thinktwice-kamihack:testIamPermissions 200
+[debug] [2026-05-17T17:42:15.217Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/thinktwice-kamihack:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-05-17T17:42:15.218Z] Checked if tokens are valid: true, expires at: 1779041921538
+[debug] [2026-05-17T17:42:15.219Z] Checked if tokens are valid: true, expires at: 1779041921538
+[debug] [2026-05-17T17:42:15.219Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/thinktwice-kamihack [none]
+[debug] [2026-05-17T17:42:15.601Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/thinktwice-kamihack 200
+[debug] [2026-05-17T17:42:15.601Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/thinktwice-kamihack {"projectId":"thinktwice-kamihack","projectNumber":"544887428499","displayName":"ThinkTwice","name":"projects/thinktwice-kamihack","resources":{"hostingSite":"thinktwice-kamihack"},"state":"ACTIVE","etag":"1_e81c74a5-0094-4897-b931-ca260381f1d2"}
+[info] 
+[info] === Deploying to 'thinktwice-kamihack'...
+[info] 
+[info] i  deploying hosting 
+[debug] [2026-05-17T17:42:15.610Z] Checked if tokens are valid: true, expires at: 1779041921538
+[debug] [2026-05-17T17:42:15.610Z] Checked if tokens are valid: true, expires at: 1779041921538
+[debug] [2026-05-17T17:42:15.611Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/thinktwice-kamihack/versions [none]
+[debug] [2026-05-17T17:42:15.611Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/thinktwice-kamihack/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2026-05-17T17:42:16.923Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/thinktwice-kamihack/versions 200
+[debug] [2026-05-17T17:42:16.923Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/thinktwice-kamihack/versions {"name":"projects/544887428499/sites/thinktwice-kamihack/versions/0b31742b97b420f7","status":"CREATED","config":{},"labels":{"deployment-tool":"cli-firebase"}}
+[info] i  hosting[thinktwice-kamihack]: beginning deploy... 
+[info] i  hosting[thinktwice-kamihack]: found 36 files in build/web 
+[debug] [2026-05-17T17:42:16.954Z] [hosting] uploading with 200 concurrency
+[debug] [2026-05-17T17:42:16.962Z] Checked if tokens are valid: true, expires at: 1779041921538
+[debug] [2026-05-17T17:42:16.963Z] Checked if tokens are valid: true, expires at: 1779041921538
+[debug] [2026-05-17T17:42:16.965Z] [hosting] hash cache [YnVpbGRcd2Vi] stored for 36 files
+[debug] [2026-05-17T17:42:16.966Z] [hosting][hash queue][FINAL] {"max":6,"min":1,"avg":1,"active":0,"complete":36,"success":36,"errored":0,"retried":0,"total":36,"elapsed":10}
+[debug] [2026-05-17T17:42:16.966Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/544887428499/sites/thinktwice-kamihack/versions/0b31742b97b420f7:populateFiles [none]
+[debug] [2026-05-17T17:42:16.967Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/544887428499/sites/thinktwice-kamihack/versions/0b31742b97b420f7:populateFiles {"files":{"/version.json":"d042cc0e7429df848f5582d501f1c55d2855beb3d53fe7935a0f174c55a31f07","/manifest.json":"238c136944e090a456661fb720cc5853ed8da3fd30d1c787751e98ec8a0e4d5c","/main.dart.js":"db6cf171c2221904d4b1bbbf45cd101d1dabffcb8734abaa57f924b85d959c9b","/index.html":"ee66a91cb2ddf94fe98ddc35e97217a3d897e890ee74515c54be3a39db481e80","/flutter_service_worker.js":"c73b271847ffc78c576de35e95f6b46187eefb1d97dcb08eb9d84c45954ff310","/flutter_bootstrap.js":"427c068aaa4b30cdcb274f3a02f60e3dba31d501edeab2b25c0e2d3bc6f9da12","/flutter.js":"f18220d166d49cbef02491208c46f2c5e54db9739184e304fc55b199b5724407","/favicon.png":"19880e004e8357a51f6a64f5d1fdc8828a6432fe9c781f8acb6b730eced2cd13","/icons/Icon-maskable-512.png":"ea58e5c49bc4dcdc5db0a9fe2f25b2a3152f85ef9094f0d020de0aa318451a1d","/icons/Icon-maskable-192.png":"f7ac56197638aec92f195c5344d15395c2cbf8a5ae74e846c5b4156b64f05e38","/icons/Icon-512.png":"1de493563deb283e6ad70f0d5a89cfd61e37343df3b919c9862c5a41699ac5bc","/icons/Icon-192.png":"5fd961c51d8eb53baacac01f8e53743a76f66a43390a11f5df042e8c618ad64a","/canvaskit/wimp.wasm":"4846645a11c43d94ba2aed5505015d097b7f8a6b863afe1248ffbd4050316481","/canvaskit/wimp.js.symbols":"d04a2862fbaec75f517bb9abc1bbcf379be107704c85be2dc77237a321110423","/canvaskit/wimp.js":"23db45b93eec24dd6db46ac5a6fafbf0063eb50c0dcd7d253f774e050ab1baa3","/canvaskit/skwasm_heavy.wasm":"87639b6a3e4c4ec213fd3b076d6c0cd4374106dcbfa901bfc9dc008c5fd0effb","/canvaskit/skwasm_heavy.js.symbols":"3fc870d752c1cef6825b990f313d718783196a8c81cb4247dbdc7a7d4fb4ea56","/canvaskit/skwasm_heavy.js":"dd3642e247a1ea4a8c519b76278011bb194471c590373ae2659f1d3cb793287c","/canvaskit/skwasm.wasm":"32d9dd72d8062fb129f257e44e79d1fe1267b9839e95c3343afcc47363a706e4","/canvaskit/skwasm.js.symbols":"c4c72f0564d1f85515bf583fb7e3a6be573104cabcedb0796d17d5d7483816d8","/canvaskit/skwasm.js":"91ea675d523ad0a19696479888658953e290f9798a43dae6b87d9ab60cc40c1a","/canvaskit/canvaskit.wasm":"85d12f5346f88f15c8da693b0b412278296648c36c7c3b855d45b09cfd297a4c","/canvaskit/canvaskit.js.symbols":"357ce2409640792b0755f7482bf069221006dbe9b26f3cea4b0e6f0f547ef453","/canvaskit/canvaskit.js":"e0e67f4b85a07ff9b9861c9f49bf88860368ec96fb4115c0d4684f54596f9700","/canvaskit/chromium/canvaskit.wasm":"5d567191a93c5590268429b7831b7c6618fb53789098b60cdc0eb5dd2ba6e082","/canvaskit/chromium/canvaskit.js.symbols":"18d71aedfe906702127b1bbb76c0b8be8cbf43798c018e12028021aaa105817f","/canvaskit/chromium/canvaskit.js":"ed67753aa5382460fefd96876bf5dc40c5d242d56b37664abc8468a6772478df","/assets/NOTICES":"c133bcc806499c11709b9ed897ba9f28701ed0f55e7309368bd2d0cabcf70c35","/assets/FontManifest.json":"1479aae12a3a535d1646297c7d9007f9819906eb6c4040f9db852e215f4d9782","/assets/AssetManifest.bin.json":"a492a8537bc30a25abc2282ac3fc1f4e5fd173677ca0a9e6c24b20ba73346593","/assets/AssetManifest.bin":"7687e4d9f23c66ffa4bd82e0f3beb70d9e258462768598ede75506d26ce41de4","/assets/shaders/stretch_effect.frag":"df37894a7ac7854986bfa5d515e9af03d9138bb77be4d027db848785ebe9e357","/assets/shaders/ink_sparkle.frag":"9d529f4d93e5dabf338537416221237a0042f9cee61c98a357340d0273c67293","/assets/fonts/MaterialIcons-Regular.otf":"0486c87f4bade0bde47f19c38085b6566b70f6da9a8572ad236238a1d701fd32","/assets/assets/images/thinktwice-logo.png":"f19160a921fd5b58c73ac01456ceec2f7fb27271935b8eafb9c2217dfb250c62","/assets/assets/images/cat-avatar.png":"f17d902fe8e002b927803874e7ab5b8f37c8ff3dc2a1bcf1fcb93f80dcb58579"}}
+[debug] [2026-05-17T17:42:17.856Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/544887428499/sites/thinktwice-kamihack/versions/0b31742b97b420f7:populateFiles 200
+[debug] [2026-05-17T17:42:17.856Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/544887428499/sites/thinktwice-kamihack/versions/0b31742b97b420f7:populateFiles {"uploadUrl":"https://upload-firebasehosting.googleapis.com/upload/sites/thinktwice-kamihack/versions/0b31742b97b420f7/files"}
+[debug] [2026-05-17T17:42:17.857Z] [hosting][populate queue][FINAL] {"max":895,"min":895,"avg":895,"active":0,"complete":1,"success":1,"errored":0,"retried":0,"total":1,"elapsed":895}
+[debug] [2026-05-17T17:42:17.858Z] [hosting] uploads queued: 0
+[debug] [2026-05-17T17:42:17.858Z] [hosting][upload queue][FINAL] {"max":0,"min":9999999999,"avg":0,"active":0,"complete":0,"success":0,"errored":0,"retried":0,"total":0,"elapsed":1779039737858}
+[info] i  hosting: upload complete 
+[info] +  hosting[thinktwice-kamihack]: file upload complete 
+[debug] [2026-05-17T17:42:17.859Z] [hosting] deploy completed after 931ms
+[debug] [2026-05-17T17:42:17.859Z] [
+  {
+    "config": {
+      "public": "build/web",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "site": "thinktwice-kamihack"
+    },
+    "version": "projects/544887428499/sites/thinktwice-kamihack/versions/0b31742b97b420f7"
+  }
+]
+[info] i  hosting[thinktwice-kamihack]: finalizing version... 
+[debug] [2026-05-17T17:42:17.862Z] Checked if tokens are valid: true, expires at: 1779041921538
+[debug] [2026-05-17T17:42:17.862Z] Checked if tokens are valid: true, expires at: 1779041921538
+[debug] [2026-05-17T17:42:17.862Z] >>> [apiv2][query] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/thinktwice-kamihack/versions/0b31742b97b420f7 updateMask=status%2Cconfig
+[debug] [2026-05-17T17:42:17.863Z] >>> [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/thinktwice-kamihack/versions/0b31742b97b420f7 {"status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]}}
+[debug] [2026-05-17T17:42:18.722Z] <<< [apiv2][status] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/thinktwice-kamihack/versions/0b31742b97b420f7 200
+[debug] [2026-05-17T17:42:18.723Z] <<< [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/thinktwice-kamihack/versions/0b31742b97b420f7 {"name":"projects/544887428499/sites/thinktwice-kamihack/versions/0b31742b97b420f7","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-05-17T17:42:15.116718Z","createUser":{"email":"enxix226@gmail.com"},"finalizeTime":"2026-05-17T17:42:17.473201Z","finalizeUser":{"email":"enxix226@gmail.com"}}
+[debug] [2026-05-17T17:42:18.723Z] [hosting] finalized version for thinktwice-kamihack:[object Object]
+[info] +  hosting[thinktwice-kamihack]: version finalized 
+[info] i  hosting[thinktwice-kamihack]: releasing new version... 
+[debug] [2026-05-17T17:42:18.724Z] Checked if tokens are valid: true, expires at: 1779041921538
+[debug] [2026-05-17T17:42:18.724Z] Checked if tokens are valid: true, expires at: 1779041921538
+[debug] [2026-05-17T17:42:18.725Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/thinktwice-kamihack/channels/live/releases versionName=projects%2F544887428499%2Fsites%2Fthinktwice-kamihack%2Fversions%2F0b31742b97b420f7
+[debug] [2026-05-17T17:42:18.725Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/thinktwice-kamihack/channels/live/releases {}
+[debug] [2026-05-17T17:42:19.662Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/thinktwice-kamihack/channels/live/releases 200
+[debug] [2026-05-17T17:42:19.663Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/thinktwice-kamihack/channels/live/releases {"name":"projects/544887428499/sites/thinktwice-kamihack/channels/live/releases/1779039737754000","version":{"name":"projects/544887428499/sites/thinktwice-kamihack/versions/0b31742b97b420f7","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-05-17T17:42:15.116718Z","createUser":{"email":"enxix226@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLWNf5lVOOP2UdHopFWOeN0iGQrwEvmG9N0_W3KURT6F0w8hozb"},"finalizeTime":"2026-05-17T17:42:17.473201Z","finalizeUser":{"email":"enxix226@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLWNf5lVOOP2UdHopFWOeN0iGQrwEvmG9N0_W3KURT6F0w8hozb"}},"type":"DEPLOY","releaseTime":"2026-05-17T17:42:17.754Z","releaseUser":{"email":"enxix226@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLWNf5lVOOP2UdHopFWOeN0iGQrwEvmG9N0_W3KURT6F0w8hozb"}}
+[debug] [2026-05-17T17:42:19.663Z] [hosting] release: {"name":"projects/544887428499/sites/thinktwice-kamihack/channels/live/releases/1779039737754000","version":{"name":"projects/544887428499/sites/thinktwice-kamihack/versions/0b31742b97b420f7","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-05-17T17:42:15.116718Z","createUser":{"email":"enxix226@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLWNf5lVOOP2UdHopFWOeN0iGQrwEvmG9N0_W3KURT6F0w8hozb"},"finalizeTime":"2026-05-17T17:42:17.473201Z","finalizeUser":{"email":"enxix226@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLWNf5lVOOP2UdHopFWOeN0iGQrwEvmG9N0_W3KURT6F0w8hozb"}},"type":"DEPLOY","releaseTime":"2026-05-17T17:42:17.754Z","releaseUser":{"email":"enxix226@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLWNf5lVOOP2UdHopFWOeN0iGQrwEvmG9N0_W3KURT6F0w8hozb"}}
+[info] +  hosting[thinktwice-kamihack]: release complete 
+[info] 
+[info] +  Deploy complete! 
+[info] 
+[info] Project Console: https://console.firebase.google.com/project/thinktwice-kamihack/overview
+[info] Hosting URL: https://thinktwice-kamihack.web.app

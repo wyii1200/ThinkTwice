@@ -43,9 +43,11 @@ class _ChallengesPageState extends State<ChallengesPage> {
     if (quest.isClaimed) return;
 
     if (!quest.isCompleted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Complete the challenge first to claim this reward')),
+      showContainedSnackBar(
+        context,
+        message: 'Complete the challenge first to claim this reward',
+        accentColor: context.colors.warning,
+        icon: Icons.info_rounded,
       );
       return;
     }

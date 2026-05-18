@@ -415,8 +415,11 @@ class _AppRootState extends State<AppRoot> {
     if (quest.isClaimed) return;
 
     if (!quest.isCompleted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Complete the challenge first to claim this reward')),
+      showContainedSnackBar(
+        context,
+        message: 'Complete the challenge first to claim this reward',
+        accentColor: context.colors.warning,
+        icon: Icons.info_rounded,
       );
       return;
     }
@@ -426,8 +429,11 @@ class _AppRootState extends State<AppRoot> {
     });
     unawaited(_persistAppState());
     _awardPoints('${quest.title} reward claimed', quest.rewardPoints, Icons.emoji_events_rounded);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Reward claimed! +${quest.rewardPoints} pts added 🎁')),
+    showContainedSnackBar(
+      context,
+      message: 'Reward claimed! +${quest.rewardPoints} pts added',
+      accentColor: context.colors.success,
+      icon: Icons.celebration_rounded,
     );
     showCelebrationDialog(
       context,
@@ -445,8 +451,8 @@ class _AppRootState extends State<AppRoot> {
     if (item.owned) return;
 
     if (_totalPoints < item.price) {
-      showDialog<void>(
-        context: context,
+      showContainedDialog<void>(
+        context,
         builder: (dialogContext) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('Reward Shop'),
@@ -479,8 +485,8 @@ class _AppRootState extends State<AppRoot> {
     });
     unawaited(_persistAppState());
 
-    showDialog<void>(
-      context: context,
+    showContainedDialog<void>(
+      context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Reward Shop'),
@@ -588,10 +594,9 @@ class _AppRootState extends State<AppRoot> {
   }
 
   Future<void> _openAvatarCustomization(BuildContext context) async {
-    final result = await showModalBottomSheet<AvatarCustomizationResult>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final result = await showContainedBottomSheet<AvatarCustomizationResult>(
+      context,
+      barrierLabel: 'Avatar Customization',
       builder: (context) => AvatarCustomizationSheet(
         totalPoints: _totalPoints,
         rewardShopItems: _rewardShopItems,
@@ -607,8 +612,11 @@ class _AppRootState extends State<AppRoot> {
     final totalCost = purchasedItems.fold<int>(0, (sum, item) => sum + (item.owned ? 0 : item.price));
     if (_totalPoints < totalCost) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Points changed before saving. Please try again.')),
+      showContainedSnackBar(
+        context,
+        message: 'Points changed before saving. Please try again.',
+        accentColor: context.colors.warning,
+        icon: Icons.info_rounded,
       );
       return;
     }
@@ -634,8 +642,10 @@ class _AppRootState extends State<AppRoot> {
     }));
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Avatar updated!')),
+    showContainedSnackBar(
+      context,
+      message: 'Avatar updated!',
+      accentColor: context.colors.success,
     );
   }
 

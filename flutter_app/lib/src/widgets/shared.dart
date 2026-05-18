@@ -11,6 +11,96 @@ import '../services/backend_api_service.dart';
 export '../../widgets/cat_head_avatar.dart'
     show AvatarMood, avatarMoodFromId, avatarMoodId, catBreedConfigs, catBreedLabel, moodLabel;
 
+const double kThinkTwiceAppMaxWidth = 430;
+
+double thinkTwiceAppWidth(BuildContext context) {
+  final width = MediaQuery.of(context).size.width;
+  return math.min(width, kThinkTwiceAppMaxWidth);
+}
+
+EdgeInsets thinkTwiceSurfacePadding(BuildContext context) {
+  final appWidth = thinkTwiceAppWidth(context);
+  final horizontal = appWidth < 380 ? 12.0 : 16.0;
+  return EdgeInsets.fromLTRB(horizontal, 12, horizontal, 16);
+}
+
+Future<T?> showContainedDialog<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  bool barrierDismissible = true,
+  String barrierLabel = 'dialog',
+  Color barrierColor = const Color(0x66000000),
+  Duration transitionDuration = const Duration(milliseconds: 280),
+}) {
+  return showGeneralDialog<T>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    barrierLabel: barrierLabel,
+    barrierColor: Colors.transparent,
+    transitionDuration: transitionDuration,
+    pageBuilder: (dialogContext, _, __) => _ContainedPopupRouteLayout(
+      barrierColor: barrierColor,
+      barrierDismissible: barrierDismissible,
+      onBarrierTap: () => Navigator.of(dialogContext).maybePop(),
+      child: Builder(builder: builder),
+    ),
+    transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
+      final fade =
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      final scale = Tween<double>(begin: 0.94, end: 1).animate(
+        CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+      );
+      final slide = Tween<Offset>(
+        begin: const Offset(0, 0.03),
+        end: Offset.zero,
+      ).animate(fade);
+      return FadeTransition(
+        opacity: fade,
+        child: SlideTransition(
+          position: slide,
+          child: ScaleTransition(scale: scale, child: child),
+        ),
+      );
+    },
+  );
+}
+
+Future<T?> showContainedBottomSheet<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  bool isDismissible = true,
+  String barrierLabel = 'bottom sheet',
+  Color barrierColor = const Color(0x59000000),
+  Duration transitionDuration = const Duration(milliseconds: 280),
+}) {
+  return showGeneralDialog<T>(
+    context: context,
+    barrierDismissible: isDismissible,
+    barrierLabel: barrierLabel,
+    barrierColor: Colors.transparent,
+    transitionDuration: transitionDuration,
+    pageBuilder: (dialogContext, _, __) => _ContainedPopupRouteLayout(
+      barrierColor: barrierColor,
+      barrierDismissible: isDismissible,
+      onBarrierTap: () => Navigator.of(dialogContext).maybePop(),
+      alignment: Alignment.bottomCenter,
+      child: Builder(builder: builder),
+    ),
+    transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
+      final fade =
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      final slide = Tween<Offset>(
+        begin: const Offset(0, 0.08),
+        end: Offset.zero,
+      ).animate(fade);
+      return FadeTransition(
+        opacity: fade,
+        child: SlideTransition(position: slide, child: child),
+      );
+    },
+  );
+}
+
 class PointsChip extends StatelessWidget {
   const PointsChip({super.key, required this.totalPoints});
 
@@ -159,6 +249,7 @@ void showContainedSnackBar(
   IconData icon = Icons.check_circle_rounded,
 }) {
   final media = MediaQuery.of(context).size;
+  final appWidth = thinkTwiceAppWidth(context);
   final highlight = accentColor ?? context.colors.primary;
 
   ScaffoldMessenger.of(context)
@@ -168,7 +259,7 @@ void showContainedSnackBar(
         behavior: SnackBarBehavior.floating,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        width: math.min(media.width * 0.92, 620),
+        width: math.max(0, appWidth - 24),
         margin: EdgeInsets.only(
           bottom: media.height < 760 ? 16 : 20,
         ),
@@ -1333,126 +1424,108 @@ Future<void> showCelebrationDialog(
   required IconData icon,
   required Color color,
 }) {
-  final media = MediaQuery.of(context).size;
-  return showGeneralDialog<void>(
-    context: context,
-    barrierDismissible: true,
+  return showContainedDialog<void>(
+    context,
     barrierLabel: 'celebration',
     barrierColor: Colors.black.withOpacity(0.35),
     transitionDuration: const Duration(milliseconds: 300),
-    pageBuilder: (context, _, __) => const SizedBox.shrink(),
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutBack);
-      return FadeTransition(
-        opacity: animation,
-        child: Transform.scale(
-          scale: curved.value,
-          child: SafeArea(
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  media.width < 560 ? 16 : 24,
-                  24,
-                  media.width < 560 ? 16 : 24,
-                  24,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: 420,
-                    maxHeight: media.height * 0.85,
+    builder: (dialogContext) {
+      final media = MediaQuery.of(dialogContext).size;
+      return Padding(
+        padding: thinkTwiceSurfacePadding(dialogContext).copyWith(top: 24),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: kThinkTwiceAppMaxWidth - 24,
+            maxHeight: media.height * 0.85,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFFFFFCF5).withOpacity(0.96),
+                      const Color(0xFFF4FFF9).withOpacity(0.96),
+                      const Color(0xFFE8F8F1).withOpacity(0.94),
+                    ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(22),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: color.withOpacity(0.16)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.12),
+                      blurRadius: 28,
+                      offset: const Offset(0, 18),
+                    ),
+                    BoxShadow(
+                      color: color.withOpacity(0.12),
+                      blurRadius: 26,
+                      spreadRadius: -10,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _CelebrationBurst(color: color),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 58,
+                        height: 58,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              const Color(0xFFFFFCF5).withOpacity(0.96),
-                              const Color(0xFFF4FFF9).withOpacity(0.96),
-                              const Color(0xFFE8F8F1).withOpacity(0.94),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: color.withOpacity(0.16)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.12),
-                              blurRadius: 28,
-                              offset: const Offset(0, 18),
-                            ),
-                            BoxShadow(
-                              color: color.withOpacity(0.12),
-                              blurRadius: 26,
-                              spreadRadius: -10,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
+                          color: color.withOpacity(0.14),
+                          shape: BoxShape.circle,
                         ),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _CelebrationBurst(color: color),
-                              const SizedBox(height: 8),
-                              Container(
-                                width: 58,
-                                height: 58,
-                                decoration: BoxDecoration(
-                                  color: color.withOpacity(0.14),
-                                  shape: BoxShape.circle,
-                                ),
-                                alignment: Alignment.center,
-                                child: Icon(icon, color: color, size: 28),
-                              ),
-                              const SizedBox(height: 14),
-                              Text(
-                                title,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  color: color,
-                                  letterSpacing: -0.4,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                body,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  height: 1.5,
-                                  color: context.colors.foreground.withOpacity(0.76),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              FilledButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: color,
-                                  foregroundColor: Colors.white,
-                                  minimumSize: const Size(0, 44),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 22,
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Nice',
-                                  style: TextStyle(fontWeight: FontWeight.w800),
-                                ),
-                              ),
-                            ],
-                          ),
+                        alignment: Alignment.center,
+                        child: Icon(icon, color: color, size: 28),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: color,
+                          letterSpacing: -0.4,
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Text(
+                        body,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.5,
+                          color: dialogContext.colors.foreground.withOpacity(
+                            0.76,
+                          ),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      FilledButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: color,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(0, 44),
+                          padding: const EdgeInsets.symmetric(horizontal: 22),
+                        ),
+                        child: const Text(
+                          'Nice',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -1519,6 +1592,60 @@ class _CelebrationBurstState extends State<_CelebrationBurst> with SingleTickerP
             }),
           );
         },
+      ),
+    );
+  }
+}
+
+class _ContainedPopupRouteLayout extends StatelessWidget {
+  const _ContainedPopupRouteLayout({
+    required this.child,
+    required this.barrierColor,
+    required this.barrierDismissible,
+    required this.onBarrierTap,
+    this.alignment = Alignment.center,
+  });
+
+  final Widget child;
+  final Color barrierColor;
+  final bool barrierDismissible;
+  final VoidCallback onBarrierTap;
+  final Alignment alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final appWidth = math.min(
+              constraints.maxWidth,
+              kThinkTwiceAppMaxWidth,
+            );
+            return Center(
+              child: SizedBox(
+                width: appWidth,
+                height: constraints.maxHeight,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: barrierDismissible ? onBarrierTap : null,
+                        child: ColoredBox(color: barrierColor),
+                      ),
+                    ),
+                    Align(
+                      alignment: alignment,
+                      child: child,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

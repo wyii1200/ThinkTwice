@@ -574,8 +574,8 @@ class AiAnalysisCard extends StatelessWidget {
 
     final reasons = popupReasons.isNotEmpty ? popupReasons : explanation;
 
-    showDialog(
-      context: context,
+    showContainedDialog(
+      context,
       builder: (_) => AlertDialog(
         title: const Text(
           'Why am I seeing this?',
