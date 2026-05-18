@@ -176,10 +176,9 @@ class _RadarPageState extends State<RadarPage> {
   Future<void> _openGroceryInputSheet() async {
     if (_selectedDeal == null) return;
 
-    final items = await showModalBottomSheet<List<String>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final items = await showContainedBottomSheet<List<String>>(
+      context,
+      barrierLabel: 'Grocery Input',
       builder: (ctx) => _GroceryInputSheet(
         storeName: _selectedDeal!.storeName,
         initialItems: _groceryItems,
@@ -284,25 +283,29 @@ class _RadarPageState extends State<RadarPage> {
       await _loadDeals(); // sync Firestore → UI
       if (!mounted) return;
       final switched = result['switched'] == true;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(switched
-            ? 'Switched to upvote — trust score updated.'
-            : 'Upvoted! Trust score updated.'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF41B89B),
-      ));
+      showContainedSnackBar(
+        context,
+        message: switched
+            ? 'Switched to upvote. Trust score updated.'
+            : 'Upvoted! Trust score updated.',
+        accentColor: context.colors.success,
+      );
     } on AlreadyVotedException {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('You already upvoted this deal.'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      showContainedSnackBar(
+        context,
+        message: 'You already upvoted this deal.',
+        accentColor: context.colors.warning,
+        icon: Icons.info_rounded,
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Could not upvote: $e'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      showContainedSnackBar(
+        context,
+        message: 'Could not upvote: $e',
+        accentColor: context.colors.destructive,
+        icon: Icons.error_outline_rounded,
+      );
     }
   }
 
@@ -318,38 +321,43 @@ class _RadarPageState extends State<RadarPage> {
       await _loadDeals(); // sync Firestore data back to UI
       if (!mounted) return;
       final switched = result['switched'] == true;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(switched
-            ? 'Switched to downvote — trust score updated.'
-            : 'Downvoted — trust score reduced.'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      showContainedSnackBar(
+        context,
+        message: switched
+            ? 'Switched to downvote. Trust score updated.'
+            : 'Downvoted. Trust score reduced.',
+        accentColor: context.colors.warning,
+        icon: Icons.info_rounded,
+      );
     } on AlreadyVotedException catch (e) {
       if (!mounted) return;
       // "Already downvoted" or "own deal" — show clean message
       final msg = e.message.contains('own deal')
           ? 'You cannot downvote your own deal.'
           : 'You already downvoted this deal.';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(msg),
-        behavior: SnackBarBehavior.floating,
-      ));
+      showContainedSnackBar(
+        context,
+        message: msg,
+        accentColor: context.colors.warning,
+        icon: Icons.info_rounded,
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Could not downvote: $e'),
-        behavior: SnackBarBehavior.floating,
-      ));
+      showContainedSnackBar(
+        context,
+        message: 'Could not downvote: $e',
+        accentColor: context.colors.destructive,
+        icon: Icons.error_outline_rounded,
+      );
     }
   }
 
   // ── Post deal ──────────────────────────────────────────────────────────────
 
   Future<void> _openPostDealSheet() async {
-    final result = await showModalBottomSheet<_PostDealResult>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    final result = await showContainedBottomSheet<_PostDealResult>(
+      context,
+      barrierLabel: 'Post Community Deal',
       builder: (context) => PostDealSheet(userLocation: widget.userLocation),
     );
 
@@ -385,19 +393,19 @@ class _RadarPageState extends State<RadarPage> {
           CameraUpdate.newLatLng(LatLng(apiDeal.lat, apiDeal.lng)));
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content:
-            Text('Deal posted! You earned points for helping others save.'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Color(0xFF41B89B),
-      ));
+      showContainedSnackBar(
+        context,
+        message: 'Deal posted! You earned points for helping others save.',
+        accentColor: context.colors.success,
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Failed to post deal: $e'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.red,
-      ));
+      showContainedSnackBar(
+        context,
+        message: 'Failed to post deal: $e',
+        accentColor: context.colors.destructive,
+        icon: Icons.error_outline_rounded,
+      );
     }
   }
 // 1. The Claim Logic
@@ -413,23 +421,20 @@ class _RadarPageState extends State<RadarPage> {
             await _loadMonthlySummary();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.celebration, color: Colors.white),
-              const SizedBox(width: 12),
-              Text('Awesome! Added RM ${(deal.originalPrice - deal.dealPrice).toStringAsFixed(2)} to your savings.'),
-            ],
-          ),
-          backgroundColor: const Color(0xFF41B89B),
-          behavior: SnackBarBehavior.floating,
-        ),
+      showContainedSnackBar(
+        context,
+        message:
+            'Awesome! Added RM ${(deal.originalPrice - deal.dealPrice).toStringAsFixed(2)} to your savings.',
+        accentColor: context.colors.success,
+        icon: Icons.celebration_rounded,
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to claim deal: $e')),
+      showContainedSnackBar(
+        context,
+        message: 'Failed to claim deal: $e',
+        accentColor: context.colors.destructive,
+        icon: Icons.error_outline_rounded,
       );
     }
   }
@@ -438,168 +443,367 @@ class _RadarPageState extends State<RadarPage> {
   void _showDealDetailsSheet(CommunityDeal deal) {
     final isOwner = deal.submittedBy == _userId;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            const SizedBox(height: 20),
-            
-            Text(deal.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            Text('${deal.storeName} • ${deal.category}', style: TextStyle(color: context.colors.mutedForeground)),
-            
-            const SizedBox(height: 16),
-            Container(
-              height: 180, width: double.infinity,
-              decoration: BoxDecoration(color: context.colors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
-              clipBehavior: Clip.antiAlias,
-              child: _buildDealImage(deal),
-            ),
-            
-            const SizedBox(height: 16),
-            // THE DESCRIPTION YOU WANTED
-            const Text('Description', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(deal.description.isNotEmpty ? deal.description : 'No description provided.', 
-                 style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.4)),
-            
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    showContainedBottomSheet(
+      context,
+      barrierLabel: 'Deal Details',
+      barrierColor: const Color(0x7A17332D),
+      builder: (ctx) {
+        final colors = ctx.colors;
+        final safeBottom = MediaQuery.of(ctx).padding.bottom;
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.86,
+          ),
+          child: Material(
+            color: colors.card,
+            elevation: 24,
+            shadowColor: Colors.black.withOpacity(0.18),
+            borderRadius: BorderRadius.circular(28),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Deal Price', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    Text('RM ${deal.dealPrice.toStringAsFixed(2)}', style: TextStyle(fontSize: 24, color: context.colors.success, fontWeight: FontWeight.bold)),
-                  ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                  child: Center(
+                    child: Container(
+                      width: 44,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: colors.mutedForeground.withOpacity(0.22),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text('Usually', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    Text('RM ${deal.originalPrice.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, decoration: TextDecoration.lineThrough, color: Colors.grey)),
-                  ],
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          deal.title,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${deal.storeName} • ${deal.category}',
+                          style: TextStyle(
+                            color: colors.mutedForeground,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          height: 184,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: colors.muted,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: _buildDealImage(deal),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: colors.background,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: colors.primary.withOpacity(0.10),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Description',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                deal.description.isNotEmpty
+                                    ? deal.description
+                                    : 'No description provided.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  height: 1.45,
+                                  color: colors.foreground.withOpacity(0.82),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: colors.background,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: colors.success.withOpacity(0.14),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Deal Price',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: colors.mutedForeground,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'RM ${deal.dealPrice.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        color: colors.success,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'Usually',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: colors.mutedForeground,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'RM ${deal.originalPrice.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        decoration: TextDecoration.lineThrough,
+                                        color: colors.mutedForeground,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    16,
+                    20,
+                    16 + safeBottom.clamp(0.0, 16.0),
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.card,
+                    border: Border(
+                      top: BorderSide(color: colors.primary.withOpacity(0.10)),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _claimDeal(deal);
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                          icon: const Icon(Icons.receipt_long_rounded),
+                          label: const Text(
+                            'Claim Deal & Record Savings',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (isOwner) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () async {
+                                  Navigator.pop(ctx);
+                                  final titleCtrl = TextEditingController(
+                                    text: deal.title,
+                                  );
+                                  final priceCtrl = TextEditingController(
+                                    text: deal.dealPrice.toString(),
+                                  );
+                                  final descCtrl = TextEditingController(
+                                    text: deal.description,
+                                  );
+                                  final origPriceCtrl = TextEditingController(
+                                    text: deal.originalPrice.toString(),
+                                  );
+
+                                  await showContainedDialog(
+                                    context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Edit Deal'),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          TextField(
+                                            controller: titleCtrl,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Title',
+                                            ),
+                                          ),
+                                          TextField(
+                                            controller: priceCtrl,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Price (RM)',
+                                            ),
+                                          ),
+                                          TextField(
+                                            controller: origPriceCtrl,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Original Price (RM)',
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                          ),
+                                          TextField(
+                                            controller: descCtrl,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Description',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        FilledButton(
+                                          onPressed: () async {
+                                            await RadarApiService.editDeal(
+                                              dealId: deal.id,
+                                              userId: _userId,
+                                              title: titleCtrl.text,
+                                              price: double.tryParse(
+                                                    priceCtrl.text,
+                                                  ) ??
+                                                  deal.dealPrice,
+                                              description: descCtrl.text,
+                                              originalPrice: double.tryParse(
+                                                    origPriceCtrl.text,
+                                                  ) ??
+                                                  deal.originalPrice,
+                                            );
+                                            Navigator.pop(context);
+                                            _loadDeals();
+                                            showContainedSnackBar(
+                                              context,
+                                              message: 'Deal updated!',
+                                              accentColor:
+                                                  context.colors.success,
+                                            );
+                                          },
+                                          child: const Text('Save'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: colors.primary,
+                                  side: BorderSide(
+                                    color: colors.primary.withOpacity(0.24),
+                                  ),
+                                ),
+                                icon: const Icon(Icons.edit, size: 18),
+                                label: const Text('Edit'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () async {
+                                  try {
+                                    await RadarApiService.deleteDeal(
+                                      dealId: deal.id,
+                                      userId: _userId,
+                                    );
+                                    Navigator.pop(ctx);
+                                    _loadDeals();
+                                    showContainedSnackBar(
+                                      context,
+                                      message: 'Deal deleted',
+                                      accentColor: context.colors.success,
+                                    );
+                                  } catch (e) {
+                                    showContainedSnackBar(
+                                      context,
+                                      message: 'Delete failed: $e',
+                                      accentColor:
+                                          context.colors.destructive,
+                                      icon: Icons.error_outline_rounded,
+                                    );
+                                  }
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: colors.destructive,
+                                  side: BorderSide(
+                                    color:
+                                        colors.destructive.withOpacity(0.24),
+                                  ),
+                                ),
+                                icon: const Icon(Icons.delete, size: 18),
+                                label: const Text('Delete'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-
-            // THE CLAIM BUTTON
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: FilledButton.icon(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _claimDeal(deal);
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: context.colors.success,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                icon: const Icon(Icons.receipt_long_rounded),
-                label: const Text('Claim Deal & Record Savings', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-            ),
-
-            // EDIT/DELETE IF IT'S THEIR OWN DEAL
-            if (isOwner) ...[
-              const Divider(height: 32),
-              Row(
-                children: [
-                // Inside _showDealDetailsSheet under the "Edit" button:
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        Navigator.pop(ctx); // Close details sheet
-                        
-                        // Simple edit dialog
-                        final titleCtrl = TextEditingController(text: deal.title);
-                        final priceCtrl = TextEditingController(text: deal.dealPrice.toString());
-                        final descCtrl = TextEditingController(text: deal.description);
-                        final origPriceCtrl = TextEditingController(text: deal.originalPrice.toString());
-
-                        await showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Edit Deal'),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Title')),
-                                TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: 'Price (RM)')),
-                                TextField(controller: origPriceCtrl, decoration: const InputDecoration(labelText: 'Original Price (RM)'), keyboardType: TextInputType.number),
-                                TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description')),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                              FilledButton(
-                                onPressed: () async {
-                                  await RadarApiService.editDeal(
-                                    dealId: deal.id,
-                                    userId: _userId,
-                                    title: titleCtrl.text,
-                                    price: double.tryParse(priceCtrl.text) ?? deal.dealPrice,
-                                    description: descCtrl.text,
-                                    originalPrice: double.tryParse(origPriceCtrl.text) ?? deal.originalPrice,
-                                  );
-                                  Navigator.pop(context);
-                                  _loadDeals(); // Refresh the screen!
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deal updated!')));
-                                },
-                                child: const Text('Save'),
-                              )
-                            ],
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.edit, size: 18),
-                      label: const Text('Edit'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        try {
-                          await RadarApiService.deleteDeal(dealId: deal.id, userId: _userId);
-                          Navigator.pop(ctx);
-                          _loadDeals(); // Refresh list
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deal deleted')));
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
-                        }
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: BorderSide(color: Colors.red.shade200),
-                      ),
-                      icon: const Icon(Icons.delete, size: 18),
-                      label: const Text('Delete'),
-                    ),
-                  ),
-                ],
-              )
-            ]
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -636,8 +840,11 @@ class _RadarPageState extends State<RadarPage> {
       return;
     }
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Could not open Google Maps.')),
+    showContainedSnackBar(
+      context,
+      message: 'Could not open Google Maps.',
+      accentColor: context.colors.warning,
+      icon: Icons.info_rounded,
     );
   }
 
@@ -1742,125 +1949,155 @@ class _RadarPageState extends State<RadarPage> {
   void _showSavingsRecords(BuildContext context) {
     final summary = _monthlySummary;
 
-
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                    color: const Color(0xFFE3ECE6),
-                    borderRadius: BorderRadius.circular(999)),
-              ),
+    showContainedBottomSheet(
+      context,
+      barrierLabel: 'Savings Records',
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.86,
+          ),
+          child: Material(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(28),
             ),
-            const SizedBox(height: 16),
-            const Text('Savings this month',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            Text(
-              summary != null
-                  ? '${summary.month} · ${summary.recordCount} records'
-                  : 'Loading...',
-              style: TextStyle(fontSize: 12, color: Theme.of(ctx).hintColor),
-            ),
-            const SizedBox(height: 20),
-
-            // Total
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF41B89B), Color(0xFF2E9B82)],
-                ),
-                borderRadius: BorderRadius.circular(18),
+            clipBehavior: Clip.antiAlias,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                14,
+                20,
+                24 + MediaQuery.of(ctx).padding.bottom,
               ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Total saved',
-                      style: TextStyle(fontSize: 12, color: Colors.white70)),
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE3ECE6),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Savings this month',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                  ),
                   const SizedBox(height: 4),
                   Text(
-                    'RM ${_fmt(summary?.totalSavedRM ?? 0)}',
-                    style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white),
+                    summary != null
+                        ? '${summary.month} · ${summary.recordCount} records'
+                        : 'Loading...',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(ctx).hintColor,
+                    ),
                   ),
+                  const SizedBox(height: 20),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF41B89B), Color(0xFF2E9B82)],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Total saved',
+                          style: TextStyle(fontSize: 12, color: Colors.white70),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'RM ${_fmt(summary?.totalSavedRM ?? 0)}',
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (summary != null && summary.records.isNotEmpty) ...[
+                    const Text(
+                      'Recent History',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 10),
+                    ...summary.records.map((record) {
+                      final isDeal = record['type'] == 'deal_used';
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF41B89B).withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              isDeal
+                                  ? Icons.local_offer_rounded
+                                  : Icons.route_rounded,
+                              color: const Color(0xFF41B89B),
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              record['dealTitle'] ??
+                                  (isDeal ? 'Community Deal' : 'Smart Route'),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '+ RM ${_fmt((record['amountSaved'] as num).toDouble())}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF41B89B),
+                            ),
+                          ),
+                        ]),
+                      );
+                    }),
+                  ] else
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          summary == null
+                              ? 'Loading records...'
+                              : 'No savings recorded yet. Start using deals and routes!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).hintColor,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
-
-            const SizedBox(height: 16),
-
-            // Breakdown / Recent History
-            if (summary != null && summary.records.isNotEmpty) ...[
-              const Text('Recent History', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 10),
-              ...summary.records.map((record) {
-                // Change icon based on whether it was a deal or a route
-                final isDeal = record['type'] == 'deal_used';
-                
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(children: [
-                    Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF41B89B).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        isDeal ? Icons.local_offer_rounded : Icons.route_rounded, 
-                        color: const Color(0xFF41B89B), 
-                        size: 18
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        record['dealTitle'] ?? (isDeal ? 'Community Deal' : 'Smart Route'), 
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)
-                      ),
-                    ),
-                    Text(
-                      '+ RM ${_fmt((record['amountSaved'] as num).toDouble())}', 
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF41B89B))
-                    ),
-                  ]),
-                );
-              }),
-            ] else
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    summary == null
-                        ? 'Loading records...'
-                        : 'No savings recorded yet. Start using deals and routes!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13, color: Theme.of(context).hintColor),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 8),
-          ],
+          ),
         ),
       ),
     );
@@ -1996,125 +2233,179 @@ class _GroceryInputSheetState extends State<_GroceryInputSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-          20, 14, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 44,
-              height: 4,
-              decoration: BoxDecoration(
-                  color: const Color(0xFFE3ECE6),
-                  borderRadius: BorderRadius.circular(999)),
-            ),
+    final safeBottom = MediaQuery.of(context).padding.bottom;
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SafeArea(
+        top: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
           ),
-          const SizedBox(height: 14),
-          const Text('What do you need to buy?',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text("We'll find the cheapest route across nearby stores.",
-              style:
-                  TextStyle(fontSize: 12, color: Theme.of(context).hintColor)),
-          const SizedBox(height: 16),
-
-          // Quick-add chips
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: ['Rice', 'Eggs', 'Bread', 'Milk', 'Vegetables']
-                .map((item) => ActionChip(
-                      label: Text(item, style: const TextStyle(fontSize: 12)),
-                      onPressed: () =>
-                          setState(() => _items.add(item.toLowerCase())),
-                    ))
-                .toList(),
-          ),
-
-          const SizedBox(height: 12),
-
-          Row(children: [
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                decoration: InputDecoration(
-                  hintText: 'Add item (e.g. cooking oil)',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Color(0xFFE3ECE6)),
+          child: Material(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 44,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE3ECE6),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'What do you need to buy?',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "We'll find the cheapest route across nearby stores.",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).hintColor,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: ['Rice', 'Eggs', 'Bread', 'Milk', 'Vegetables']
+                              .map((item) => ActionChip(
+                                    label: Text(
+                                      item,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                    onPressed: () => setState(
+                                      () => _items.add(item.toLowerCase()),
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _controller,
+                              decoration: InputDecoration(
+                                hintText: 'Add item (e.g. cooking oil)',
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE3ECE6),
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE3ECE6),
+                                  ),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                              ),
+                              onSubmitted: (_) => _addItem(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            onPressed: _addItem,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFF41B89B),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              minimumSize: const Size(48, 48),
+                            ),
+                            child: const Icon(Icons.add_rounded),
+                          ),
+                        ]),
+                        const SizedBox(height: 12),
+                        if (_items.isNotEmpty) ...[
+                          const Text(
+                            'Your list:',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: _items
+                                .map((item) => Chip(
+                                      label: Text(
+                                        item,
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                      deleteIcon: const Icon(
+                                        Icons.close,
+                                        size: 14,
+                                      ),
+                                      onDeleted: () =>
+                                          setState(() => _items.remove(item)),
+                                    ))
+                                .toList(),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Color(0xFFE3ECE6)),
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 ),
-                onSubmitted: (_) => _addItem(),
-              ),
-            ),
-            const SizedBox(width: 8),
-            FilledButton(
-              onPressed: _addItem,
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF41B89B),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-                minimumSize: const Size(48, 48),
-              ),
-              child: const Icon(Icons.add_rounded),
-            ),
-          ]),
-
-          const SizedBox(height: 12),
-
-          if (_items.isNotEmpty) ...[
-            const Text('Your list:',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: _items
-                  .map((item) => Chip(
-                        label: Text(item, style: const TextStyle(fontSize: 12)),
-                        deleteIcon: const Icon(Icons.close, size: 14),
-                        onDeleted: () => setState(() => _items.remove(item)),
-                      ))
-                  .toList(),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _items.isEmpty
-                  ? null
-                  : () => Navigator.of(context).pop(_items),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF41B89B),
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-              ),
-              child: Text(
-                _items.isEmpty
-                    ? 'Add at least one item'
-                    : 'Generate cheapest route (${_items.length} items)',
-              ),
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + safeBottom),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    border: Border(
+                      top: BorderSide(
+                        color: Theme.of(context).dividerColor.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+                  child: FilledButton(
+                    onPressed:
+                        _items.isEmpty ? null : () => Navigator.of(context).pop(_items),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF41B89B),
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      _items.isEmpty
+                          ? 'Add at least one item'
+                          : 'Generate cheapest route (${_items.length} items)',
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -2194,8 +2485,12 @@ class _PostDealSheetState extends State<PostDealSheet> {
     if (_titleController.text.trim().isEmpty ||
         _storeController.text.trim().isEmpty ||
         price <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Please fill in title, store name, and price.')));
+      showContainedSnackBar(
+        context,
+        message: 'Please fill in title, store name, and price.',
+        accentColor: context.colors.warning,
+        icon: Icons.info_rounded,
+      );
       return;
     }
     setState(() => _submitting = true);
@@ -2216,20 +2511,27 @@ class _PostDealSheetState extends State<PostDealSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.92,
-      minChildSize: 0.65,
-      maxChildSize: 0.96,
-      builder: (context, controller) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-          decoration: BoxDecoration(
+    final safeBottom = MediaQuery.of(context).padding.bottom;
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SafeArea(
+        top: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.90,
+          ),
+          child: Material(
             color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: ListView(
-            controller: controller,
-            children: [
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+                    children: [
               Center(
                 child: Container(
                   width: 44,
@@ -2334,27 +2636,46 @@ const SizedBox(height: 10),
                       height: 140, fit: BoxFit.cover),
                 ),
               ],
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _submitting ? null : _submit,
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF41B89B),
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
+                    ],
+                  ),
                 ),
-                child: _submitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
-                    : const Text('Submit deal'),
-              ),
-            ],
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + safeBottom),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    border: Border(
+                      top: BorderSide(
+                        color: Theme.of(context).dividerColor.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+                  child: FilledButton(
+                    onPressed: _submitting ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF41B89B),
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: _submitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text('Submit deal'),
+                  ),
+                ),
+              ],
+            ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 

@@ -1633,12 +1633,20 @@ class _ContainedPopupRouteLayout extends StatelessWidget {
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTap: barrierDismissible ? onBarrierTap : null,
-                        child: ColoredBox(color: barrierColor),
+                        child: ClipRect(
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                            child: ColoredBox(color: barrierColor),
+                          ),
+                        ),
                       ),
                     ),
-                    Align(
-                      alignment: alignment,
-                      child: child,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Align(
+                        alignment: alignment,
+                        child: child,
+                      ),
                     ),
                   ],
                 ),
