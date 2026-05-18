@@ -97,6 +97,13 @@ class AiNudge {
   }
 }
 
+class UserNotFoundException implements Exception {
+  final String message;
+  UserNotFoundException(this.message);
+  @override
+  String toString() => 'UserNotFoundException: $message';
+}
+
 class BackendApiService {
   static final _client = http.Client();
 
@@ -181,6 +188,9 @@ class BackendApiService {
     final uri = Uri.parse('$_backendUrl/users/$userId');
     final res = await _client.get(uri).timeout(const Duration(seconds: 10));
     final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode == 404 || body['error'] == 'User not found') {
+      throw UserNotFoundException(body['error'] ?? 'User not found');
+    }
     if (body['success'] != true) {
       throw Exception(body['error'] ?? 'Failed to fetch profile');
     }

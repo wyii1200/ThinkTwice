@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../core/app_theme.dart';
 import '../core/models.dart';
@@ -24,6 +24,8 @@ class ProfilePage extends StatelessWidget {
     required this.onNotificationsChanged,
     required this.onAutoSaveChanged,
     required this.onSignOut,
+    required this.resilienceScore,
+    required this.smartDecisionScore,
   });
 
   final double budget;
@@ -40,16 +42,12 @@ class ProfilePage extends StatelessWidget {
   final ValueChanged<bool> onNotificationsChanged;
   final ValueChanged<bool> onAutoSaveChanged;
   final VoidCallback onSignOut;
+  final int resilienceScore;
+  final int smartDecisionScore;
 
   @override
   Widget build(BuildContext context) {
     final aiResult = AiState.latestAiResult;
-
-    final resilienceScore =
-        aiResult != null ? AiService.extractResilienceScore(aiResult) : 50;
-
-    final smartScore =
-        aiResult != null ? AiService.extractSmartDecisionScore(aiResult) : 50;
 
     final riskLevel =
         aiResult != null ? AiService.extractRiskLevel(aiResult) : 'low';
@@ -58,7 +56,7 @@ class ProfilePage extends StatelessWidget {
         ? AiService.extractCoachingMessage(aiResult)
         : 'Run Live AI Analysis to unlock your latest money habit update.';
 
-    final liveTotalPoints = totalPoints + smartScore;
+    final liveTotalPoints = totalPoints;
     final level = 1 + (liveTotalPoints ~/ 300);
     final rarity = _profileRarityLabel(accessory: accessory, effect: effect);
 
@@ -264,7 +262,7 @@ class ProfilePage extends StatelessWidget {
                       child: progressStat(
                         context,
                         'Smart Spending',
-                        '$smartScore',
+                        '$smartDecisionScore',
                       ),
                     ),
                     const SizedBox(width: 10),

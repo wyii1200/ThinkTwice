@@ -85,6 +85,7 @@ class _AppRootState extends State<AppRoot> {
 
   // Live nudge history for insights page
   List<Map<String, dynamic>> _nudgeHistory = [];
+  double _lastSaveAmount = 8.0;
 
   CatAvatarProfile _avatarProfile = const CatAvatarProfile(
     breed: 'siamese',
@@ -131,6 +132,7 @@ class _AppRootState extends State<AppRoot> {
         _userName = existing.displayName?.isNotEmpty == true
             ? existing.displayName!
             : existing.email?.split('@')[0] ?? 'Friend';
+        _isAuthed = true;
       });
       unawaited(_refreshFromBackend());
     }
@@ -174,7 +176,8 @@ class _AppRootState extends State<AppRoot> {
   }
 
   // Fetch live data from backend after login
-  Future<bool> _refreshFromBackend() async {
+  // Returns true if user exists and is loaded, false if user does not exist, null on error
+  Future<bool?> _refreshFromBackend() async {
     if (_userId.isEmpty) return false;
     try {
       final profile = await BackendApiService.getUserProfile(_userId);
@@ -203,6 +206,8 @@ class _AppRootState extends State<AppRoot> {
         _resilienceScore = profile.resilienceScore;
         _smartDecisionScore = profile.smartDecisionScore;
         _savingsPocket = profile.savingsPocket;
+        _budget = profile.dailyBudget * 30;
+        _goal = profile.savingsGoal;
         if (profile.currentBalance > 0) _balance = profile.currentBalance;
         if (profile.displayName.isNotEmpty) _userName = profile.displayName;
         if (liveTransactions.isNotEmpty) {
@@ -239,9 +244,11 @@ class _AppRootState extends State<AppRoot> {
       });
       unawaited(_persistAppState());
       return true;
+    } on UserNotFoundException {
+      return false;
     } catch (e) {
       debugPrint('Backend refresh failed: $e');
-      return false;
+      return null;
     }
   }
 
@@ -315,12 +322,20 @@ class _AppRootState extends State<AppRoot> {
     final exists = await _refreshFromBackend();
 
     if (!mounted) return;
-    if (!exists) {
+    if (exists == false) {
       // New user -> show onboarding
       setState(() {
         _isAuthed = false;
         _onboardingStep = 1;
       });
+    } else if (exists == null) {
+      // Network/Server error! Do not show onboarding, show error message
+      showContainedSnackBar(
+        context,
+        message: 'Backend refresh failed due to a server or network error. Please try again.',
+        accentColor: context.colors.warning,
+        icon: Icons.error_outline_rounded,
+      );
     }
   }
 
@@ -573,20 +588,20 @@ class _AppRootState extends State<AppRoot> {
     try {
       final result = await BackendApiService.approveAutoSave(
         userId: _userId,
-        amount: 8,
+        amount: _lastSaveAmount,
       );
 
       setState(() {
         _resilienceScore = (_resilienceScore + (result['resilienceDelta'] as int? ?? 5)).clamp(0, 100);
         _smartDecisionScore = (_smartDecisionScore + 10).clamp(0, 100);
-        _savingsPocket += 8;
+        _savingsPocket += _lastSaveAmount;
         _currentStreak += 1;
         _avatarProfile = _avatarProfile.copyWith(expression: 'happy');
         _transactions = [
-          const TransactionRecord(
+          TransactionRecord(
             id: 'tx-auto-save',
             merchant: 'Pocket Save',
-            amount: 8,
+            amount: _lastSaveAmount,
             icon: Icons.savings_rounded,
             timestampLabel: 'Just now',
             category: 'Savings',
@@ -599,13 +614,13 @@ class _AppRootState extends State<AppRoot> {
       if (!context.mounted) return;
       showContainedSnackBar(
         context,
-        message: 'RM8 moved to savings. Your dashboard has been updated.',
+        message: 'RM${_lastSaveAmount.toStringAsFixed(0)} moved to savings. Your dashboard has been updated.',
         accentColor: context.colors.success,
       );
       showCelebrationDialog(
         context,
         title: 'Money tucked away',
-        body: 'RM8 is saved and your Smart Spending Streak just got stronger.',
+        body: 'RM${_lastSaveAmount.toStringAsFixed(0)} is saved and your Smart Spending Streak just got stronger.',
         icon: Icons.savings_rounded,
         color: context.colors.success,
       );
@@ -616,10 +631,10 @@ class _AppRootState extends State<AppRoot> {
         _currentStreak += 1;
         _avatarProfile = _avatarProfile.copyWith(expression: 'happy');
         _transactions = [
-          const TransactionRecord(
+          TransactionRecord(
             id: 'tx-auto-save',
             merchant: 'Pocket Save',
-            amount: 8,
+            amount: _lastSaveAmount,
             icon: Icons.savings_rounded,
             timestampLabel: 'Just now',
             category: 'Savings',
@@ -632,7 +647,7 @@ class _AppRootState extends State<AppRoot> {
       if (!context.mounted) return;
       showContainedSnackBar(
         context,
-        message: 'RM8 moved to savings. Your dashboard has been updated.',
+        message: 'RM${_lastSaveAmount.toStringAsFixed(0)} moved to savings. Your dashboard has been updated.',
         accentColor: context.colors.success,
       );
     }
@@ -798,6 +813,7 @@ class _AppRootState extends State<AppRoot> {
       _aiInsights = nudge.aiExplanation;
       _triggerSmartRadar = nudge.triggerSmartRadar;
       _radarCategory = nudge.radarCategory;
+      _lastSaveAmount = nudge.saveAmount > 0 ? nudge.saveAmount : 8.0;
 
       // Update balance immediately from backend response
       if (newBalance != null && newBalance >= 0) _balance = newBalance;
@@ -959,6 +975,8 @@ class _AppRootState extends State<AppRoot> {
             nudgeHistory: _nudgeHistory,
             savingsPocket: _savingsPocket,
             transactions: _transactions,
+            resilienceScore: _resilienceScore,
+            smartDecisionScore: _smartDecisionScore,
           ),
           ProfilePage(
             budget: _budget,
@@ -975,6 +993,8 @@ class _AppRootState extends State<AppRoot> {
             onNotificationsChanged: (value) => setState(() => _notificationsEnabled = value),
             onAutoSaveChanged: (value) => setState(() => _autoSaveEnabled = value),
             onSignOut: _resetSessionState,
+            resilienceScore: _resilienceScore,
+            smartDecisionScore: _smartDecisionScore,
           ),
         ],
       ),
