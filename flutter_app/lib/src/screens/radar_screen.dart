@@ -681,8 +681,9 @@ class _RadarPageState extends State<RadarPage> {
       title: d.title,
       storeName: d.storeName,
       category: d.category,
-      description: d.description ?? '${d.category} deal at ${d.storeName}',
-
+      description: (d.description != null && d.description!.isNotEmpty) 
+          ? d.description! 
+          : '${d.category} deal at ${d.storeName}',
       expiryDate: d.expiresAt != null
           ? DateTime.tryParse(d.expiresAt!) ??
               DateTime.now().add(const Duration(days: 7))
@@ -2132,6 +2133,7 @@ class _PostDealResult {
   final double lng;
   final String address;
   final Uint8List? imageBytes;
+  final String description;
 
   const _PostDealResult({
     required this.title,
@@ -2142,6 +2144,7 @@ class _PostDealResult {
     required this.lat,
     required this.lng,
     required this.address,
+    required this.description,
     this.imageBytes,
   });
 }
@@ -2207,6 +2210,7 @@ class _PostDealSheetState extends State<PostDealSheet> {
       originalPrice: originalPrice,
       lat: widget.userLocation.latitude + 0.0025,
       lng: widget.userLocation.longitude + 0.0025,
+      description: _descriptionController.text.trim(),
       address: _addressController.text.trim().isEmpty
           ? 'Near current location'
           : _addressController.text.trim(),

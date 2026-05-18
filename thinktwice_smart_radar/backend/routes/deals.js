@@ -105,6 +105,7 @@ router.post("/", async (req, res) => {
       hidden: false,
       createdAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
+      description: description || "",
     };
 
     await dealRef.set(dealData);

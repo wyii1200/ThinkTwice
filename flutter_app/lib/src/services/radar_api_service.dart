@@ -292,6 +292,7 @@ class RadarApiService {
     required String address,
     required String userId,
     required double originalPrice,
+    required String description,
     Uint8List? imageBytes,
   }) async {
     final body = <String, dynamic>{
@@ -303,6 +304,7 @@ class RadarApiService {
       'lat': lat,
       'lng': lng,
       'address': address,
+      'description': description,
       'submittedBy': userId,
       if (imageBytes != null) 'imageBase64': base64Encode(imageBytes),
     };
