@@ -19,6 +19,8 @@ class InsightsPage extends StatelessWidget {
     required this.nudgeHistory,
     required this.savingsPocket,
     required this.transactions,
+    required this.resilienceScore,
+    required this.smartDecisionScore,
   });
 
   final BudgetPlan plan;
@@ -27,6 +29,8 @@ class InsightsPage extends StatelessWidget {
   final List<Map<String, dynamic>> nudgeHistory;
   final double savingsPocket;
   final List<TransactionRecord> transactions;
+  final int resilienceScore;
+  final int smartDecisionScore;
 
   Color _categoryColor(BuildContext context, String category) {
     final normalized = category.toLowerCase();
@@ -66,8 +70,6 @@ class InsightsPage extends StatelessWidget {
     final dashboardInsight = aiResult != null
         ? AiService.extractDashboardInsight(aiResult)
         : plan.recommendations.first;
-    final resilienceScore =
-        aiResult != null ? AiService.extractResilienceScore(aiResult) : 50;
     final smartTipIndex =
         (riskScore.round() + velocityScore.round() + transactions.length) %
             smartTips.length;
