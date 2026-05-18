@@ -38,8 +38,6 @@ router.get('/:userId', async (req, res) => {
 
     const pointsSnap = await db.collection('pointsLog')
       .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
-      .limit(5)
       .get();
 
     const recentPointsEvents = pointsSnap.docs
@@ -67,7 +65,13 @@ router.get('/:userId', async (req, res) => {
           createdAt: d.createdAt,
         };
       })
-      .filter(Boolean);
+      .filter(Boolean)
+      .sort((a, b) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return timeB - timeA;
+      })
+      .slice(0, 5);
 
     const level = calculateLevel(user.totalPoints || 0);
     const badges = evaluateBadges(user);

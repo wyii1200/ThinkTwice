@@ -270,6 +270,7 @@ def analyze_risk(user: UserProfile):
         "spendingVelocityAnalysis": velocity_result,
         "scoreAnalysis": score_result,
         "intervention": orchestrator_result,
+        "budgetProfile": user.budget_profile.model_dump() if getattr(user, "budget_profile", None) else {},
     }
 
     llm_result = generate_llm_coaching_message(llm_base_response)

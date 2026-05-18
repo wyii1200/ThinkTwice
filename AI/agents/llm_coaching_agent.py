@@ -163,6 +163,21 @@ def generate_llm_coaching_message(ai_result: dict) -> dict:
             False
         )
 
+        budget_profile = ai_result.get("budgetProfile", {})
+        budget_context = ""
+        if budget_profile:
+            adaptability = budget_profile.get("adaptability_score", 50)
+            savings_rate = budget_profile.get("savings_rate", "Unknown")
+            
+            if adaptability < 40:
+                protection_level = "STRICT: User requested strict protection over their savings goal. Be firm but polite."
+            elif adaptability > 70:
+                protection_level = "FLEXIBLE: User is comfortable with flexible spending. Focus on gentle guidance."
+            else:
+                protection_level = "MODERATE: User prefers balanced guidance."
+                
+            budget_context = f"\nUser Adaptability Score: {adaptability} ({protection_level})\nTarget Savings Rate: {savings_rate}"
+
         prompt = f"""
 You are ThinkTwice, a warm and supportive AI financial behaviour coach for Malaysian university students and young adults.
 
@@ -179,7 +194,7 @@ Prediction: {prediction}
 Suggested savings amount: RM{suggested_amount}
 Final action: {final_action}
 Smart Radar triggered: {trigger_smart_radar}
-User consent required: {requires_consent}
+User consent required: {requires_consent}{budget_context}
 
 Return ONLY valid JSON in this EXACT format:
 

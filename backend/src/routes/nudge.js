@@ -66,14 +66,19 @@ router.get('/history/:userId', async (req, res) => {
     const snapshot = await db
       .collection('nudgeLogs')
       .where('userId', '==', userId)
-      .orderBy('timestamp', 'desc')
-      .limit(20)
       .get();
 
-    const nudges = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const nudges = snapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .sort((a, b) => {
+        const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+        const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+        return timeB - timeA;
+      })
+      .slice(0, 20);
 
     res.json({
       success: true,

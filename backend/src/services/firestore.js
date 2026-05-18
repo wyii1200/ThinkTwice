@@ -26,14 +26,16 @@ async function getTransactionsByUser(userId, limit = 20) {
   const snapshot = await db
     .collection('transactions')
     .where('userId', '==', userId)
-    .orderBy('timestamp', 'desc')
-    .limit(limit)
     .get();
 
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+  return snapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .sort((a, b) => {
+      const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : 0;
+      const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : 0;
+      return tB - tA;
+    })
+    .slice(0, limit);
 }
 
 async function getUserProfile(userId) {
@@ -130,14 +132,16 @@ async function getNudgeLogs(userId, limit = 5) {
   const snapshot = await db
     .collection('nudgeLogs')
     .where('userId', '==', userId)
-    .orderBy('createdAt', 'desc')
-    .limit(limit)
     .get();
 
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+  return snapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .sort((a, b) => {
+      const tA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+      const tB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+      return tB - tA;
+    })
+    .slice(0, limit);
 }
 
 async function deductBalance(userId, amount) {

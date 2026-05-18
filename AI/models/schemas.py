@@ -58,6 +58,16 @@ class Transaction(BaseModel):
     location: Optional[str] = None
 
 
+class BudgetProfile(BaseModel):
+    weekly_food_budget: float
+    weekly_spent_food: float
+    daily_safe_limit: float
+    preferred_savings_amount: float
+    adaptability_score: Optional[int] = None
+    savings_rate: Optional[float] = None
+    flexible_spend: Optional[float] = None
+    category_percents: Optional[Dict[str, float]] = None
+
 class UserProfile(BaseModel):
     user_id: str
     daily_budget: float
@@ -67,3 +77,4 @@ class UserProfile(BaseModel):
     transactions: List[Transaction]
 
     user_action: Optional[str] = None
+    budget_profile: Optional[BudgetProfile] = None

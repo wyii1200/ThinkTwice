@@ -36,6 +36,10 @@ async function analyzeTransaction(payload) {
       weekly_spent_food: userProfile?.weeklySpentFood || 68,
       daily_safe_limit: userProfile?.dailySafeLimit || 25,
       preferred_savings_amount: userProfile?.preferredSavingsAmount || 8,
+      adaptability_score: userProfile?.adaptabilityScore,
+      savings_rate: userProfile?.savingsRate,
+      flexible_spend: userProfile?.flexibleSpend,
+      category_percents: userProfile?.categoryPercents,
     },
   };
 
