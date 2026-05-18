@@ -5,6 +5,7 @@ import '../core/models.dart';
 import '../widgets/shared.dart';
 import '../services/ai_service.dart';
 import '../services/ai_state.dart';
+import '../services/backend_api_service.dart';
 
 class ChallengesPage extends StatefulWidget {
   const ChallengesPage({
@@ -19,6 +20,7 @@ class ChallengesPage extends StatefulWidget {
     required this.onClaimReward,
     required this.onRedeemItem,
     required this.onCustomizeAvatar,
+    required this.leaderboard,
   });
 
   final int totalPoints;
@@ -31,6 +33,7 @@ class ChallengesPage extends StatefulWidget {
   final ValueChanged<String> onClaimReward;
   final ValueChanged<String> onRedeemItem;
   final VoidCallback onCustomizeAvatar;
+  final List<LeaderboardItem> leaderboard;
 
   @override
   State<ChallengesPage> createState() => _ChallengesPageState();
@@ -75,19 +78,28 @@ class _ChallengesPageState extends State<ChallengesPage> {
     final aiExplanations =
         aiResult != null ? AiService.extractInsightTexts(aiResult) : <String>[];
 
-    final squad = [
-      (1, 'Mira', 1240, 'british_shorthair', 'glasses', 'glow_outline'),
-      (
-        2,
-        'You',
-        widget.totalPoints + smartDecisionScore,
-        widget.breed,
-        widget.accessory,
-        widget.effect
-      ),
-      (3, 'Hafiz', 980, 'orange_tabby', 'headphones', 'sparkle_aura'),
-      (4, 'Lina', 760, 'calico', 'flower', 'floating_hearts'),
-    ];
+    final squad = widget.leaderboard.isNotEmpty
+        ? widget.leaderboard.map((item) => (
+            item.rank,
+            item.isCurrentUser ? 'You' : item.displayName,
+            item.totalPoints,
+            item.breed,
+            item.accessory,
+            item.effect
+          )).toList()
+        : [
+            (1, 'Mira', 1240, 'british_shorthair', 'glasses', 'glow_outline'),
+            (
+              2,
+              'You',
+              widget.totalPoints + smartDecisionScore,
+              widget.breed,
+              widget.accessory,
+              widget.effect
+            ),
+            (3, 'Hafiz', 980, 'orange_tabby', 'headphones', 'sparkle_aura'),
+            (4, 'Lina', 760, 'calico', 'flower', 'floating_hearts'),
+          ];
     final streakQuest = widget.quests.firstWhere(
       (quest) => quest.id == 'quest-savings-streak',
       orElse: () => const QuestProgress(

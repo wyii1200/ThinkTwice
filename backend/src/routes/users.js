@@ -21,6 +21,11 @@ router.post('/setup', async (req, res) => {
       expression,
       accessory,
       effect,
+      categoryPercents,
+      yesAnswers,
+      adaptabilityScore,
+      savingsRate,
+      flexibleSpend,
     } = req.body;
 
     if (!userId) {
@@ -39,10 +44,18 @@ router.post('/setup', async (req, res) => {
       dailyBudget: Number(dailyBudget || 25),
       savingsGoal: Number(savingsGoal || 200),
 
-      weeklyFoodBudget: 80,
+      weeklyFoodBudget: categoryPercents && categoryPercents['Food & drinks']
+        ? Number(((flexibleSpend || (dailyBudget * 30)) * (categoryPercents['Food & drinks'] / 100) / 4.3).toFixed(2))
+        : 80,
       weeklySpentFood: 68,
-      dailySafeLimit: 25,
-      preferredSavingsAmount: 8,
+      dailySafeLimit: Number(dailyBudget || 25),
+      preferredSavingsAmount: Number(flexibleSpend && savingsRate ? ((flexibleSpend * savingsRate) / 30).toFixed(2) : 8),
+
+      categoryPercents: categoryPercents || { 'Food & drinks': 30, 'Transport': 15, 'Bills': 20, 'Entertainment': 10, 'Shopping': 25 },
+      yesAnswers: yesAnswers || [],
+      adaptabilityScore: Number(adaptabilityScore || 72),
+      savingsRate: Number(savingsRate || 0.2),
+      flexibleSpend: Number(flexibleSpend || 1000),
 
       fcmToken: fcmToken || null,
 
@@ -50,9 +63,9 @@ router.post('/setup', async (req, res) => {
       savingsPocket: 0,
       moneySavedThisWeek: 0,
 
-      resilienceScore: 50,
-      moneyHabitScore: 50,
-      smartDecisionScore: 50,
+      resilienceScore: Number(adaptabilityScore || 72),
+      moneyHabitScore: Number(adaptabilityScore || 72),
+      smartDecisionScore: Number(adaptabilityScore || 72),
 
       streak: 0,
       smartSpendingStreak: 0,

@@ -31,37 +31,43 @@ router.get('/:userId', async (req, res) => {
       smartSpendingStreak: doc.data().smartSpendingStreak || doc.data().streak || 0,
       avatarId: doc.data().avatarId || 'default',
       isCurrentUser: doc.id === userId,
+      breed: doc.data().breed || 'siamese',
+      accessory: doc.data().accessory || 'none',
+      effect: doc.data().effect || 'none',
     }));
 
-    const nudgeSnap = await db.collection('nudgeLogs')
+    const pointsSnap = await db.collection('pointsLog')
       .where('userId', '==', userId)
       .orderBy('createdAt', 'desc')
-      .limit(10)
+      .limit(5)
       .get();
 
-    const recentPointsEvents = nudgeSnap.docs
+    const recentPointsEvents = pointsSnap.docs
       .map((doc) => {
         const d = doc.data();
-        if (d.status === 'accepted') {
-          return {
-            label: 'Nice save 👏',
-            points: 10,
-            type: 'save',
-            createdAt: d.createdAt,
-          };
+        let icon = 'star_rounded';
+        let label = d.reason || 'Earned points';
+        
+        if (label.includes('quest_claimed')) {
+          icon = 'emoji_events_rounded';
+          label = 'Quest completed';
+        } else if (label.includes('redeem_items')) {
+          icon = 'shopping_bag_outlined';
+          label = 'Redeemed shop items';
+        } else if (label.toLowerCase().includes('deal') || label.toLowerCase().includes('verified')) {
+          icon = 'map_rounded';
+        } else if (label.toLowerCase().includes('save') || label.toLowerCase().includes('streak')) {
+          icon = 'savings_outlined';
         }
-        if (d.status === 'ignored') {
-          return {
-            label: 'Purchase continued',
-            points: -2,
-            type: 'continue',
-            createdAt: d.createdAt,
-          };
-        }
-        return null;
+
+        return {
+          label: label,
+          points: d.points,
+          icon: icon,
+          createdAt: d.createdAt,
+        };
       })
-      .filter(Boolean)
-      .slice(0, 5);
+      .filter(Boolean);
 
     const level = calculateLevel(user.totalPoints || 0);
     const badges = evaluateBadges(user);
