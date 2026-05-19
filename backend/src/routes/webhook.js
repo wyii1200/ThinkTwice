@@ -8,6 +8,7 @@ const {
   getUserProfile,
   logNudge,
   deductBalance,
+  updateResilienceScore,
 } = require('../services/firestore');
 
 const {
@@ -136,6 +137,14 @@ router.post('/transaction', async (req, res) => {
       });
 
       newBalance = await deductBalance(userId, amount);
+
+      const calculatedScore = aiResult.moneyHabitScore;
+      const currentScore = userProfile?.moneyHabitScore ?? userProfile?.resilienceScore ?? 72;
+      const scoreDelta = calculatedScore - currentScore;
+
+      if (scoreDelta !== 0) {
+        await updateResilienceScore(userId, scoreDelta);
+      }
     }
 
     return res.json({

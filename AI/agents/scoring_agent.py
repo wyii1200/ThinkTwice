@@ -6,8 +6,14 @@ def calculate_scores(
     risk_level
 ):
 
-    money_habit_score = 75
-    smart_decision_score = 75
+    current_score = getattr(user, "money_habit_score", None)
+    if current_score is None:
+        current_score = 75
+        if getattr(user, "budget_profile", None) and getattr(user.budget_profile, "adaptability_score", None) is not None:
+            current_score = user.budget_profile.adaptability_score
+
+    money_habit_score = current_score
+    smart_decision_score = current_score
 
     spending_ratio = safe_divide(
         user.current_daily_spending,

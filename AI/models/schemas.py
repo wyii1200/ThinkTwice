@@ -73,6 +73,7 @@ class UserProfile(BaseModel):
     daily_budget: float
     current_daily_spending: float
     savings_goal: float
+    money_habit_score: Optional[int] = None
 
     transactions: List[Transaction]
 
