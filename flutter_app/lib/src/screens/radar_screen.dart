@@ -608,6 +608,14 @@ class _RadarPageState extends State<RadarPage> {
         accentColor: context.colors.success,
         icon: Icons.celebration_rounded,
       );
+    } on AlreadyClaimedDealException catch (e) {
+      if (!mounted) return;
+      showContainedSnackBar(
+        context,
+        message: e.message,
+        accentColor: context.colors.warning,
+        icon: Icons.info_rounded,
+      );
     } catch (e) {
       if (!mounted) return;
       showContainedSnackBar(

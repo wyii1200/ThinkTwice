@@ -3,9 +3,9 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 //testing with local server
-const String _baseUrl = 'http://localhost:4000';
+//const String _baseUrl = 'http://localhost:4000';
 
-//const String _baseUrl = 'https://thinktwice-zu5d.onrender.com';
+const String _baseUrl = 'https://thinktwice-zu5d.onrender.com';
 // ─── Response models ──────────────────────────────────────────────────────────
 
   //final String submittedBy;
@@ -412,6 +412,11 @@ class RadarApiService {
         .timeout(const Duration(seconds: 10));
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode == 409) {
+      throw AlreadyClaimedDealException(
+        body['error'] as String? ?? 'You already claimed this deal.',
+      );
+    }
     if (body['success'] != true) {
       throw Exception(body['error'] ?? 'Failed to record deal usage');
     }
@@ -526,6 +531,14 @@ class RadarApiService {
 class AlreadyVotedException implements Exception {
   final String message;
   const AlreadyVotedException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+class AlreadyClaimedDealException implements Exception {
+  final String message;
+  const AlreadyClaimedDealException(this.message);
 
   @override
   String toString() => message;

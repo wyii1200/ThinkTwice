@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const { db, bucket } = require("../firebase");
 const { getInitialTrustScore, upvoteDeal, downvoteDeal, isDealVisible, isDealVerified, TRUST_VERIFIED_THRESHOLD } = require("../services/trustScore");
-const { recordSavingsProof } = require("../services/savingsCalc");
 const axios = require("axios");
 
 // ─── GET /deals ───────────────────────────────────────────────────────────────
@@ -164,17 +163,56 @@ router.post("/use", async (req, res) => {
       return res.status(400).json({ success: false, error: "userId, dealId, amountSaved required" });
     }
 
-    const proofId = await recordSavingsProof(db, userId, {
-      type: "deal_used",
-      amountSaved: parseFloat(amountSaved),
-      category: category || "general",
-      dealId,
-      dealTitle: dealTitle || "Community Deal", // <--- ADD THIS
+    const dealRef = db.collection("deals").doc(dealId);
+    const safeClaimId = `${encodeURIComponent(userId)}_${encodeURIComponent(dealId)}`;
+    const claimRef = db.collection("deal_claims").doc(safeClaimId);
+    const proofRef = db.collection("savings_proof").doc();
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+    await db.runTransaction(async (tx) => {
+      const [dealDoc, claimDoc] = await Promise.all([
+        tx.get(dealRef),
+        tx.get(claimRef),
+      ]);
+
+      if (!dealDoc.exists) {
+        const err = new Error("Deal not found");
+        err.statusCode = 404;
+        throw err;
+      }
+
+      if (claimDoc.exists) {
+        const err = new Error("You already claimed this deal.");
+        err.statusCode = 409;
+        throw err;
+      }
+
+      tx.set(claimRef, {
+        claimId: safeClaimId,
+        userId,
+        dealId,
+        proofId: proofRef.id,
+        claimedAt: now.toISOString(),
+      });
+
+      tx.set(proofRef, {
+        proofId: proofRef.id,
+        userId,
+        type: "deal_used",
+        amountSaved: parseFloat(amountSaved),
+        category: category || "general",
+        dealId,
+        routeId: null,
+        month,
+        createdAt: now.toISOString(),
+        dealTitle: dealTitle || "Community Deal",
+      });
     });
 
-    res.json({ success: true, proofId });
+    res.json({ success: true, proofId: proofRef.id });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.statusCode || 500).json({ success: false, error: err.message });
   }
 });
 
