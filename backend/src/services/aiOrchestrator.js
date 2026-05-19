@@ -23,6 +23,7 @@ async function analyzeTransaction(payload) {
     daily_budget: userProfile?.dailyBudget || 25,
     current_daily_spending: calculateDailySpending(userHistory, amount),
     savings_goal: userProfile?.savingsGoal || 200,
+    money_habit_score: userProfile?.moneyHabitScore ?? userProfile?.resilienceScore ?? 72,
     demo_scenario: demoScenario || 'bubble_tea_high_risk',
     user_action: userAction || null,
     transactions: buildTransactionHistory(userHistory, {

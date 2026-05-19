@@ -151,10 +151,13 @@ router.post('/award-points', async (req, res) => {
       ? Math.ceil(safePoints * 0.1)
       : Math.floor(safePoints * 0.1);
 
+    const currentScore = user.moneyHabitScore ?? user.resilienceScore ?? 50;
+    const nextScore = Math.max(0, Math.min(100, currentScore + scoreDelta));
+
     const updates = {
       totalPoints: admin.firestore.FieldValue.increment(safePoints),
-      resilienceScore: admin.firestore.FieldValue.increment(scoreDelta),
-      moneyHabitScore: admin.firestore.FieldValue.increment(scoreDelta),
+      resilienceScore: nextScore,
+      moneyHabitScore: nextScore,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 

@@ -11,10 +11,17 @@ function serverTimestamp() {
 }
 
 async function saveTransaction(data) {
+  const cleanedData = {};
+  for (const key in data) {
+    if (data[key] !== undefined) {
+      cleanedData[key] = data[key];
+    }
+  }
+
   const ref = await db.collection('transactions').add({
-    ...data,
-    amount: Number(data.amount || 0),
-    status: data.status || 'completed',
+    ...cleanedData,
+    amount: Number(cleanedData.amount || 0),
+    status: cleanedData.status || 'completed',
     timestamp: serverTimestamp(),
     createdAt: serverTimestamp(),
   });
