@@ -251,7 +251,7 @@ class _HomePageState extends State<HomePage> {
         .take(4)
         .toList();
     final trend = [30, 45, 28, 60, 35, 52, 41];
-    final goalProgress = (plan.savingsAmount * 0.6 / goal).clamp(0.0, 1.0);
+    final goalProgress = (savingsPocket / (goal > 0 ? goal : 1)).clamp(0.0, 1.0);
     return Stack(
       children: [
         SingleChildScrollView(
@@ -389,7 +389,7 @@ class _HomePageState extends State<HomePage> {
                                     color: Colors.white.withOpacity(0.9)),
                               ),
                               Text(
-                                'RM ${formatRm(plan.savingsAmount * 0.6)} / RM ${formatRm(goal)}',
+                                'RM ${formatRm(savingsPocket)} / RM ${formatRm(goal)}',
                                 style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
