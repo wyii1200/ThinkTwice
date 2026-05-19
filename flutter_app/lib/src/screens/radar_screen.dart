@@ -1,4 +1,5 @@
 ﻿import 'dart:typed_data';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -58,6 +59,8 @@ class _RadarPageState extends State<RadarPage> {
   String? _routeError;
   final List<String> _groceryItems = [];
   String? _aiRouteVerdict;
+  List<_RoutePlanStop> _plannedRouteStops = [];
+  String? _routeDecisionNote;
   
 
   // FIX 1: Change this to your laptop WiFi IP when testing on physical device
@@ -100,6 +103,8 @@ class _RadarPageState extends State<RadarPage> {
       _loadingDeals = true;
       _dealsError = null;
       _routeResult = null;
+      _plannedRouteStops = [];
+      _routeDecisionNote = null;
       if (category != null) _activeCategory = category;
     });
 
@@ -174,13 +179,11 @@ class _RadarPageState extends State<RadarPage> {
   // ── FIX 2 & 3: Route generation — user-triggered with grocery input ────────
 
   Future<void> _openGroceryInputSheet() async {
-    if (_selectedDeal == null) return;
-
     final items = await showContainedBottomSheet<List<String>>(
       context,
       barrierLabel: 'Grocery Input',
       builder: (ctx) => _GroceryInputSheet(
-        storeName: _selectedDeal!.storeName,
+        storeName: _selectedDeal?.storeName ?? 'nearby grocery stores',
         initialItems: _groceryItems,
       ),
     );
@@ -193,24 +196,18 @@ class _RadarPageState extends State<RadarPage> {
         ..addAll(items);
       _loadingRoute = true;
       _routeError = null;
+      _plannedRouteStops = [];
+      _routeDecisionNote = null;
     });
 
     try {
+      final routePlan = await _buildSmartRoutePlan(items);
+      if (routePlan.stops.isEmpty) {
+        throw Exception('No suitable store found for this grocery list.');
+      }
+
       // Only send lat/lng — never address strings (causes Directions API NOT_FOUND)
-      final stops = [
-        {
-          'storeName': _selectedDeal!.storeName,
-          'lat': _selectedDeal!.latitude,
-          'lng': _selectedDeal!.longitude,
-          'items': items.take((items.length / 2).ceil()).toList(),
-        },
-        {
-          'storeName': 'Fresh Mart',
-          'lat': widget.userLocation.latitude + 0.008,
-          'lng': widget.userLocation.longitude + 0.005,
-          'items': items.skip((items.length / 2).ceil()).toList(),
-        },
-      ];
+      final stops = routePlan.stops.map((stop) => stop.toApiStop()).toList();
 
       final result = await RadarApiService.optimizeRoute(
         userId: _userId,
@@ -223,6 +220,11 @@ class _RadarPageState extends State<RadarPage> {
       if (!mounted) return;
       setState(() {
         _routeResult = result;
+        _plannedRouteStops = _mergeRouteOrder(routePlan.stops, result);
+        _routeDecisionNote = routePlan.decisionNote;
+        if (_plannedRouteStops.first.deal != null) {
+          _selectedDeal = _apiDealToCommunityDeal(_plannedRouteStops.first.deal!);
+        }
         _loadingRoute = false;
         _aiRouteVerdict = null; // Clear previous verdict
       });
@@ -238,25 +240,202 @@ class _RadarPageState extends State<RadarPage> {
       setState(() {
         _routeError = e.toString();
         _loadingRoute = false;
+        _plannedRouteStops = [];
+        _routeDecisionNote = null;
       });
     }
   }
 
-  void _animateMapToRoute() {
-    if (_selectedDeal == null) return;
+  Future<_RoutePlan> _buildSmartRoutePlan(List<String> items) async {
+    final communityDeals = await _loadRouteCandidateDeals();
+    final unmatchedItems = items.toSet();
+    final chosenDeals = <ApiDeal, List<String>>{};
 
-    final stopBLat = widget.userLocation.latitude + 0.008;
-    final stopBLng = widget.userLocation.longitude + 0.005;
+    for (final item in items) {
+      final rankedDeals = communityDeals
+          .where((deal) => _dealMatchesItem(deal, item))
+          .map((deal) => _ScoredDeal(
+                deal: deal,
+                netValue: _estimatedDealNetValue(deal),
+              ))
+          .where((candidate) => candidate.netValue > 0.25)
+          .toList()
+        ..sort((a, b) {
+          final scoreCompare = b.netValue.compareTo(a.netValue);
+          if (scoreCompare != 0) return scoreCompare;
+          final trustCompare = b.deal.trustScore.compareTo(a.deal.trustScore);
+          if (trustCompare != 0) return trustCompare;
+          return b.deal.upvotes.compareTo(a.deal.upvotes);
+        });
 
-    final allLats = [
-      widget.userLocation.latitude,
-      _selectedDeal!.latitude,
-      stopBLat,
+      if (rankedDeals.isEmpty) continue;
+      final bestDeal = rankedDeals.first.deal;
+      chosenDeals.putIfAbsent(bestDeal, () => []).add(item);
+      unmatchedItems.remove(item);
+    }
+
+    final stops = <_RoutePlanStop>[
+      for (final entry in chosenDeals.entries)
+        _RoutePlanStop.communityDeal(entry.key, entry.value),
     ];
-    final allLngs = [
+
+    if (unmatchedItems.isNotEmpty || stops.isEmpty) {
+      final fallbackItems = stops.isEmpty ? items : unmatchedItems.toList();
+      stops.add(await _recommendedFallbackStop(fallbackItems));
+    }
+
+    stops.sort((a, b) {
+      if (a.isCommunityDeal != b.isCommunityDeal) {
+        return a.isCommunityDeal ? -1 : 1;
+      }
+      return a.distanceFrom(widget.userLocation)
+          .compareTo(b.distanceFrom(widget.userLocation));
+    });
+
+    final coveredCount = items.length - unmatchedItems.length;
+    final decisionNote = coveredCount > 0
+        ? 'AI picked $coveredCount community deal item${coveredCount == 1 ? '' : 's'} first, then filled the gaps with a recommended grocery store.'
+        : 'No community deal was a better match for this list, so AI recommended a nearby grocery store.';
+
+    return _RoutePlan(stops: stops, decisionNote: decisionNote);
+  }
+
+  Future<List<ApiDeal>> _loadRouteCandidateDeals() async {
+    final knownDeals = <String, ApiDeal>{
+      for (final deal in _apiDeals) deal.dealId: deal,
+      for (final deal in widget.deals.map(_communityDealToApiDeal))
+        deal.dealId: deal,
+    };
+
+    try {
+      final groceryDeals = await RadarApiService.getDeals(
+        lat: widget.userLocation.latitude,
+        lng: widget.userLocation.longitude,
+        category: 'grocery',
+        radiusMeters: 5000,
+      );
+      for (final deal in groceryDeals) {
+        knownDeals[deal.dealId] = deal;
+      }
+    } catch (_) {}
+
+    return knownDeals.values
+        .where((deal) => !deal.hidden)
+        .where((deal) =>
+            deal.category == 'grocery' || deal.category == _activeCategory)
+        .toList();
+  }
+
+  bool _dealMatchesItem(ApiDeal deal, String item) {
+    final itemText = _normaliseRouteText(item);
+    if (itemText.isEmpty) return false;
+    final dealText = _normaliseRouteText(
+      '${deal.title} ${deal.description ?? ''} ${deal.category}',
+    );
+    if (dealText.isEmpty) return false;
+    return dealText.contains(itemText) || itemText.contains(dealText);
+  }
+
+  double _estimatedDealNetValue(ApiDeal deal) {
+    final saving = math.max(0, deal.originalPrice - deal.price);
+    final travelCost = _distanceKm(
+          widget.userLocation.latitude,
+          widget.userLocation.longitude,
+          deal.lat,
+          deal.lng,
+        ) *
+        0.15;
+    return saving - travelCost;
+  }
+
+  Future<_RoutePlanStop> _recommendedFallbackStop(List<String> items) async {
+    try {
+      final nearby = await RadarApiService.getNearby(
+        lat: widget.userLocation.latitude,
+        lng: widget.userLocation.longitude,
+        category: 'grocery',
+        radiusMeters: 3000,
+      );
+      final places = nearby.nearbyPlaces.toList()
+        ..sort((a, b) => _distanceKm(
+              widget.userLocation.latitude,
+              widget.userLocation.longitude,
+              a.lat,
+              a.lng,
+            ).compareTo(_distanceKm(
+              widget.userLocation.latitude,
+              widget.userLocation.longitude,
+              b.lat,
+              b.lng,
+            )));
+      if (places.isNotEmpty) {
+        return _RoutePlanStop.nearbyPlace(places.first, items);
+      }
+    } catch (_) {}
+
+    return _RoutePlanStop.generated(
+      storeName: 'Nearby Grocery',
+      lat: widget.userLocation.latitude + 0.005,
+      lng: widget.userLocation.longitude + 0.005,
+      items: items,
+    );
+  }
+
+  List<_RoutePlanStop> _mergeRouteOrder(
+    List<_RoutePlanStop> plannedStops,
+    RouteResult result,
+  ) {
+    if (result.orderedStops.isEmpty) return plannedStops;
+
+    final remaining = plannedStops.toList();
+    final ordered = <_RoutePlanStop>[];
+    for (final routeStop in result.orderedStops) {
+      final index = remaining.indexWhere(
+        (stop) => stop.storeName == routeStop.storeName,
+      );
+      if (index == -1) continue;
+      ordered.add(remaining.removeAt(index).copyWith(items: routeStop.items));
+    }
+    return [...ordered, ...remaining];
+  }
+
+  String _normaliseRouteText(String value) => value
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+
+  double _distanceKm(double lat1, double lng1, double lat2, double lng2) {
+    const earthRadiusKm = 6371.0;
+    final dLat = _degToRad(lat2 - lat1);
+    final dLng = _degToRad(lng2 - lng1);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degToRad(lat1)) *
+            math.cos(_degToRad(lat2)) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    return earthRadiusKm * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+  }
+
+  double _degToRad(double degrees) => degrees * math.pi / 180;
+
+  void _animateMapToRoute() {
+    final routeStops = _plannedRouteStops;
+    if (routeStops.isEmpty && _selectedDeal == null) return;
+
+    final allLats = <double>[
+      widget.userLocation.latitude,
+      if (routeStops.isNotEmpty)
+        ...routeStops.map((stop) => stop.lat)
+      else
+        _selectedDeal!.latitude,
+    ];
+    final allLngs = <double>[
       widget.userLocation.longitude,
-      _selectedDeal!.longitude,
-      stopBLng,
+      if (routeStops.isNotEmpty)
+        ...routeStops.map((stop) => stop.lng)
+      else
+        _selectedDeal!.longitude,
     ];
 
     final bounds = LatLngBounds(
@@ -850,13 +1029,17 @@ class _RadarPageState extends State<RadarPage> {
 
   Future<void> _openNavigation(CommunityDeal deal) async {
     try {
-      await RadarApiService.useDeal(
-        userId: _userId,
-        dealId: deal.id,
-        amountSaved: deal.estimatedSavings,
-        category: deal.category,
-        dealTitle: deal.title, // <--- Add this property to your Api Service
-      );
+      final routeUsesSelectedDeal = _routeResult == null ||
+          _plannedRouteStops.any((stop) => stop.deal?.dealId == deal.id);
+      if (routeUsesSelectedDeal) {
+        await RadarApiService.useDeal(
+          userId: _userId,
+          dealId: deal.id,
+          amountSaved: deal.estimatedSavings,
+          category: deal.category,
+          dealTitle: deal.title, // <--- Add this property to your Api Service
+        );
+      }
       if (_routeResult != null) {
         await RadarApiService.acceptRoute(
           userId: _userId,
@@ -867,10 +1050,26 @@ class _RadarPageState extends State<RadarPage> {
       await _loadMonthlySummary();
     } catch (_) {}
 
-    final uri = Uri.parse(
-      'https://www.google.com/maps/dir/?api=1'
-      '&destination=${deal.latitude},${deal.longitude}'
-      '&travelmode=driving',
+    final routeStops = _plannedRouteStops;
+    final destination = routeStops.isNotEmpty
+        ? LatLng(routeStops.last.lat, routeStops.last.lng)
+        : LatLng(deal.latitude, deal.longitude);
+    final waypoints = routeStops.length > 1
+        ? routeStops
+            .take(routeStops.length - 1)
+            .map((stop) => '${stop.lat},${stop.lng}')
+            .join('|')
+        : null;
+
+    final uri = Uri.https(
+      'www.google.com',
+      '/maps/dir/',
+      {
+        'api': '1',
+        'destination': '${destination.latitude},${destination.longitude}',
+        if (waypoints != null) 'waypoints': waypoints,
+        'travelmode': 'driving',
+      },
     );
 
     if (await canLaunchUrl(uri)) {
@@ -966,6 +1165,17 @@ class _RadarPageState extends State<RadarPage> {
         createdAt: DateTime.now().toIso8601String(),
       );
 
+  List<_RoutePlanStop> get _routeDisplayStops {
+    if (_plannedRouteStops.isNotEmpty) return _plannedRouteStops;
+    if (_selectedDeal == null || _groceryItems.isEmpty) return const [];
+    return [
+      _RoutePlanStop.communityDeal(
+        _communityDealToApiDeal(_selectedDeal!),
+        _groceryItems,
+      ),
+    ];
+  }
+
   // FIX 4: Markers with labeled route stops
   Set<Marker> _markers() {
     final markers = <Marker>{
@@ -1003,40 +1213,31 @@ class _RadarPageState extends State<RadarPage> {
     }
 
     // Route stop markers — only shown when route is generated
-    if (_routeResult != null && _selectedDeal != null) {
-      // Stop A — selected deal
-      markers.add(Marker(
-        markerId: const MarkerId('stop_A'),
-        position: LatLng(_selectedDeal!.latitude, _selectedDeal!.longitude),
-        infoWindow: InfoWindow(
-          title: 'Stop A — ${_selectedDeal!.storeName}',
-          snippet: _groceryItems.take(3).join(', '),
-        ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-      ));
-      // Stop B — nearby store
-      markers.add(Marker(
-        markerId: const MarkerId('stop_B'),
-        position: LatLng(
-          widget.userLocation.latitude + 0.008,
-          widget.userLocation.longitude + 0.005,
-        ),
-        infoWindow: InfoWindow(
-          title: 'Stop B — Fresh Mart',
-          snippet: _groceryItems
-              .skip((_groceryItems.length / 2).ceil())
-              .take(3)
-              .join(', '),
-        ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
-      ));
+    if (_routeResult != null && _plannedRouteStops.isNotEmpty) {
+      for (var i = 0; i < _plannedRouteStops.length; i++) {
+        final stop = _plannedRouteStops[i];
+        final label = String.fromCharCode(65 + i);
+        markers.add(Marker(
+          markerId: MarkerId('stop_$label'),
+          position: LatLng(stop.lat, stop.lng),
+          infoWindow: InfoWindow(
+            title: 'Stop $label — ${stop.storeName}',
+            snippet: stop.items.take(3).join(', '),
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            stop.isCommunityDeal
+                ? BitmapDescriptor.hueGreen
+                : BitmapDescriptor.hueViolet,
+          ),
+        ));
+      }
     }
 
     return markers;
   }
 
   Set<Polyline> _polylines() {
-    if (_routeResult != null && _selectedDeal != null) {
+    if (_routeResult != null && _plannedRouteStops.isNotEmpty) {
       return {
         Polyline(
           polylineId: const PolylineId('route-full'),
@@ -1044,11 +1245,7 @@ class _RadarPageState extends State<RadarPage> {
           color: const Color(0xFF41B89B),
           points: [
             widget.userLocation,
-            LatLng(_selectedDeal!.latitude, _selectedDeal!.longitude),
-            LatLng(
-              widget.userLocation.latitude + 0.008,
-              widget.userLocation.longitude + 0.005,
-            ),
+            ..._plannedRouteStops.map((stop) => LatLng(stop.lat, stop.lng)),
           ],
           patterns: [PatternItem.dash(20), PatternItem.gap(10)],
         ),
@@ -1428,11 +1625,15 @@ class _RadarPageState extends State<RadarPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _legendRow(Colors.blue, '📍 You'),
-                          const SizedBox(height: 4),
-                          _legendRow(const Color(0xFF41B89B),
-                              'A — ${selected?.storeName ?? ''}'),
-                          const SizedBox(height: 4),
-                          _legendRow(Colors.purple, 'B — Fresh Mart'),
+                          for (var i = 0; i < _plannedRouteStops.length; i++) ...[
+                            const SizedBox(height: 4),
+                            _legendRow(
+                              _plannedRouteStops[i].isCommunityDeal
+                                  ? const Color(0xFF41B89B)
+                                  : Colors.purple,
+                              '${String.fromCharCode(65 + i)} — ${_plannedRouteStops[i].storeName}',
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -1630,6 +1831,17 @@ class _RadarPageState extends State<RadarPage> {
                         ),
                       ]),
                     ),
+                    if (_routeDecisionNote != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _routeDecisionNote!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          height: 1.35,
+                          color: context.colors.mutedForeground,
+                        ),
+                      ),
+                    ],
                   ],
 
                   const SizedBox(height: 12),
@@ -1673,24 +1885,19 @@ class _RadarPageState extends State<RadarPage> {
                     ]),
                     const SizedBox(height: 12),
 
-                   _routeStop(context,
-                        label: 'A',
-                        color: const Color(0xFF41B89B),
-                        store: _routeResult!.orderedStops.isNotEmpty
-                            ? _routeResult!.orderedStops[0].storeName
-                            : selected.storeName,
-                        items: _routeResult!.orderedStops.isNotEmpty
-                            ? _routeResult!.orderedStops[0].items
-                            : _groceryItems.take((_groceryItems.length / 2).ceil()).toList(),
-                        source: _routeResult!.orderedStops.isNotEmpty ? 'ThinkTwice Community' : null),
-                    _routeConnector(),
-                    _routeStop(context,
-                        label: 'B',
-                        color: Colors.purple,
-                        store: 'Fresh Mart',
-                        items: _groceryItems
-                            .skip((_groceryItems.length / 2).ceil())
-                            .toList()),
+                    for (var i = 0; i < _routeDisplayStops.length; i++) ...[
+                      _routeStop(
+                        context,
+                        label: String.fromCharCode(65 + i),
+                        color: _routeDisplayStops[i].isCommunityDeal
+                            ? const Color(0xFF41B89B)
+                            : Colors.purple,
+                        store: _routeDisplayStops[i].storeName,
+                        items: _routeDisplayStops[i].items,
+                        source: _routeDisplayStops[i].source,
+                      ),
+                      if (i < _routeDisplayStops.length - 1) _routeConnector(),
+                    ],
 
                     const SizedBox(height: 14),
 
@@ -1764,6 +1971,8 @@ class _RadarPageState extends State<RadarPage> {
                       onPressed: () => setState(() {
                         _routeResult = null;
                         _groceryItems.clear();
+                        _plannedRouteStops = [];
+                        _routeDecisionNote = null;
                       }),
                       icon: const Icon(Icons.refresh_rounded, size: 14),
                       label: const Text('Change grocery list',
@@ -2230,6 +2439,115 @@ class _RadarPageState extends State<RadarPage> {
         ),
       ]),
     );
+  }
+}
+
+class _RoutePlan {
+  const _RoutePlan({required this.stops, required this.decisionNote});
+
+  final List<_RoutePlanStop> stops;
+  final String decisionNote;
+}
+
+class _ScoredDeal {
+  const _ScoredDeal({required this.deal, required this.netValue});
+
+  final ApiDeal deal;
+  final double netValue;
+}
+
+class _RoutePlanStop {
+  const _RoutePlanStop({
+    required this.storeName,
+    required this.lat,
+    required this.lng,
+    required this.items,
+    required this.source,
+    this.address = '',
+    this.deal,
+  });
+
+  factory _RoutePlanStop.communityDeal(ApiDeal deal, List<String> items) =>
+      _RoutePlanStop(
+        storeName: deal.storeName,
+        lat: deal.lat,
+        lng: deal.lng,
+        address: deal.address,
+        items: items,
+        source: 'ThinkTwice Community',
+        deal: deal,
+      );
+
+  factory _RoutePlanStop.nearbyPlace(NearbyPlace place, List<String> items) =>
+      _RoutePlanStop(
+        storeName: place.name,
+        lat: place.lat,
+        lng: place.lng,
+        address: place.address,
+        items: items,
+        source: 'AI recommended store',
+      );
+
+  factory _RoutePlanStop.generated({
+    required String storeName,
+    required double lat,
+    required double lng,
+    required List<String> items,
+  }) =>
+      _RoutePlanStop(
+        storeName: storeName,
+        lat: lat,
+        lng: lng,
+        items: items,
+        source: 'AI recommended store',
+      );
+
+  final String storeName;
+  final double lat;
+  final double lng;
+  final String address;
+  final List<String> items;
+  final String source;
+  final ApiDeal? deal;
+
+  bool get isCommunityDeal => deal != null;
+
+  Map<String, dynamic> toApiStop() => {
+        'storeName': storeName,
+        'lat': lat,
+        'lng': lng,
+        'address': address,
+        'items': items,
+        'source': source,
+        if (deal != null) ...{
+          'dealId': deal!.dealId,
+          'dealTitle': deal!.title,
+          'dealPrice': deal!.price,
+          'originalPrice': deal!.originalPrice,
+          'trustScore': deal!.trustScore,
+        },
+      };
+
+  _RoutePlanStop copyWith({List<String>? items}) => _RoutePlanStop(
+        storeName: storeName,
+        lat: lat,
+        lng: lng,
+        address: address,
+        items: items ?? this.items,
+        source: source,
+        deal: deal,
+      );
+
+  double distanceFrom(LatLng origin) {
+    const earthRadiusKm = 6371.0;
+    final dLat = (lat - origin.latitude) * math.pi / 180;
+    final dLng = (lng - origin.longitude) * math.pi / 180;
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(origin.latitude * math.pi / 180) *
+            math.cos(lat * math.pi / 180) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    return earthRadiusKm * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
   }
 }
 

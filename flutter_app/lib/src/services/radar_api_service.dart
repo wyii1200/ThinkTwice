@@ -153,15 +153,24 @@ class RouteStop {
   final String address;
   final List<String> items;
   final String? source; 
+  final double? lat;
+  final double? lng;
 
   const RouteStop(
-      {required this.storeName, required this.address, required this.items , this.source});
+      {required this.storeName,
+      required this.address,
+      required this.items,
+      this.source,
+      this.lat,
+      this.lng});
 
   factory RouteStop.fromJson(Map<String, dynamic> json) => RouteStop(
         storeName: json['storeName'] as String? ?? '',
         address: json['address'] as String? ?? '',
         items: List<String>.from(json['items'] as List<dynamic>? ?? []),
         source: json['source'] as String?,
+        lat: (json['lat'] as num?)?.toDouble(),
+        lng: (json['lng'] as num?)?.toDouble(),
       );
 }
 
